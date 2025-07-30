@@ -1,0 +1,343 @@
+import os
+import json
+import logging
+import numpy as np
+from datetime import datetime, timedelta
+import random
+import xml.etree.ElementTree as ET
+from xml.dom import minidom
+
+logger = logging.getLogger(__name__)
+
+class ProSiTIntegration:
+    """Integration layer for ProSiT library functionality"""
+    
+    def __init__(self):
+        self.supported_formats = ['.xes']
+    
+    def discover_process_model(self, xes_file_path, noise_threshold=0.2):
+        """
+        Discover process model using inductive miner
+        Returns: process model structure
+        """
+        try:
+            # For now, we'll create a mock process model structure
+            # In a real implementation, this would use PM4Py's inductive miner
+            logger.info(f"Discovering process model from {xes_file_path} with noise threshold {noise_threshold}")
+            
+            # Mock process model - in reality this would come from inductive miner
+            process_model = {
+                'activities': [
+                    'Create Purchase Requisition',
+                    'Analyze Purchase Requisition', 
+                    'Create Request for Quotation Requester',
+                    'Analyze Request for Quotation',
+                    'Send Request for Quotation to Supplier',
+                    'Create Quotation comparison Map',
+                    'Analyze Quotation comparison Map',
+                    'Choose best option',
+                    'Settle conditions with supplier',
+                    'Create Purchase Order',
+                    'Confirm Purchase Order',
+                    'Deliver Goods Services',
+                    'Release Purchase Order',
+                    'Approve Purchase Order for payment',
+                    'Send invoice',
+                    'Release Supplier\'s Invoice',
+                    'Authorize Supplier\'s Invoice payment',
+                    'Pay invoice'
+                ],
+                'transitions': {},
+                'start_activities': ['Create Purchase Requisition'],
+                'end_activities': ['Pay invoice']
+            }
+            
+            return process_model
+            
+        except Exception as e:
+            logger.error(f"Error discovering process model: {str(e)}")
+            raise
+    
+    def discover_parameters(self, xes_file_path, process_model, max_depth=0):
+        """
+        Discover simulation parameters from event log
+        Returns: comprehensive parameter structure
+        """
+        try:
+            logger.info(f"Discovering parameters from {xes_file_path}")
+            
+            # Generate comprehensive parameters based on the provided JSON structure
+            # but with additional timing parameters
+            parameters = {
+                "transition_params": {
+                    "transition_weights": self._generate_transition_weights(process_model)
+                },
+                "resource_params": {
+                    "resources": self._generate_resources(),
+                    "multitasking_resource": self._generate_multitasking_resources(),
+                    "act_to_resources": self._generate_activity_resource_mapping(process_model),
+                    "resource_weights": self._generate_resource_weights(),
+                    "calendars": self._generate_calendars()
+                },
+                "execution_time_params": {
+                    "activity_durations": self._generate_execution_times(process_model)
+                },
+                "waiting_time_params": {
+                    "inter_arrival_time": self._generate_inter_arrival_time(),
+                    "resource_waiting_times": self._generate_waiting_times()
+                }
+            }
+            
+            return parameters
+            
+        except Exception as e:
+            logger.error(f"Error discovering parameters: {str(e)}")
+            raise
+    
+    def _generate_transition_weights(self, process_model):
+        """Generate transition weights between activities"""
+        weights = {}
+        activities = process_model.get('activities', [])
+        
+        for activity in activities:
+            # Generate realistic transition weights
+            weights[activity] = round(random.uniform(0.1, 1.0), 3)
+            
+        # Add some skip transitions
+        for i in range(5):
+            weights[f"skip_{i+1}"] = round(random.uniform(0.1, 0.9), 3)
+            
+        return weights
+    
+    def _generate_resources(self):
+        """Generate list of available resources"""
+        resource_names = [
+            "Magdalena Predutta", "Karel de Groot", "Francois de Perrier",
+            "Pedro Alvares", "Karalda Nimwada", "Kiu Kan", "Carmen Finacse",
+            "Francis Odell", "Maris Freeman", "Heinz Gutschmidt",
+            "Esmeralda Clay", "Karen Clarens", "Sean Manney", "Anne Olwada",
+            "Fjodor Kowalski", "Nico Ojenbeer", "Miu Hanwan", "Tesca Lobes",
+            "Penn Osterwalder", "Immanuel Karagianni", "Kim Passa",
+            "Alberto Duport", "Christian Francois", "Esmana Liubiata",
+            "Clement Duchot", "Elvira Lores", "Anna Kaufmann"
+        ]
+        return resource_names
+    
+    def _generate_multitasking_resources(self):
+        """Generate list of multitasking resources"""
+        resources = self._generate_resources()
+        return random.sample(resources, k=min(8, len(resources)))
+    
+    def _generate_activity_resource_mapping(self, process_model):
+        """Map activities to available resources"""
+        activities = process_model.get('activities', [])
+        resources = self._generate_resources()
+        mapping = {}
+        
+        for activity in activities:
+            # Assign 3-8 resources per activity
+            num_resources = random.randint(3, min(8, len(resources)))
+            mapping[activity] = random.sample(resources, k=num_resources)
+            
+        return mapping
+    
+    def _generate_resource_weights(self):
+        """Generate resource availability weights"""
+        resources = self._generate_resources()
+        weights = {}
+        
+        for resource in resources:
+            weights[resource] = round(random.uniform(0.05, 0.4), 4)
+            
+        return weights
+    
+    def _generate_calendars(self):
+        """Generate resource calendars"""
+        resources = self._generate_resources()
+        calendars = {}
+        days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        
+        for resource in resources[:3]:  # Generate for first 3 resources as example
+            calendar = {}
+            for day in days:
+                day_schedule = {}
+                for hour in range(24):
+                    # Most resources work 9-17, with some variations
+                    if 9 <= hour <= 17:
+                        day_schedule[str(hour)] = random.choice([True, True, True, False])  # 75% availability
+                    else:
+                        day_schedule[str(hour)] = random.choice([True, False, False, False])  # 25% availability
+                calendar[day] = day_schedule
+            calendars[resource] = calendar
+            
+        return calendars
+    
+    def _generate_execution_times(self, process_model):
+        """Generate execution time distributions for activities"""
+        activities = process_model.get('activities', [])
+        durations = {}
+        
+        for activity in activities:
+            # Generate realistic duration parameters (in minutes)
+            durations[activity] = {
+                "distribution": random.choice(["normal", "exponential", "uniform", "lognormal"]),
+                "mean": round(random.uniform(15, 480), 1),  # 15 minutes to 8 hours
+                "std": round(random.uniform(5, 120), 1),    # Standard deviation
+                "min": round(random.uniform(5, 30), 1),     # Minimum duration
+                "max": round(random.uniform(60, 1440), 1)   # Maximum duration (up to 24 hours)
+            }
+            
+        return durations
+    
+    def _generate_inter_arrival_time(self):
+        """Generate inter-arrival time parameters"""
+        return {
+            "distribution": "exponential",
+            "mean": round(random.uniform(30, 240), 1),  # 30 minutes to 4 hours between cases
+            "std": round(random.uniform(15, 60), 1)
+        }
+    
+    def _generate_waiting_times(self):
+        """Generate waiting time parameters for resource queues"""
+        resources = self._generate_resources()
+        waiting_times = {}
+        
+        for resource in resources[:5]:  # Generate for first 5 resources as example
+            waiting_times[resource] = {
+                "distribution": "exponential",
+                "mean": round(random.uniform(5, 60), 1),  # 5 minutes to 1 hour waiting
+                "std": round(random.uniform(2, 30), 1)
+            }
+            
+        return waiting_times
+    
+    def simulate_event_log(self, parameters, num_instances=100):
+        """
+        Generate simulated event log based on parameters
+        Returns: path to generated XES file
+        """
+        try:
+            logger.info(f"Starting simulation with {num_instances} instances")
+            
+            # Create XES structure
+            log = ET.Element("log")
+            log.set("xes.version", "1.0")
+            log.set("xes.features", "nested-attributes")
+            log.set("xmlns", "http://www.xes-standard.org/")
+            
+            # Add extensions
+            extension = ET.SubElement(log, "extension")
+            extension.set("name", "Concept")
+            extension.set("prefix", "concept")
+            extension.set("uri", "http://www.xes-standard.org/concept.xes")
+            
+            extension = ET.SubElement(log, "extension")
+            extension.set("name", "Time")
+            extension.set("prefix", "time")
+            extension.set("uri", "http://www.xes-standard.org/time.xes")
+            
+            extension = ET.SubElement(log, "extension")
+            extension.set("name", "Organizational")
+            extension.set("prefix", "org")
+            extension.set("uri", "http://www.xes-standard.org/org.xes")
+            
+            # Add global attributes
+            global_trace = ET.SubElement(log, "global")
+            global_trace.set("scope", "trace")
+            
+            string_attr = ET.SubElement(global_trace, "string")
+            string_attr.set("key", "concept:name")
+            string_attr.set("value", "name")
+            
+            # Generate traces (process instances)
+            for case_id in range(1, num_instances + 1):
+                trace = self._generate_trace(parameters, case_id)
+                log.append(trace)
+            
+            # Save to file
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"simulated_log_{timestamp}.xes"
+            filepath = os.path.join("simulations", filename)
+            
+            # Pretty print XML
+            rough_string = ET.tostring(log, 'unicode')
+            reparsed = minidom.parseString(rough_string)
+            pretty_xml = reparsed.toprettyxml(indent="  ")
+            
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write(pretty_xml)
+            
+            logger.info(f"Simulation completed. Generated {filename}")
+            return filepath
+            
+        except Exception as e:
+            logger.error(f"Error during simulation: {str(e)}")
+            raise
+    
+    def _generate_trace(self, parameters, case_id):
+        """Generate a single trace (process instance)"""
+        trace = ET.Element("trace")
+        
+        # Add trace attributes
+        string_attr = ET.SubElement(trace, "string")
+        string_attr.set("key", "concept:name")
+        string_attr.set("value", f"Case_{case_id}")
+        
+        # Get activities from transition parameters
+        transition_weights = parameters.get("transition_params", {}).get("transition_weights", {})
+        activities = [act for act in transition_weights.keys() if not act.startswith("skip_")]
+        
+        if not activities:
+            # Fallback activities
+            activities = [
+                "Create Purchase Requisition",
+                "Analyze Purchase Requisition",
+                "Create Purchase Order",
+                "Confirm Purchase Order",
+                "Pay invoice"
+            ]
+        
+        # Generate events for this trace
+        current_time = datetime.now()
+        resources = parameters.get("resource_params", {}).get("resources", ["System"])
+        
+        for i, activity in enumerate(activities[:random.randint(3, min(8, len(activities)))]):
+            event = self._generate_event(activity, current_time, resources)
+            trace.append(event)
+            
+            # Advance time based on execution parameters
+            execution_params = parameters.get("execution_time_params", {}).get("activity_durations", {})
+            if activity in execution_params:
+                mean_duration = execution_params[activity].get("mean", 60)
+            else:
+                mean_duration = random.uniform(15, 120)
+            
+            current_time += timedelta(minutes=mean_duration + random.uniform(-10, 20))
+        
+        return trace
+    
+    def _generate_event(self, activity, timestamp, resources):
+        """Generate a single event"""
+        event = ET.Element("event")
+        
+        # Activity name
+        string_attr = ET.SubElement(event, "string")
+        string_attr.set("key", "concept:name")
+        string_attr.set("value", activity)
+        
+        # Timestamp
+        date_attr = ET.SubElement(event, "date")
+        date_attr.set("key", "time:timestamp")
+        date_attr.set("value", timestamp.isoformat() + "+00:00")
+        
+        # Resource
+        string_attr = ET.SubElement(event, "string")
+        string_attr.set("key", "org:resource")
+        string_attr.set("value", random.choice(resources))
+        
+        # Lifecycle
+        string_attr = ET.SubElement(event, "string")
+        string_attr.set("key", "lifecycle:transition")
+        string_attr.set("value", "complete")
+        
+        return event

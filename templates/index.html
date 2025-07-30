@@ -1,0 +1,761 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <!-- Left Panel - Upload and Sessions -->
+    <div class="col-lg-4">
+        <!-- Upload Card -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i data-feather="upload" class="me-2"></i>
+                    Upload Event Log
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="xesFile" class="form-label">XES Event Log File</label>
+                        <input type="file" class="form-control" id="xesFile" name="file" accept=".xes" required>
+                        <div class="form-text">Upload your XES event log file for analysis</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="noiseThreshold" class="form-label">
+                            Noise Threshold: <span id="thresholdValue">0.2</span>
+                        </label>
+                        <input type="range" class="form-range" id="noiseThreshold" name="noise_threshold" 
+                               min="0" max="1" step="0.05" value="0.2">
+                        <div class="form-text">Controls process discovery sensitivity</div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success w-100">
+                        <i data-feather="upload" class="me-2"></i>
+                        Upload & Discover
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Recent Sessions -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-secondary text-white">
+                <h6 class="card-title mb-0">
+                    <i data-feather="clock" class="me-2"></i>
+                    Recent Sessions
+                </h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush" id="sessionsList">
+                    {% for session in sessions %}
+                    <div class="list-group-item list-group-item-action cursor-pointer" 
+                         onclick="loadSession({{ session.id }})">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ session.filename }}</h6>
+                                <small class="text-muted">{{ session.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                            </div>
+                            <span class="badge bg-{{ 'success' if session.status == 'ready' else 'warning' if session.status == 'uploaded' else 'info' }}">
+                                {{ session.status }}
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Panel - Parameters and Simulation -->
+    <div class="col-lg-8">
+        <!-- Parameters Editor -->
+        <div class="card shadow-sm mb-4" id="parametersCard" style="display: none;">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i data-feather="settings" class="me-2"></i>
+                    Simulation Parameters
+                </h5>
+                <div>
+                    <button class="btn btn-outline-light btn-sm me-2" onclick="exportParameters()">
+                        <i data-feather="download" class="me-1"></i>
+                        Export JSON
+                    </button>
+                    <button class="btn btn-light btn-sm" onclick="saveParameters()">
+                        <i data-feather="save" class="me-1"></i>
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Parameter Tabs -->
+                <ul class="nav nav-tabs mb-3" id="parameterTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="transition-tab" data-bs-toggle="tab" 
+                                data-bs-target="#transition-pane" type="button" role="tab">
+                            <i data-feather="git-branch" class="me-2"></i>
+                            Transitions
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="resource-tab" data-bs-toggle="tab" 
+                                data-bs-target="#resource-pane" type="button" role="tab">
+                            <i data-feather="users" class="me-2"></i>
+                            Resources
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="execution-tab" data-bs-toggle="tab" 
+                                data-bs-target="#execution-pane" type="button" role="tab">
+                            <i data-feather="clock" class="me-2"></i>
+                            Execution Times
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="waiting-tab" data-bs-toggle="tab" 
+                                data-bs-target="#waiting-pane" type="button" role="tab">
+                            <i data-feather="pause" class="me-2"></i>
+                            Waiting Times
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content" id="parameterTabsContent">
+                    <!-- Transition Parameters -->
+                    <div class="tab-pane fade show active" id="transition-pane" role="tabpanel">
+                        <div id="transitionParams"></div>
+                    </div>
+
+                    <!-- Resource Parameters -->
+                    <div class="tab-pane fade" id="resource-pane" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Resource Management</h6>
+                                <div id="resourceParams"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Activity Assignments</h6>
+                                <div id="activityResourceParams"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Execution Time Parameters -->
+                    <div class="tab-pane fade" id="execution-pane" role="tabpanel">
+                        <div id="executionParams"></div>
+                    </div>
+
+                    <!-- Waiting Time Parameters -->
+                    <div class="tab-pane fade" id="waiting-pane" role="tabpanel">
+                        <div id="waitingParams"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Simulation Card -->
+        <div class="card shadow-sm" id="simulationCard" style="display: none;">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">
+                    <i data-feather="play" class="me-2"></i>
+                    Run Simulation
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="simulationForm">
+                    <div class="row align-items-end">
+                        <div class="col-md-6">
+                            <label for="numInstances" class="form-label">Number of Instances</label>
+                            <input type="number" class="form-control" id="numInstances" 
+                                   min="1" max="10000" value="100" required>
+                            <div class="form-text">Number of process instances to simulate</div>
+                        </div>
+                        <div class="col-md-6">
+                            <button type="submit" class="btn btn-info w-100">
+                                <i data-feather="play" class="me-2"></i>
+                                Generate Event Log
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                
+                <div id="simulationResults" class="mt-3" style="display: none;">
+                    <div class="alert alert-success">
+                        <h6>Simulation Complete!</h6>
+                        <p class="mb-2">Your simulated event log has been generated successfully.</p>
+                        <button class="btn btn-success btn-sm" id="downloadBtn">
+                            <i data-feather="download" class="me-1"></i>
+                            Download XES File
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Welcome Message -->
+<div id="welcomeMessage" class="text-center py-5">
+    <div class="mb-4">
+        <i data-feather="cpu" size="64" class="text-primary"></i>
+    </div>
+    <h2 class="text-primary mb-3">Welcome to ProSiT</h2>
+    <p class="lead text-muted mb-4">Process Simulation Tool</p>
+    <p class="text-muted">
+        Upload your XES event log to discover process parameters and generate realistic simulations.
+        <br>
+        Customize transition weights, resource assignments, execution times, and waiting times with our intuitive interface.
+    </p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentSessionId = null;
+let currentParameters = null;
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    // Update noise threshold display
+    const thresholdSlider = document.getElementById('noiseThreshold');
+    const thresholdValue = document.getElementById('thresholdValue');
+    
+    thresholdSlider.addEventListener('input', function() {
+        thresholdValue.textContent = this.value;
+    });
+
+    // Setup form handlers
+    setupFormHandlers();
+    
+    // Initialize feather icons
+    feather.replace();
+});
+
+function setupFormHandlers() {
+    // Upload form
+    document.getElementById('uploadForm').addEventListener('submit', handleUpload);
+    
+    // Simulation form
+    document.getElementById('simulationForm').addEventListener('submit', handleSimulation);
+}
+
+async function handleUpload(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    
+    showLoading('Uploading file...', 'Discovering process model and parameters');
+    
+    try {
+        // Upload file
+        const uploadResponse = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const uploadResult = await uploadResponse.json();
+        
+        if (!uploadResult.success) {
+            throw new Error(uploadResult.error);
+        }
+        
+        showAlert('File uploaded successfully', 'success');
+        
+        // Discover parameters
+        updateLoadingMessage('Discovering parameters...', 'Analyzing process structure and extracting simulation parameters');
+        
+        const discoverResponse = await fetch(`/api/discover/${uploadResult.session_id}`, {
+            method: 'POST'
+        });
+        
+        const discoverResult = await discoverResponse.json();
+        
+        if (!discoverResult.success) {
+            throw new Error(discoverResult.error);
+        }
+        
+        hideLoading();
+        showAlert('Parameters discovered successfully', 'success');
+        
+        // Load the session
+        loadSessionData(uploadResult.session_id, discoverResult.parameters);
+        
+    } catch (error) {
+        hideLoading();
+        showAlert(`Error: ${error.message}`, 'danger');
+    }
+}
+
+async function loadSession(sessionId) {
+    showLoading('Loading session...', 'Retrieving parameters and session data');
+    
+    try {
+        const response = await fetch(`/api/parameters/${sessionId}`);
+        const result = await response.json();
+        
+        if (!result.success) {
+            throw new Error(result.error);
+        }
+        
+        hideLoading();
+        loadSessionData(sessionId, result.parameters);
+        
+    } catch (error) {
+        hideLoading();
+        showAlert(`Error loading session: ${error.message}`, 'danger');
+    }
+}
+
+function loadSessionData(sessionId, parameters) {
+    currentSessionId = sessionId;
+    currentParameters = parameters;
+    
+    // Hide welcome message
+    document.getElementById('welcomeMessage').style.display = 'none';
+    
+    // Show parameter and simulation cards
+    document.getElementById('parametersCard').style.display = 'block';
+    document.getElementById('simulationCard').style.display = 'block';
+    
+    // Render parameters
+    renderParameters(parameters);
+    
+    // Re-initialize feather icons
+    feather.replace();
+}
+
+function renderParameters(parameters) {
+    // Render transition parameters
+    renderTransitionParameters(parameters.transition_params);
+    
+    // Render resource parameters
+    renderResourceParameters(parameters.resource_params);
+    
+    // Render execution time parameters
+    renderExecutionTimeParameters(parameters.execution_time_params);
+    
+    // Render waiting time parameters
+    renderWaitingTimeParameters(parameters.waiting_time_params);
+}
+
+function renderTransitionParameters(transitionParams) {
+    const container = document.getElementById('transitionParams');
+    const weights = transitionParams.transition_weights || {};
+    
+    let html = '<h6 class="mb-3">Transition Weights</h6>';
+    
+    for (const [transition, weight] of Object.entries(weights)) {
+        html += `
+            <div class="mb-3">
+                <label class="form-label">${transition}</label>
+                <div class="input-group">
+                    <input type="range" class="form-range me-3" min="0" max="1" step="0.01" 
+                           value="${weight}" onchange="updateTransitionWeight('${transition}', this.value)">
+                    <input type="number" class="form-control" style="width: 100px;" min="0" max="1" step="0.01" 
+                           value="${weight}" onchange="updateTransitionWeight('${transition}', this.value)">
+                </div>
+            </div>
+        `;
+    }
+    
+    container.innerHTML = html;
+}
+
+function renderResourceParameters(resourceParams) {
+    const container = document.getElementById('resourceParams');
+    const activityContainer = document.getElementById('activityResourceParams');
+    
+    // Resource management
+    let html = '<div class="mb-3">';
+    html += '<h6>Available Resources</h6>';
+    html += '<div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">';
+    
+    (resourceParams.resources || []).forEach(resource => {
+        const weight = resourceParams.resource_weights?.[resource] || 0.1;
+        html += `
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="small">${resource}</span>
+                <input type="number" class="form-control form-control-sm" style="width: 80px;" 
+                       min="0" max="1" step="0.01" value="${weight}"
+                       onchange="updateResourceWeight('${resource}', this.value)">
+            </div>
+        `;
+    });
+    
+    html += '</div></div>';
+    
+    // Multitasking resources
+    html += '<div class="mb-3">';
+    html += '<h6>Multitasking Resources</h6>';
+    html += '<div class="border rounded p-2">';
+    
+    (resourceParams.resources || []).forEach(resource => {
+        const isMultitasking = (resourceParams.multitasking_resource || []).includes(resource);
+        html += `
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" ${isMultitasking ? 'checked' : ''} 
+                       onchange="updateMultitaskingResource('${resource}', this.checked)">
+                <label class="form-check-label small">${resource}</label>
+            </div>
+        `;
+    });
+    
+    html += '</div></div>';
+    
+    container.innerHTML = html;
+    
+    // Activity-resource assignments
+    let activityHtml = '';
+    const actToResources = resourceParams.act_to_resources || {};
+    
+    for (const [activity, assignedResources] of Object.entries(actToResources)) {
+        activityHtml += `
+            <div class="mb-3">
+                <h6 class="small">${activity}</h6>
+                <div class="border rounded p-2" style="max-height: 150px; overflow-y: auto;">
+        `;
+        
+        (resourceParams.resources || []).forEach(resource => {
+            const isAssigned = assignedResources.includes(resource);
+            activityHtml += `
+                <div class="form-check form-check-sm">
+                    <input class="form-check-input" type="checkbox" ${isAssigned ? 'checked' : ''} 
+                           onchange="updateActivityResource('${activity}', '${resource}', this.checked)">
+                    <label class="form-check-label small">${resource}</label>
+                </div>
+            `;
+        });
+        
+        activityHtml += '</div></div>';
+    }
+    
+    activityContainer.innerHTML = activityHtml;
+}
+
+function renderExecutionTimeParameters(executionParams) {
+    const container = document.getElementById('executionParams');
+    const durations = executionParams.activity_durations || {};
+    
+    let html = '<h6 class="mb-3">Activity Duration Distributions</h6>';
+    
+    for (const [activity, params] of Object.entries(durations)) {
+        html += `
+            <div class="card mb-3">
+                <div class="card-header py-2">
+                    <h6 class="mb-0">${activity}</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label small">Distribution</label>
+                            <select class="form-select form-select-sm" 
+                                    onchange="updateExecutionParam('${activity}', 'distribution', this.value)">
+                                <option value="normal" ${params.distribution === 'normal' ? 'selected' : ''}>Normal</option>
+                                <option value="exponential" ${params.distribution === 'exponential' ? 'selected' : ''}>Exponential</option>
+                                <option value="uniform" ${params.distribution === 'uniform' ? 'selected' : ''}>Uniform</option>
+                                <option value="lognormal" ${params.distribution === 'lognormal' ? 'selected' : ''}>Log-Normal</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small">Mean (minutes)</label>
+                            <input type="number" class="form-control form-control-sm" 
+                                   min="1" value="${params.mean || 60}"
+                                   onchange="updateExecutionParam('${activity}', 'mean', parseFloat(this.value))">
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-4">
+                            <label class="form-label small">Std Dev</label>
+                            <input type="number" class="form-control form-control-sm" 
+                                   min="0" value="${params.std || 15}"
+                                   onchange="updateExecutionParam('${activity}', 'std', parseFloat(this.value))">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">Min</label>
+                            <input type="number" class="form-control form-control-sm" 
+                                   min="1" value="${params.min || 5}"
+                                   onchange="updateExecutionParam('${activity}', 'min', parseFloat(this.value))">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">Max</label>
+                            <input type="number" class="form-control form-control-sm" 
+                                   min="1" value="${params.max || 480}"
+                                   onchange="updateExecutionParam('${activity}', 'max', parseFloat(this.value))">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    container.innerHTML = html;
+}
+
+function renderWaitingTimeParameters(waitingParams) {
+    const container = document.getElementById('waitingParams');
+    
+    let html = '<h6 class="mb-3">Inter-arrival Time</h6>';
+    
+    const interArrival = waitingParams.inter_arrival_time || {};
+    html += `
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <label class="form-label small">Distribution</label>
+                        <select class="form-select form-select-sm" 
+                                onchange="updateWaitingParam('inter_arrival_time', 'distribution', this.value)">
+                            <option value="exponential" ${interArrival.distribution === 'exponential' ? 'selected' : ''}>Exponential</option>
+                            <option value="normal" ${interArrival.distribution === 'normal' ? 'selected' : ''}>Normal</option>
+                            <option value="uniform" ${interArrival.distribution === 'uniform' ? 'selected' : ''}>Uniform</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small">Mean (minutes)</label>
+                        <input type="number" class="form-control form-control-sm" 
+                               min="1" value="${interArrival.mean || 60}"
+                               onchange="updateWaitingParam('inter_arrival_time', 'mean', parseFloat(this.value))">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small">Std Dev</label>
+                        <input type="number" class="form-control form-control-sm" 
+                               min="0" value="${interArrival.std || 20}"
+                               onchange="updateWaitingParam('inter_arrival_time', 'std', parseFloat(this.value))">
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    html += '<h6 class="mb-3">Resource Waiting Times</h6>';
+    
+    const resourceWaiting = waitingParams.resource_waiting_times || {};
+    for (const [resource, params] of Object.entries(resourceWaiting)) {
+        html += `
+            <div class="card mb-2">
+                <div class="card-body py-2">
+                    <div class="row align-items-center">
+                        <div class="col-md-3">
+                            <small class="fw-bold">${resource}</small>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select form-select-sm" 
+                                    onchange="updateResourceWaitingParam('${resource}', 'distribution', this.value)">
+                                <option value="exponential" ${params.distribution === 'exponential' ? 'selected' : ''}>Exponential</option>
+                                <option value="normal" ${params.distribution === 'normal' ? 'selected' : ''}>Normal</option>
+                                <option value="uniform" ${params.distribution === 'uniform' ? 'selected' : ''}>Uniform</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="number" class="form-control form-control-sm" 
+                                   placeholder="Mean" min="0" value="${params.mean || 15}"
+                                   onchange="updateResourceWaitingParam('${resource}', 'mean', parseFloat(this.value))">
+                        </div>
+                        <div class="col-md-3">
+                            <input type="number" class="form-control form-control-sm" 
+                                   placeholder="Std Dev" min="0" value="${params.std || 5}"
+                                   onchange="updateResourceWaitingParam('${resource}', 'std', parseFloat(this.value))">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    container.innerHTML = html;
+}
+
+// Parameter update functions
+function updateTransitionWeight(transition, value) {
+    if (!currentParameters.transition_params.transition_weights) {
+        currentParameters.transition_params.transition_weights = {};
+    }
+    currentParameters.transition_params.transition_weights[transition] = parseFloat(value);
+    
+    // Update corresponding range/number input
+    const inputs = document.querySelectorAll(`input[onchange*="${transition}"]`);
+    inputs.forEach(input => {
+        if (input.value !== value) {
+            input.value = value;
+        }
+    });
+}
+
+function updateResourceWeight(resource, value) {
+    if (!currentParameters.resource_params.resource_weights) {
+        currentParameters.resource_params.resource_weights = {};
+    }
+    currentParameters.resource_params.resource_weights[resource] = parseFloat(value);
+}
+
+function updateMultitaskingResource(resource, isChecked) {
+    if (!currentParameters.resource_params.multitasking_resource) {
+        currentParameters.resource_params.multitasking_resource = [];
+    }
+    
+    const index = currentParameters.resource_params.multitasking_resource.indexOf(resource);
+    
+    if (isChecked && index === -1) {
+        currentParameters.resource_params.multitasking_resource.push(resource);
+    } else if (!isChecked && index !== -1) {
+        currentParameters.resource_params.multitasking_resource.splice(index, 1);
+    }
+}
+
+function updateActivityResource(activity, resource, isAssigned) {
+    if (!currentParameters.resource_params.act_to_resources) {
+        currentParameters.resource_params.act_to_resources = {};
+    }
+    
+    if (!currentParameters.resource_params.act_to_resources[activity]) {
+        currentParameters.resource_params.act_to_resources[activity] = [];
+    }
+    
+    const resources = currentParameters.resource_params.act_to_resources[activity];
+    const index = resources.indexOf(resource);
+    
+    if (isAssigned && index === -1) {
+        resources.push(resource);
+    } else if (!isAssigned && index !== -1) {
+        resources.splice(index, 1);
+    }
+}
+
+function updateExecutionParam(activity, param, value) {
+    if (!currentParameters.execution_time_params.activity_durations[activity]) {
+        currentParameters.execution_time_params.activity_durations[activity] = {};
+    }
+    currentParameters.execution_time_params.activity_durations[activity][param] = value;
+}
+
+function updateWaitingParam(section, param, value) {
+    if (!currentParameters.waiting_time_params[section]) {
+        currentParameters.waiting_time_params[section] = {};
+    }
+    currentParameters.waiting_time_params[section][param] = value;
+}
+
+function updateResourceWaitingParam(resource, param, value) {
+    if (!currentParameters.waiting_time_params.resource_waiting_times) {
+        currentParameters.waiting_time_params.resource_waiting_times = {};
+    }
+    if (!currentParameters.waiting_time_params.resource_waiting_times[resource]) {
+        currentParameters.waiting_time_params.resource_waiting_times[resource] = {};
+    }
+    currentParameters.waiting_time_params.resource_waiting_times[resource][param] = value;
+}
+
+async function saveParameters() {
+    if (!currentSessionId || !currentParameters) {
+        showAlert('No parameters to save', 'warning');
+        return;
+    }
+    
+    showLoading('Saving parameters...', 'Updating simulation parameters');
+    
+    try {
+        const response = await fetch(`/api/parameters/${currentSessionId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(currentParameters)
+        });
+        
+        const result = await response.json();
+        
+        hideLoading();
+        
+        if (result.success) {
+            showAlert('Parameters saved successfully', 'success');
+        } else {
+            throw new Error(result.error);
+        }
+        
+    } catch (error) {
+        hideLoading();
+        showAlert(`Error saving parameters: ${error.message}`, 'danger');
+    }
+}
+
+async function exportParameters() {
+    if (!currentSessionId) {
+        showAlert('No session to export', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/export_parameters/${currentSessionId}`);
+        
+        if (response.ok) {
+            // Create blob and download
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `parameters_${currentSessionId}.json`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            showAlert('Parameters exported successfully', 'success');
+        } else {
+            throw new Error('Export failed');
+        }
+        
+    } catch (error) {
+        showAlert(`Error exporting parameters: ${error.message}`, 'danger');
+    }
+}
+
+async function handleSimulation(e) {
+    e.preventDefault();
+    
+    if (!currentSessionId) {
+        showAlert('No session available for simulation', 'warning');
+        return;
+    }
+    
+    const numInstances = parseInt(document.getElementById('numInstances').value);
+    
+    showLoading('Running simulation...', `Generating ${numInstances} process instances`);
+    
+    try {
+        const response = await fetch(`/api/simulate/${currentSessionId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ num_instances: numInstances })
+        });
+        
+        const result = await response.json();
+        
+        hideLoading();
+        
+        if (result.success) {
+            showAlert(`Simulation completed with ${numInstances} instances`, 'success');
+            
+            // Show results
+            const resultsDiv = document.getElementById('simulationResults');
+            const downloadBtn = document.getElementById('downloadBtn');
+            
+            downloadBtn.onclick = function() {
+                const filename = result.output_path.split('/').pop();
+                window.location.href = `/api/download/${filename}`;
+            };
+            
+            resultsDiv.style.display = 'block';
+            
+        } else {
+            throw new Error(result.error);
+        }
+        
+    } catch (error) {
+        hideLoading();
+        showAlert(`Simulation error: ${error.message}`, 'danger');
+    }
+}
+</script>
+{% endblock %}
