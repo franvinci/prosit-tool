@@ -1247,13 +1247,13 @@ function renderDistributionParameters(itemName, distribution, params, type) {
                     <div class="col-md-6">
                         <label class="form-label small">Mean</label>
                         <input type="number" class="form-control form-control-sm" 
-                               min="1" step="0.1" value="${params.mean || 60}"
+                               min="1" step="0.1" value="${params.mean || params.mean_value || 10}"
                                onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'mean', parseFloat(this.value))">
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small">Std Dev</label>
                         <input type="number" class="form-control form-control-sm" 
-                               min="0" step="0.1" value="${params.std || 15}"
+                               min="0" step="0.1" value="${params.std || 2}"
                                onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'std', parseFloat(this.value))">
                     </div>
                 </div>
@@ -1261,13 +1261,13 @@ function renderDistributionParameters(itemName, distribution, params, type) {
                     <div class="col-md-6">
                         <label class="form-label small">Min</label>
                         <input type="number" class="form-control form-control-sm" 
-                               min="0" step="0.1" value="${params.min || 1}"
+                               min="0" step="0.1" value="${params.min || params.min_value || 0}"
                                onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'min', parseFloat(this.value))">
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small">Max</label>
                         <input type="number" class="form-control form-control-sm" 
-                               min="1" step="0.1" value="${params.max || 480}"
+                               min="1" step="0.1" value="${params.max || params.max_value || 100}"
                                onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'max', parseFloat(this.value))">
                     </div>
                 </div>
@@ -1280,13 +1280,13 @@ function renderDistributionParameters(itemName, distribution, params, type) {
                     <div class="col-md-4">
                         <label class="form-label small">Mean</label>
                         <input type="number" class="form-control form-control-sm" 
-                               min="1" step="0.1" value="${params.mean || 60}"
+                               min="1" step="0.1" value="${params.mean || params.scale || params.mean_value || 10}"
                                onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'mean', parseFloat(this.value))">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label small">Min</label>
                         <input type="number" class="form-control form-control-sm" 
-                               min="0" step="0.1" value="${params.min || 1}"
+                               min="0" step="0.1" value="${params.min || params.min_value || 0}"
                                onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'min', parseFloat(this.value))">
                     </div>
                     <div class="col-md-4">
