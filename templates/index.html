@@ -727,7 +727,7 @@ function renderExecutionTimeParameters(executionParams) {
                             </select>
                         </div>
                         <div class="col-md-6">
-                            ${renderDistributionParameters(activity, distribution, params, 'execution')}
+                            ${renderDistributionParameters(activity, distribution, params.parameters || params, 'execution')}
                         </div>
                     </div>
                 </div>
@@ -780,7 +780,7 @@ function renderWaitingTimeParameters(waitingParams) {
                             </select>
                         </div>
                         <div class="col-md-6">
-                            ${renderDistributionParameters(resource, distribution, params, 'waiting')}
+                            ${renderDistributionParameters(resource, distribution, params.parameters || params, 'waiting')}
                         </div>
                     </div>
                 </div>
