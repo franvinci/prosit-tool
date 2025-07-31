@@ -390,6 +390,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function togglePetriNetSections() {
         if (discoverNet && discoverNet.checked) {
+            // Show noise threshold section for discovery
             discoverySection.style.display = 'block';
             pnmlSection.style.display = 'none';
             uploadBtnText.textContent = 'Upload & Discover';
@@ -397,9 +398,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const pnmlFile = document.getElementById('pnmlFile');
             if (pnmlFile) pnmlFile.required = false;
         } else if (importNet && importNet.checked) {
-            discoverySection.style.display = 'block';
-            pnmlSection.style.display = 'none';
-            uploadBtnText.textContent = 'Upload & Discover';
+            // Show PNML file upload section for import
+            discoverySection.style.display = 'none';
+            pnmlSection.style.display = 'block';
+            uploadBtnText.textContent = 'Upload & Import';
             // PNML file required for import
             const pnmlFile = document.getElementById('pnmlFile');
             if (pnmlFile) pnmlFile.required = true;
