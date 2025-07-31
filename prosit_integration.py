@@ -132,19 +132,30 @@ class ProSiTIntegration:
                 '''<svg class="petri-net-interactive" style="max-width: 100%; height: auto; background: white; border-radius: 8px;"'''
             )
             
-            # Collect activity transitions for click handling
-            activity_transitions = []
+            # Create mapping from transition object IDs to labels
+            transition_mapping = {}
             for transition in net.transitions:
                 if transition.label:  # Only labeled transitions (activities)
-                    activity_transitions.append(transition.label)
+                    # Map the transition object ID to its label
+                    transition_id = str(id(transition))
+                    transition_mapping[transition_id] = transition.label
+                    logger.debug(f"Mapping transition {transition_id} -> {transition.label}")
             
-            # Add data attributes and styling to transitions for better interactivity
-            for activity in activity_transitions:
-                # Find and enhance transition nodes with the activity label
+            # Replace internal IDs with activity names in title elements
+            for transition_id, activity_label in transition_mapping.items():
+                # Replace the memory address with the activity label
                 enhanced_svg = enhanced_svg.replace(
-                    f'<title>{activity}</title>',
-                    f'<title>{activity}</title><desc class="activity-transition" data-activity="{activity}"></desc>'
+                    f'<title>{transition_id}</title>',
+                    f'<title>{activity_label}</title>'
                 )
+            
+            # Also try to replace transition names if they appear
+            for transition in net.transitions:
+                if transition.label and transition.name:
+                    enhanced_svg = enhanced_svg.replace(
+                        f'<title>{transition.name}</title>',
+                        f'<title>{transition.label}</title>'
+                    )
             
             # Improve styling of transitions and places with purple/green theme
             enhanced_svg = enhanced_svg.replace(
