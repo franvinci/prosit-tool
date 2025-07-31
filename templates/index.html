@@ -1062,6 +1062,7 @@ function renderArrivalCalendar(calendar) {
 }
 
 function renderPetriNet(processModel) {
+    console.log('renderPetriNet called with processModel:', processModel);
     const container = document.getElementById('petriNetContainer');
     
     if (!processModel) {
@@ -1077,6 +1078,7 @@ function renderPetriNet(processModel) {
     if (processModel.visualization) {
         // Check if it's SVG content or base64 image
         if (processModel.visualization.includes('<svg')) {
+            console.log('Rendering SVG visualization');
             // Direct SVG content - embed it
             container.innerHTML = `
                 <div class="text-center">
@@ -1086,6 +1088,9 @@ function renderPetriNet(processModel) {
                     <div class="alert alert-info small">
                         <i data-feather="info" class="me-1"></i>
                         Click on activity transitions to navigate to their execution time parameters
+                        <button type="button" class="btn btn-sm btn-outline-primary ms-2" onclick="setupSVGInteractivity()">
+                            Enable Clicks
+                        </button>
                     </div>
                 </div>
                 <div class="mt-3">
