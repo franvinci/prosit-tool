@@ -74,6 +74,12 @@ Preferred communication style: Simple, everyday language.
 - **Parameter conversion**: Complete rewrite to handle ProSiT's to_json/from_json methods
 - **Data persistence**: JSON files for parameters, PostgreSQL for session metadata
 
+### Parameter Persistence and Simulation Fixes (July 31, 2025)
+- **Fixed parameter modification storage**: User changes to distribution parameters now persist correctly in ProSiT JSON format instead of reverting to defaults
+- **Fixed simulation data source**: Simulations now use stored modified parameters from JSON files instead of rediscovering from original XES files
+- **Enhanced resource addition**: New resources automatically added to all parameter sections (weights, calendars, waiting times) with proper alphabetical sorting
+- **Parameter validation**: Improved conversion logic to preserve user modifications during format conversions
+
 ## External Dependencies
 
 ### Python Packages

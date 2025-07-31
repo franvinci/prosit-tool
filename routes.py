@@ -271,24 +271,24 @@ def convert_app_to_prosit_format(app_params, prosit_json):
                     'mean_value': param_values.get('mean_value', 10.0)
                 }
                 
-                # Convert parameters based on distribution type
+                # Convert parameters based on distribution type, using actual values not defaults
                 if dist == 'fixed':
-                    prosit_entry['params'] = [param_values.get('value', 10.0)]
+                    prosit_entry['params'] = [param_values.get('value', param_values.get('mean_value', 10.0))]
                 elif dist == 'norm':
                     prosit_entry['params'] = [
-                        param_values.get('mean', 10.0),
+                        param_values.get('mean', param_values.get('mean_value', 10.0)),
                         param_values.get('std', 2.0)
                     ]
                 elif dist == 'expon':
                     prosit_entry['params'] = [
                         0.0,
-                        param_values.get('scale', 10.0)
+                        param_values.get('scale', param_values.get('mean_value', 10.0))
                     ]
                 elif dist == 'lognorm':
                     prosit_entry['params'] = [
                         param_values.get('s', 1.0),
                         param_values.get('loc', 0.0),
-                        param_values.get('scale', 1.0)
+                        param_values.get('scale', param_values.get('mean_value', 1.0))
                     ]
                 
                 prosit_json['execution_time_params']['execution_time_distributions'][activity] = prosit_entry
@@ -306,24 +306,24 @@ def convert_app_to_prosit_format(app_params, prosit_json):
                     'mean_value': param_values.get('mean_value', 120.0)
                 }
                 
-                # Convert parameters based on distribution type
+                # Convert parameters based on distribution type, using actual values not defaults
                 if dist == 'fixed':
-                    prosit_entry['params'] = [param_values.get('value', 120.0)]
+                    prosit_entry['params'] = [param_values.get('value', param_values.get('mean_value', 120.0))]
                 elif dist == 'norm':
                     prosit_entry['params'] = [
-                        param_values.get('mean', 120.0),
+                        param_values.get('mean', param_values.get('mean_value', 120.0)),
                         param_values.get('std', 30.0)
                     ]
                 elif dist == 'expon':
                     prosit_entry['params'] = [
                         0.0,
-                        param_values.get('scale', 120.0)
+                        param_values.get('scale', param_values.get('mean_value', 120.0))
                     ]
                 elif dist == 'lognorm':
                     prosit_entry['params'] = [
                         param_values.get('s', 1.0),
                         param_values.get('loc', 0.0),
-                        param_values.get('scale', 120.0)
+                        param_values.get('scale', param_values.get('mean_value', 120.0))
                     ]
                 
                 prosit_json['waiting_time_params']['waiting_time_distributions'][resource] = prosit_entry
@@ -449,17 +449,31 @@ def simulate(session_id):
         # Load process model and run simulation using ProSiT
         logger.info(f"Starting simulation for session {session_id} with {num_instances} instances")
         
-        # Get original file path to reload process model
+        # Load the stored modified parameters instead of rediscovering
+        session_metadata = session.get_parameters()
+        json_filename = session_metadata.get('json_filename')
+        
+        if not json_filename:
+            return jsonify({'error': 'No stored parameters found for this session'}), 400
+        
+        # Get the path to the saved ProSiT JSON file (contains user modifications)
+        json_filepath = os.path.join(app.config['UPLOAD_FOLDER'], json_filename)
+        
+        if not os.path.exists(json_filepath):
+            return jsonify({'error': 'Stored parameter file not found'}), 404
+        
+        # Get original file path to reload process model structure
         original_filename = session.filename
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], original_filename)
         
-        # Reload process model
+        # Reload process model structure (but don't rediscover parameters)
         process_model = prosit.discover_process_model(filepath, session.noise_threshold)
         
-        # Discover parameters from the event log to get ProSiT params object
-        prosit.discover_parameters(filepath, process_model)
+        # Load the modified parameters from JSON instead of rediscovering
+        logger.info(f"Using stored modified parameters from {json_filename}")
+        prosit.load_parameters_from_json(json_filepath)
         
-        # Run simulation using ProSiT
+        # Run simulation using the modified parameters
         result_df = prosit.run_simulation(n_traces=num_instances, start_timestamp=start_timestamp)
         
         # Save simulation results as XES file
