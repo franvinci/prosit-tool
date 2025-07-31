@@ -347,7 +347,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function setupFormHandlers() {
     // Upload form
-    document.getElementById('uploadForm').addEventListener('submit', handleUpload);
+    const uploadForm = document.getElementById('uploadForm');
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', handleUpload);
+    }
     
     // Simulation form
     document.getElementById('simulationForm').addEventListener('submit', handleSimulation);
