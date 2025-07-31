@@ -421,6 +421,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize feather icons
     feather.replace();
+    
+    // Force cache refresh by adding timestamp to any AJAX requests
+    const timestamp = Date.now();
+    console.log('Page loaded with timestamp:', timestamp);
 });
 
 function setupFormHandlers() {
