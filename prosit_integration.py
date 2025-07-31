@@ -6,6 +6,7 @@ from datetime import datetime
 import pm4py
 from pm4py.visualization.petri_net import visualizer as pn_visualizer
 from pm4py.objects.petri_net.obj import PetriNet
+from pm4py.objects.log.importer.xes import importer as xes_importer
 
 # ProSiT imports
 from prosit.simulator import SimulatorParameters, SimulatorEngine
@@ -32,21 +33,27 @@ class ProSiTIntegration:
         try:
             logger.info(f"Discovering process model from {xes_file_path} with noise threshold {noise_threshold}")
             
-            # Load event log from XES file
-            event_log = pm4py.read_xes(xes_file_path)
+            # Load event log from XES file using proper XES importer
+            event_log = xes_importer.apply(xes_file_path)
             logger.info(f"Loaded {len(event_log)} traces from XES file")
             
             # Debug: Check event log structure for ProSiT compatibility
-            if event_log and len(event_log) > 0:
-                first_trace = event_log[0]
-                if first_trace and len(first_trace) > 0:
-                    first_event = first_trace[0]
-                    logger.info(f"Event log structure - First event type: {type(first_event)}")
-                    logger.info(f"Event log structure - First event keys: {list(first_event.keys()) if hasattr(first_event, 'keys') else 'No keys'}")
-                    if hasattr(first_event, 'keys') and 'org:resource' in first_event:
-                        logger.info(f"Resource attribute found: {first_event['org:resource']}")
-                    else:
-                        logger.warning("No 'org:resource' attribute found in first event")
+            try:
+                if event_log is not None and len(event_log) > 0:
+                    first_trace = event_log[0]
+                    if first_trace is not None and len(first_trace) > 0:
+                        first_event = first_trace[0]
+                        logger.info(f"Event log structure - First event type: {type(first_event)}")
+                        if hasattr(first_event, 'keys'):
+                            logger.info(f"Event log structure - First event keys: {list(first_event.keys())}")
+                            if 'org:resource' in first_event:
+                                logger.info(f"Resource attribute found: {first_event['org:resource']}")
+                            else:
+                                logger.warning("No 'org:resource' attribute found in first event")
+                        else:
+                            logger.info("Event log structure - Event has no keys method")
+            except Exception as debug_error:
+                logger.warning(f"Debug event log structure failed: {str(debug_error)}")
             
             # Apply inductive miner to discover Petri net
             net, initial_marking, final_marking = pm4py.discover_petri_net_inductive(event_log, noise_threshold=noise_threshold)
