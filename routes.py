@@ -454,22 +454,38 @@ def download_file(filename):
 
 @app.route('/api/export_parameters/<int:session_id>')
 def export_parameters(session_id):
-    """Export parameters as JSON file"""
+    """Export parameters in ProSiT simulator format"""
     try:
         session = SimulationSession.query.get_or_404(session_id)
-        parameters = session.get_parameters()
+        session_metadata = session.get_parameters()
         
-        if not parameters:
+        if not session_metadata:
             return jsonify({'error': 'No parameters found'}), 404
         
-        # Create temporary file
+        # Get the JSON filename from session metadata
+        json_filename = session_metadata.get('json_filename')
+        if not json_filename:
+            return jsonify({'error': 'No ProSiT JSON file associated with this session'}), 400
+        
+        # Get the path to the saved ProSiT JSON file
+        json_filepath = os.path.join(app.config['UPLOAD_FOLDER'], json_filename)
+        
+        if not os.path.exists(json_filepath):
+            return jsonify({'error': 'ProSiT parameter file not found'}), 404
+        
+        # Load the current ProSiT JSON (which includes any updates made through the UI)
+        with open(json_filepath, 'r') as f:
+            prosit_json = json.load(f)
+        
+        # Create temporary file with current parameters
         import tempfile
         with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-            json.dump(parameters, f, indent=2)
+            json.dump(prosit_json, f, indent=4)
             temp_path = f.name
         
+        # Return the ProSiT simulator format JSON file
         return send_file(temp_path, as_attachment=True, 
-                        download_name=f'parameters_{session_id}.json',
+                        download_name=f'prosit_parameters_{session_id}.json',
                         mimetype='application/json')
         
     except Exception as e:
