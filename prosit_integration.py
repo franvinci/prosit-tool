@@ -264,8 +264,51 @@ class ProSiTIntegration:
                     'parameters': self._convert_prosit_params_to_app(dist_name, params, min_val, max_val, mean_val)
                 }
             
-            # Extract inter-arrival time parameters
-            inter_arrival_params = prosit_json.get('inter_arrival_params', {})
+            # Extract inter-arrival time parameters from ProSiT JSON (key: arrival_params)
+            arrival_json_params = prosit_json.get('arrival_params', {})
+            inter_arrival_params = {}
+            
+            if arrival_json_params:
+                # Extract from ProSiT arrival_params structure
+                arrival_dist = arrival_json_params.get('arrival_time_distributions', {})
+                arrival_calendar = arrival_json_params.get('arrival_calendar', {})
+                
+                if arrival_dist:
+                    dist_name = arrival_dist.get('dist_name', 'expon')
+                    params = arrival_dist.get('params', [60.0])
+                    min_val = arrival_dist.get('min_value', 1.0)
+                    max_val = arrival_dist.get('max_value', 1000.0)
+                    mean_val = arrival_dist.get('mean_value', 60.0)
+                    
+                    inter_arrival_params = {
+                        'inter_arrival_time': {
+                            'distribution': dist_name,
+                            'parameters': self._convert_prosit_params_to_app(dist_name, params, min_val, max_val, mean_val),
+                            'calendar': arrival_calendar or {
+                                day: {str(hour): True for hour in range(9, 18)} 
+                                for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+                            }
+                        }
+                    }
+            
+            if not inter_arrival_params:
+                # Create default inter-arrival parameters if missing
+                inter_arrival_params = {
+                    'inter_arrival_time': {
+                        'distribution': 'expon',
+                        'parameters': {
+                            'mean': 60.0,  # Default: 1 case per minute
+                            'scale': 60.0,
+                            'min_value': 1.0,
+                            'max_value': 1000.0,
+                            'mean_value': 60.0
+                        },
+                        'calendar': {
+                            day: {str(hour): True for hour in range(9, 18)} 
+                            for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+                        }
+                    }
+                }
             
             # Create process model info (will be loaded separately)
             process_model = {
