@@ -69,6 +69,7 @@ class ProSiTIntegration:
             # Generate comprehensive parameters based on the provided JSON structure
             # but with additional timing parameters
             parameters = {
+                "process_model": process_model,  # Include the process model for visualization
                 "transition_params": {
                     "transition_weights": self._generate_transition_weights(process_model)
                 },
