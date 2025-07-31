@@ -242,7 +242,7 @@
 
         <!-- Simulation Card -->
         <div class="card shadow-sm mt-4" id="simulationCard" style="display: none;">
-            <div class="card-header bg-purple text-white">
+            <div class="card-header" style="background: linear-gradient(135deg, #6f42c1 0%, #5a32a0 100%); color: white;">
                 <h5 class="card-title mb-0">
                     <i data-feather="play" class="me-2"></i>
                     Run Simulation
@@ -268,7 +268,10 @@
                 </div>
                 
                 <div class="d-grid gap-2">
-                    <button type="button" class="btn btn-purple btn-lg" onclick="runSimulation()">
+                    <button type="button" class="btn btn-lg" style="background: linear-gradient(135deg, #6f42c1 0%, #5a32a0 100%); border: none; color: white; transition: all 0.3s ease;" 
+                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 15px rgba(111, 66, 193, 0.4)'" 
+                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'"
+                            onclick="runSimulation()">
                         <i data-feather="play" class="me-2"></i>
                         Generate Simulated Event Log
                     </button>
@@ -605,40 +608,8 @@ function renderExecutionTimeParameters(executionParams) {
 function renderWaitingTimeParameters(waitingParams) {
     const container = document.getElementById('waitingParams');
     
-    let html = '<h6 class="mb-3">Inter-arrival Time</h6>';
-    
-    const interArrival = waitingParams.inter_arrival_time || {};
-    html += `
-        <div class="card mb-3">
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4">
-                        <label class="form-label small">Distribution</label>
-                        <select class="form-select form-select-sm" 
-                                onchange="updateWaitingParam('inter_arrival_time', 'distribution', this.value)">
-                            <option value="exponential" ${interArrival.distribution === 'exponential' ? 'selected' : ''}>Exponential</option>
-                            <option value="normal" ${interArrival.distribution === 'normal' ? 'selected' : ''}>Normal</option>
-                            <option value="uniform" ${interArrival.distribution === 'uniform' ? 'selected' : ''}>Uniform</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label small">Mean (minutes)</label>
-                        <input type="number" class="form-control form-control-sm" 
-                               min="1" value="${interArrival.mean || 60}"
-                               onchange="updateWaitingParam('inter_arrival_time', 'mean', parseFloat(this.value))">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label small">Std Dev</label>
-                        <input type="number" class="form-control form-control-sm" 
-                               min="0" value="${interArrival.std || 20}"
-                               onchange="updateWaitingParam('inter_arrival_time', 'std', parseFloat(this.value))">
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    html += '<h6 class="mb-3">Resource Waiting Times</h6>';
+    // Only show resource waiting times (inter-arrival moved to separate section)
+    let html = '<h6 class="mb-3">Resource Waiting Times</h6>';
     
     const resourceWaiting = waitingParams.resource_waiting_times || {};
     for (const [resource, params] of Object.entries(resourceWaiting)) {
@@ -1036,7 +1007,7 @@ function renderInterArrivalTimeParameters(waitingParams) {
     const distribution = interArrival.distribution || 'expon';
     html += '<div class="mb-3">';
     html += '<label class="form-label small">Distribution</label>';
-    html += '<select class="form-select form-select-sm" onchange="updateInterArrivalParam(\'distribution\', this.value); renderInterArrivalTimeParameters(currentParameters.waiting_time_params);">';
+    html += '<select class="form-select form-select-sm" onchange="updateInterArrivalParam(\'distribution\', this.value); renderInterArrivalTimeParameters(currentParameters.inter_arrival_params);">';
     html += `<option value="fixed" ${distribution === 'fixed' ? 'selected' : ''}>Fixed</option>`;
     html += `<option value="norm" ${distribution === 'norm' ? 'selected' : ''}>Normal</option>`;
     html += `<option value="expon" ${distribution === 'expon' ? 'selected' : ''}>Exponential</option>`;
@@ -1045,7 +1016,7 @@ function renderInterArrivalTimeParameters(waitingParams) {
     html += '</select>';
     html += '</div>';
     
-    html += renderDistributionParameters('inter_arrival_time', distribution, interArrival, 'inter_arrival');
+    html += renderDistributionParameters('inter_arrival_time', distribution, interArrival.parameters || {}, 'inter_arrival');
     
     html += '</div>';
     html += '</div>';
@@ -1071,10 +1042,20 @@ function renderInterArrivalTimeParameters(waitingParams) {
 }
 
 function updateInterArrivalParam(param, value) {
-    if (!currentParameters.waiting_time_params.inter_arrival_time) {
-        currentParameters.waiting_time_params.inter_arrival_time = {};
+    if (!currentParameters.inter_arrival_params) {
+        currentParameters.inter_arrival_params = {};
     }
-    currentParameters.waiting_time_params.inter_arrival_time[param] = value;
+    if (!currentParameters.inter_arrival_params.inter_arrival_time) {
+        currentParameters.inter_arrival_params.inter_arrival_time = { parameters: {} };
+    }
+    if (param === 'distribution') {
+        currentParameters.inter_arrival_params.inter_arrival_time.distribution = value;
+    } else {
+        if (!currentParameters.inter_arrival_params.inter_arrival_time.parameters) {
+            currentParameters.inter_arrival_params.inter_arrival_time.parameters = {};
+        }
+        currentParameters.inter_arrival_params.inter_arrival_time.parameters[param] = value;
+    }
 }
 
 function renderDistributionParameters(itemName, distribution, params, type) {
