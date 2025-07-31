@@ -29,7 +29,7 @@
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="petriNetSource" id="discoverNet" value="discover" checked>
                                     <label class="form-check-label" for="discoverNet">
-                                        <strong>Discover from XES</strong><br>
+                                        <strong>Discover from Event Log</strong><br>
                                         <small class="text-muted">Use inductive miner to discover Petri net</small>
                                     </label>
                                 </div>
@@ -38,7 +38,7 @@
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="petriNetSource" id="importNet" value="import">
                                     <label class="form-check-label" for="importNet">
-                                        <strong>Import PNML Model</strong><br>
+                                        <strong>Import Petri net from PNML File</strong><br>
                                         <small class="text-muted">Use existing Petri net from PNML file</small>
                                     </label>
                                 </div>
@@ -54,7 +54,7 @@
                             </label>
                             <input type="range" class="form-range" id="noiseThreshold" name="noise_threshold" 
                                    min="0" max="1" step="0.05" value="0.2">
-                            <div class="form-text">Controls process discovery sensitivity</div>
+                            <div class="form-text">Lower threshold leads to higher fitness, while 1 promotes simplicity and precision.</div>
                         </div>
                     </div>
 
@@ -63,7 +63,7 @@
                         <div class="mb-3">
                             <label for="pnmlFile" class="form-label">PNML Petri Net File</label>
                             <input type="file" class="form-control" id="pnmlFile" name="pnml_file" accept=".pnml">
-                            <div class="form-text">Upload your PNML Petri net model file (parameters will be discovered from XES)</div>
+                            <div class="form-text">Upload your PNML Petri net model file.</div>
                         </div>
                     </div>
                     
@@ -155,6 +155,13 @@
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="arrival-tab" data-bs-toggle="tab" 
+                                data-bs-target="#arrival-pane" type="button" role="tab">
+                            <i data-feather="zap" class="me-2"></i>
+                            Arrival Times
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
                         <button class="nav-link" id="execution-tab" data-bs-toggle="tab" 
                                 data-bs-target="#execution-pane" type="button" role="tab">
                             <i data-feather="clock" class="me-2"></i>
@@ -166,13 +173,6 @@
                                 data-bs-target="#waiting-pane" type="button" role="tab">
                             <i data-feather="pause" class="me-2"></i>
                             Waiting Times
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="arrival-tab" data-bs-toggle="tab" 
-                                data-bs-target="#arrival-pane" type="button" role="tab">
-                            <i data-feather="zap" class="me-2"></i>
-                            Inter-Arrival
                         </button>
                     </li>
 
@@ -189,7 +189,7 @@
                     <div class="tab-pane fade" id="resource-pane" role="tabpanel">
                         <div class="row">
                             <div class="col-md-4">
-                                <h6>Resource Management</h6>
+                                <h6>Resource Weights</h6>
                                 <div id="resourceParams"></div>
                             </div>
                             <div class="col-md-4">
@@ -397,9 +397,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const pnmlFile = document.getElementById('pnmlFile');
             if (pnmlFile) pnmlFile.required = false;
         } else if (importNet && importNet.checked) {
-            discoverySection.style.display = 'none';
-            pnmlSection.style.display = 'block';
-            uploadBtnText.textContent = 'Upload & Process';
+            discoverySection.style.display = 'block';
+            pnmlSection.style.display = 'none';
+            uploadBtnText.textContent = 'Upload & Discover';
             // PNML file required for import
             const pnmlFile = document.getElementById('pnmlFile');
             if (pnmlFile) pnmlFile.required = true;
@@ -1314,7 +1314,7 @@ function renderPetriNet(processModel) {
                     </div>
                     <div class="alert alert-info small">
                         <i data-feather="info" class="me-1"></i>
-                        Process model discovered using PM4Py inductive miner algorithm
+                        Process model discovered using inductive miner algorithm
                     </div>
                 </div>
                 <div class="mt-3">
