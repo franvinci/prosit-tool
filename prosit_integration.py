@@ -269,9 +269,22 @@ class ProSiTIntegration:
                         assigned_resources.append(resource)
                 act_to_resources[activity] = assigned_resources
             
-            # Get calendars
-            calendars = getattr(prosit_params, 'calendars', {})
-            logger.info(f"Found calendars for {len(calendars)} resources: {list(calendars.keys())}")
+            # Get calendars and convert numeric day keys to day names
+            prosit_calendars = getattr(prosit_params, 'calendars', {})
+            logger.info(f"Found calendars for {len(prosit_calendars)} resources: {list(prosit_calendars.keys())}")
+            
+            # Convert ProSiT calendar format (numeric days) to expected format (day names)
+            calendars = {}
+            day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+            
+            for resource, resource_calendar in prosit_calendars.items():
+                calendars[resource] = {}
+                for day_idx, day_schedule in resource_calendar.items():
+                    if str(day_idx).isdigit() and int(day_idx) < 7:
+                        day_name = day_names[int(day_idx)]
+                        calendars[resource][day_name] = day_schedule
+                        
+            logger.info(f"Converted calendars for {len(calendars)} resources with day names")
             
             # Get waiting time distributions (resource-specific)
             waiting_time_distributions = {}
@@ -331,7 +344,9 @@ class ProSiTIntegration:
                 }
             }
             
-            logger.info(f"Converted parameters: {len(resources)} resources, {len(execution_time_params)} activities, {len(multitasking_resources)} multitasking resources")
+            logger.info(f"Converted parameters: {len(resources)} resources, {len(execution_time_params)} activities with execution times, {len(multitasking_resources)} multitasking resources")
+            logger.info(f"Activities with execution times: {list(execution_time_params.keys())}")
+            logger.info(f"Resources with waiting times: {list(resource_waiting_times.keys())}")
             
             return parameters
             
