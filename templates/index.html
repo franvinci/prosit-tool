@@ -722,7 +722,7 @@ function renderWaitingTimeParameters(waitingParams) {
     // Only show resource waiting times (inter-arrival moved to separate section)
     let html = '<h6 class="mb-3">Resource Waiting Times</h6>';
     
-    const resourceWaiting = waitingParams.resource_waiting_times || {};
+    const resourceWaiting = waitingParams.waiting_time || {};
     for (const [resource, params] of Object.entries(resourceWaiting)) {
         const distribution = params.distribution || 'norm';
         html += `
@@ -735,7 +735,7 @@ function renderWaitingTimeParameters(waitingParams) {
                         <div class="col-md-6">
                             <label class="form-label small">Distribution</label>
                             <select class="form-select form-select-sm" 
-                                    onchange="updateResourceWaitingParam('${resource}', 'distribution', this.value); renderWaitingTimeParameters(currentParameters.waiting_time_params);">
+                                    onchange="updateWaitingParam('${resource}', 'distribution', this.value); renderWaitingTimeParameters(currentParameters.waiting_time_params);">
                                 <option value="fixed" ${distribution === 'fixed' ? 'selected' : ''}>Fixed</option>
                                 <option value="norm" ${distribution === 'norm' ? 'selected' : ''}>Normal</option>
                                 <option value="expon" ${distribution === 'expon' ? 'selected' : ''}>Exponential</option>
@@ -818,7 +818,7 @@ function updateExecutionParam(activity, param, value) {
     currentParameters.execution_time_params.activity_durations[activity][param] = value;
 }
 
-function updateWaitingParam(section, param, value) {
+function updateWaitingTimeParam(section, param, value) {
     if (!currentParameters.waiting_time_params[section]) {
         currentParameters.waiting_time_params[section] = {};
     }
@@ -833,6 +833,35 @@ function updateResourceWaitingParam(resource, param, value) {
         currentParameters.waiting_time_params.resource_waiting_times[resource] = {};
     }
     currentParameters.waiting_time_params.resource_waiting_times[resource][param] = value;
+}
+
+function updateWaitingParam(resource, param, value) {
+    if (!currentParameters.waiting_time_params.waiting_time) {
+        currentParameters.waiting_time_params.waiting_time = {};
+    }
+    if (!currentParameters.waiting_time_params.waiting_time[resource]) {
+        currentParameters.waiting_time_params.waiting_time[resource] = {};
+    }
+    if (param === 'distribution') {
+        currentParameters.waiting_time_params.waiting_time[resource][param] = value;
+        // Reset parameters when distribution changes
+        if (value === 'fixed') {
+            currentParameters.waiting_time_params.waiting_time[resource].parameters = { value: 120 };
+        } else if (value === 'norm') {
+            currentParameters.waiting_time_params.waiting_time[resource].parameters = { mean: 120, std: 30 };
+        } else if (value === 'expon') {
+            currentParameters.waiting_time_params.waiting_time[resource].parameters = { mean: 120 };
+        } else if (value === 'lognorm') {
+            currentParameters.waiting_time_params.waiting_time[resource].parameters = { mean: 120, std: 30 };
+        } else if (value === 'uniform') {
+            currentParameters.waiting_time_params.waiting_time[resource].parameters = { min: 30, max: 240 };
+        }
+    } else {
+        if (!currentParameters.waiting_time_params.waiting_time[resource].parameters) {
+            currentParameters.waiting_time_params.waiting_time[resource].parameters = {};
+        }
+        currentParameters.waiting_time_params.waiting_time[resource].parameters[param] = value;
+    }
 }
 
 async function saveParameters() {
@@ -1586,7 +1615,7 @@ function addNewResource() {
     }
     currentParameters.waiting_time_params.waiting_time[resourceName] = {
         distribution: 'expon',
-        parameters: { mean: 120, min: 1, max: 480 }
+        parameters: { mean: 120 }
     };
     
     // Refresh the UI
