@@ -460,7 +460,8 @@ class ProSiTIntegration:
             logger.info(f"Activities with execution times: {list(execution_time_params.keys())}")
             logger.info(f"Resources with waiting times: {list(resource_waiting_times.keys())}")
             
-            return parameters
+            # Ensure all data is JSON serializable
+            return self._make_json_serializable(parameters)
             
         except Exception as e:
             logger.error(f"Error converting ProSiT parameters: {str(e)}")
@@ -625,6 +626,30 @@ class ProSiTIntegration:
         except Exception as e:
             logger.error(f"Error enhancing SVG: {str(e)}")
             return svg_content
+    
+    def _make_json_serializable(self, obj):
+        """Convert object to JSON serializable format"""
+        import json
+        from datetime import datetime, date
+        
+        if isinstance(obj, dict):
+            return {key: self._make_json_serializable(value) for key, value in obj.items()}
+        elif isinstance(obj, list):
+            return [self._make_json_serializable(item) for item in obj]
+        elif isinstance(obj, (datetime, date)):
+            return obj.isoformat()
+        elif hasattr(obj, '__dict__') and not isinstance(obj, (str, int, float, bool)):
+            # For complex objects, convert to string representation
+            return str(obj)
+        elif obj is None or isinstance(obj, (str, int, float, bool)):
+            return obj
+        else:
+            # Try to convert to string for any other type
+            try:
+                json.dumps(obj)  # Test if it's already serializable
+                return obj
+            except (TypeError, ValueError):
+                return str(obj)
     
     def extract_parameters_from_pnml_and_log(self, pnml_filepath, xes_filepath):
         """Extract parameters using PNML model structure and XES event log data"""

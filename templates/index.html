@@ -496,6 +496,57 @@ function updateNoiseThreshold(value) {
     }
 }
 
+// Alert and loading functions
+function showAlert(message, type = 'info') {
+    // Create alert element
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'danger' ? 'danger' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info'} alert-dismissible fade show`;
+    alertDiv.style.position = 'fixed';
+    alertDiv.style.top = '20px';
+    alertDiv.style.right = '20px';
+    alertDiv.style.zIndex = '9999';
+    alertDiv.style.minWidth = '300px';
+    
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+
+function showLoading(title, message) {
+    // Simple loading implementation
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'tempLoading';
+    loadingDiv.className = 'position-fixed top-50 start-50 translate-middle';
+    loadingDiv.style.zIndex = '9999';
+    loadingDiv.innerHTML = `
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="spinner-border text-primary mb-3"></div>
+                <h5>${title}</h5>
+                <p>${message}</p>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(loadingDiv);
+}
+
+function hideLoading() {
+    const loadingDiv = document.getElementById('tempLoading');
+    if (loadingDiv) {
+        loadingDiv.remove();
+    }
+}
+
 async function loadSession(sessionId) {
     showLoading('Loading session...', 'Retrieving parameters and session data');
     
