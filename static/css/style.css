@@ -324,6 +324,82 @@ body {
     border-radius: 15px 15px 0 0;
 }
 
+/* Calendar styling for resource and arrival time calendars */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 2px;
+    margin-bottom: 1rem;
+}
+
+.calendar-hour-btn {
+    width: 35px !important;
+    height: 25px !important;
+    font-size: 10px !important;
+    padding: 2px !important;
+    border: 1px solid #dee2e6;
+    margin: 1px;
+    transition: all 0.2s ease;
+}
+
+.calendar-hour-btn.selected {
+    background-color: #90EE90 !important; /* Light green for selected hours */
+    border-color: #28a745 !important;
+    color: #000 !important;
+}
+
+.calendar-hour-btn:hover {
+    background-color: #c3e6cb !important;
+    border-color: #28a745 !important;
+}
+
+.calendar-day-header {
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+/* Arrival calendar specific styling */
+.arrival-calendar-hour {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    color: #6c757d;
+    transition: all 0.2s ease;
+}
+
+.arrival-calendar-hour.active {
+    background-color: #90EE90 !important; /* Light green for active arrival hours */
+    border-color: #28a745 !important;
+    color: #000 !important;
+}
+
+.arrival-calendar-hour:hover {
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+}
+
+/* Resource calendar specific styling */
+.resource-calendar-container {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.btn-purple {
+    background-color: #90EE90 !important; /* Changed to light green */
+    border-color: #28a745 !important;
+    color: #000 !important;
+}
+
+.btn-purple:hover {
+    background-color: #7FDD7F !important;
+    border-color: #20a039 !important;
+    color: #000 !important;
+}
+
 .modal-footer {
     border-top: 2px solid var(--border-color);
     border-radius: 0 0 15px 15px;

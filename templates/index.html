@@ -139,7 +139,7 @@
                 </div>
 
                 <!-- Parameter Tabs -->
-                <ul class="nav nav-tabs mb-3" id="parameterTabs" role="tablist">
+                <ul class="nav nav-tabs nav-fill mb-3" id="parameterTabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" id="transition-tab" data-bs-toggle="tab" 
                                 data-bs-target="#transition-pane" type="button" role="tab">
@@ -157,7 +157,7 @@
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="arrival-tab" data-bs-toggle="tab" 
                                 data-bs-target="#arrival-pane" type="button" role="tab">
-                            <i data-feather="zap" class="me-2"></i>
+                            <i data-feather="calendar" class="me-2"></i>
                             Arrival Times
                         </button>
                     </li>
@@ -306,8 +306,8 @@
                 </div>
                 
                 <div class="d-grid gap-2">
-                    <button type="button" class="btn btn-lg" style="background: linear-gradient(135deg, #6f42c1 0%, #5a32a0 100%); border: none; color: white; transition: all 0.3s ease;" 
-                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 15px rgba(111, 66, 193, 0.4)'" 
+                    <button type="button" class="btn btn-lg" style="background: linear-gradient(135deg, #28a745 0%, #20a039 100%); border: none; color: white; transition: all 0.3s ease;" 
+                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 15px rgba(40, 167, 69, 0.4)'" 
                             onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'"
                             onclick="runSimulation()">
                         <i data-feather="play" class="me-2"></i>
@@ -1030,8 +1030,7 @@ function showResourceCalendar(resourceName) {
                 const isAvailable = calendar[day][hour.toString()] === true;
                 const hourStr = hour.toString().padStart(2, '0');
                 html += `
-                    <button type="button" class="btn btn-sm ${isAvailable ? 'btn-purple' : 'btn-outline-secondary'}" 
-                            style="width: 35px; height: 25px; font-size: 10px; padding: 2px;"
+                    <button type="button" class="btn btn-sm calendar-hour-btn ${isAvailable ? 'selected' : ''}" 
                             onclick="toggleResourceHour('${resourceName}', '${day}', '${hour}', ${!isAvailable})">
                         ${hourStr}
                     </button>
@@ -1274,8 +1273,7 @@ function renderArrivalCalendar(calendar) {
             const isActive = calendar[day] ? (calendar[day][hour.toString()] === true) : (hour >= 9 && hour <= 17); // Default business hours
             const hourStr = hour.toString().padStart(2, '0');
             html += `
-                <button type="button" class="btn btn-sm ${isActive ? 'btn-purple' : 'btn-outline-secondary'}" 
-                        style="width: 30px; height: 22px; font-size: 9px; padding: 1px;"
+                <button type="button" class="btn btn-sm calendar-hour-btn arrival-calendar-hour ${isActive ? 'active' : ''}" 
                         onclick="toggleArrivalHour('${day}', '${hour}', ${!isActive})">
                     ${hourStr}
                 </button>
