@@ -4,89 +4,41 @@
 <div class="row">
     <!-- Left Panel - Upload and Sessions -->
     <div class="col-lg-4">
-        <!-- Process Mining & Discovery Card -->
+        <!-- Upload Card -->
         <div class="card shadow-sm mb-4">
-            <div class="card-header" style="background: linear-gradient(135deg, #6f42c1 0%, #5a32a0 100%); color: white;">
+            <div class="card-header bg-primary text-white">
                 <h5 class="card-title mb-0">
-                    <i data-feather="trending-up" class="me-2"></i>
-                    Process Mining & Discovery
+                    <i data-feather="upload" class="me-2"></i>
+                    Upload Event Log
                 </h5>
             </div>
             <div class="card-body">
-                <form id="processDiscoveryForm" enctype="multipart/form-data">
-                    <!-- Step 1: Upload Event Log -->
-                    <div class="mb-4">
-                        <h6 class="fw-bold text-purple mb-3">Step 1: Upload Event Log</h6>
-                        <div class="mb-3">
-                            <label for="eventLogFile" class="form-label">XES Event Log File</label>
-                            <input type="file" class="form-control" id="eventLogFile" name="event_log" accept=".xes" required>
-                            <div class="form-text">Upload your XES event log file for process mining</div>
-                        </div>
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="xesFile" class="form-label">XES Event Log File</label>
+                        <input type="file" class="form-control" id="xesFile" name="file" accept=".xes" required>
+                        <div class="form-text">Upload your XES event log file for analysis</div>
                     </div>
-
-                    <!-- Step 2: Choose Process Model Source -->
-                    <div class="mb-4">
-                        <h6 class="fw-bold text-purple mb-3">Step 2: Choose Process Model Source</h6>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="modelSource" id="inductiveMinerOption" value="discover" checked onchange="toggleModelSource()">
-                                    <label class="form-check-label" for="inductiveMinerOption">
-                                        <strong>Discover with Inductive Miner</strong><br>
-                                        <small class="text-muted">Automatically discover process model</small>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="modelSource" id="pnmlUploadOption" value="upload" onchange="toggleModelSource()">
-                                    <label class="form-check-label" for="pnmlUploadOption">
-                                        <strong>Upload PNML Model</strong><br>
-                                        <small class="text-muted">Use existing Petri Net model</small>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
+                    
+                    <div class="mb-3">
+                        <label for="noiseThreshold" class="form-label">
+                            Noise Threshold: <span id="thresholdValue">0.2</span>
+                        </label>
+                        <input type="range" class="form-range" id="noiseThreshold" name="noise_threshold" 
+                               min="0" max="1" step="0.05" value="0.2">
+                        <div class="form-text">Controls process discovery sensitivity</div>
                     </div>
-
-                    <!-- Inductive Miner Settings -->
-                    <div id="inductiveMinerSettings" class="mb-4">
-                        <h6 class="fw-bold text-purple mb-3">Discovery Settings</h6>
-                        <div class="mb-3">
-                            <label for="noiseThreshold" class="form-label">Noise Threshold</label>
-                            <input type="range" class="form-range" id="noiseThreshold" name="noise_threshold" min="0" max="1" step="0.1" value="0.2" oninput="updateNoiseThreshold(this.value)">
-                            <div class="d-flex justify-content-between">
-                                <small class="text-muted">0.0 (No filtering)</small>
-                                <small class="text-muted">Current: <span id="noiseThresholdValue">0.2</span></small>
-                                <small class="text-muted">1.0 (Maximum filtering)</small>
-                            </div>
-                            <div class="form-text">Higher values create simpler models by filtering infrequent behavior</div>
-                        </div>
-                    </div>
-
-                    <!-- PNML Upload Section -->
-                    <div id="pnmlUploadSettings" class="mb-4" style="display: none;">
-                        <h6 class="fw-bold text-purple mb-3">Process Model File</h6>
-                        <div class="mb-3">
-                            <label for="pnmlFile" class="form-label">PNML File</label>
-                            <input type="file" class="form-control" id="pnmlFile" name="pnml_file" accept=".pnml">
-                            <div class="form-text">Upload your Petri Net Markup Language (PNML) file</div>
-                        </div>
-                    </div>
-
-                    <!-- Submit Button -->
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-lg" style="background: linear-gradient(135deg, #6f42c1 0%, #5a32a0 100%); border: none; color: white; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 15px rgba(111, 66, 193, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                            <i data-feather="search" class="me-2"></i>
-                            <span id="submitButtonText">Discover Process Model</span>
-                        </button>
-                    </div>
+                    
+                    <button type="submit" class="btn btn-success w-100">
+                        <i data-feather="upload" class="me-2"></i>
+                        Upload & Discover
+                    </button>
                 </form>
             </div>
         </div>
 
         <!-- Recent Sessions -->
-        <div class="card shadow-sm mt-4">
+        <div class="card shadow-sm">
             <div class="card-header bg-secondary text-white">
                 <h6 class="card-title mb-0">
                     <i data-feather="clock" class="me-2"></i>
@@ -398,152 +350,59 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function setupFormHandlers() {
     // Upload form
-    const processDiscoveryForm = document.getElementById('processDiscoveryForm');
-    if (processDiscoveryForm) {
-        processDiscoveryForm.addEventListener('submit', handleProcessDiscovery);
+    const uploadForm = document.getElementById('uploadForm');
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', handleUpload);
     }
     
-    // Simulation form - check if exists first
-    const simulationForm = document.getElementById('simulationForm');
-    if (simulationForm) {
-        simulationForm.addEventListener('submit', handleSimulation);
-    }
+    // Simulation form
+    document.getElementById('simulationForm').addEventListener('submit', handleSimulation);
 }
 
-async function handleProcessDiscovery(e) {
+async function handleUpload(e) {
     e.preventDefault();
     
-    const formData = new FormData();
-    const eventLogFile = document.getElementById('eventLogFile');
-    const modelSource = document.querySelector('input[name="modelSource"]:checked').value;
+    const formData = new FormData(e.target);
     
-    if (eventLogFile.files.length === 0) {
-        alert('Please select an event log file to upload.');
-        return;
-    }
-    
-    formData.append('event_log', eventLogFile.files[0]);
-    formData.append('model_source', modelSource);
-    
-    if (modelSource === 'discover') {
-        const noiseThreshold = document.getElementById('noiseThreshold').value;
-        formData.append('noise_threshold', noiseThreshold);
-    } else {
-        const pnmlFile = document.getElementById('pnmlFile');
-        if (pnmlFile.files.length === 0) {
-            alert('Please select a PNML file to upload.');
-            return;
-        }
-        formData.append('pnml_file', pnmlFile.files[0]);
-    }
-    
-    showLoading('Processing...', 'Uploading files and discovering process model');
+    showLoading('Uploading file...', 'Discovering process model and parameters');
     
     try {
-        const response = await fetch('/api/process-discovery', {
+        // Upload file
+        const uploadResponse = await fetch('/api/upload', {
             method: 'POST',
             body: formData
         });
         
-        const result = await response.json();
+        const uploadResult = await uploadResponse.json();
         
-        if (!result.success) {
-            throw new Error(result.error);
+        if (!uploadResult.success) {
+            throw new Error(uploadResult.error);
+        }
+        
+        showAlert('File uploaded successfully', 'success');
+        
+        // Discover parameters
+        updateLoadingMessage('Discovering parameters...', 'Analyzing process structure and extracting simulation parameters');
+        
+        const discoverResponse = await fetch(`/api/discover/${uploadResult.session_id}`, {
+            method: 'POST'
+        });
+        
+        const discoverResult = await discoverResponse.json();
+        
+        if (!discoverResult.success) {
+            throw new Error(discoverResult.error);
         }
         
         hideLoading();
-        showAlert('Process discovery completed successfully', 'success');
+        showAlert('Parameters discovered successfully', 'success');
         
-        // Clear the form
-        eventLogFile.value = '';
-        if (document.getElementById('pnmlFile').files.length > 0) {
-            document.getElementById('pnmlFile').value = '';
-        }
-        
-        // Load the session data if available
-        if (result.session_id) {
-            loadSessionData(result.session_id, result.parameters, result.process_model);
-        }
+        // Load the session
+        loadSessionData(uploadResult.session_id, discoverResult.parameters, discoverResult.process_model);
         
     } catch (error) {
         hideLoading();
         showAlert(`Error: ${error.message}`, 'danger');
-    }
-}
-
-function toggleModelSource() {
-    const inductiveMinerOption = document.getElementById('inductiveMinerOption');
-    const pnmlUploadOption = document.getElementById('pnmlUploadOption');
-    const inductiveMinerSettings = document.getElementById('inductiveMinerSettings');
-    const pnmlUploadSettings = document.getElementById('pnmlUploadSettings');
-    const submitButtonText = document.getElementById('submitButtonText');
-    
-    if (inductiveMinerOption && inductiveMinerOption.checked) {
-        inductiveMinerSettings.style.display = 'block';
-        pnmlUploadSettings.style.display = 'none';
-        if (submitButtonText) submitButtonText.textContent = 'Discover Process Model';
-    } else if (pnmlUploadOption && pnmlUploadOption.checked) {
-        inductiveMinerSettings.style.display = 'none';
-        pnmlUploadSettings.style.display = 'block';
-        if (submitButtonText) submitButtonText.textContent = 'Upload & Process Model';
-    }
-}
-
-function updateNoiseThreshold(value) {
-    const noiseThresholdValue = document.getElementById('noiseThresholdValue');
-    if (noiseThresholdValue) {
-        noiseThresholdValue.textContent = value;
-    }
-}
-
-// Alert and loading functions
-function showAlert(message, type = 'info') {
-    // Create alert element
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type === 'danger' ? 'danger' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info'} alert-dismissible fade show`;
-    alertDiv.style.position = 'fixed';
-    alertDiv.style.top = '20px';
-    alertDiv.style.right = '20px';
-    alertDiv.style.zIndex = '9999';
-    alertDiv.style.minWidth = '300px';
-    
-    alertDiv.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    
-    document.body.appendChild(alertDiv);
-    
-    // Auto remove after 5 seconds
-    setTimeout(() => {
-        if (alertDiv.parentNode) {
-            alertDiv.remove();
-        }
-    }, 5000);
-}
-
-function showLoading(title, message) {
-    // Simple loading implementation
-    const loadingDiv = document.createElement('div');
-    loadingDiv.id = 'tempLoading';
-    loadingDiv.className = 'position-fixed top-50 start-50 translate-middle';
-    loadingDiv.style.zIndex = '9999';
-    loadingDiv.innerHTML = `
-        <div class="card text-center">
-            <div class="card-body">
-                <div class="spinner-border text-primary mb-3"></div>
-                <h5>${title}</h5>
-                <p>${message}</p>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(loadingDiv);
-}
-
-function hideLoading() {
-    const loadingDiv = document.getElementById('tempLoading');
-    if (loadingDiv) {
-        loadingDiv.remove();
     }
 }
 
@@ -1505,49 +1364,8 @@ function toggleArrivalHour(day, hour, isActive) {
     }
 }
 
-// Process Model Discovery Functions
-function toggleDiscoveryMethod() {
-    const uploadMethod = document.getElementById('uploadPnml').checked;
-    const pnmlSection = document.getElementById('pnmlUploadSection');
-    const minerSection = document.getElementById('inductiveMinerSection');
-    
-    if (uploadMethod) {
-        pnmlSection.style.display = 'block';
-        minerSection.style.display = 'none';
-    } else {
-        pnmlSection.style.display = 'none';
-        minerSection.style.display = 'block';
-    }
-}
 
-function updateNoiseValue(value) {
-    document.getElementById('noiseValue').textContent = value;
-}
 
-function updateNoiseValueMain(value) {
-    document.getElementById('noiseValueMain').textContent = value;
-}
-
-function toggleModelSource() {
-    const inductiveOption = document.getElementById('inductiveMinerOption').checked;
-    const inductiveSettings = document.getElementById('inductiveMinerSettings');
-    const pnmlSettings = document.getElementById('pnmlUploadSettings');
-    const submitButtonText = document.getElementById('submitButtonText');
-    
-    if (inductiveOption) {
-        inductiveSettings.style.display = 'block';
-        pnmlSettings.style.display = 'none';
-        submitButtonText.textContent = 'Discover Process Model';
-    } else {
-        inductiveSettings.style.display = 'none';
-        pnmlSettings.style.display = 'block';
-        submitButtonText.textContent = 'Upload & Process Model';
-    }
-}
-
-function updateNoiseThreshold(value) {
-    document.getElementById('noiseThresholdValue').textContent = value;
-}
 
 </script>
 {% endblock %}
