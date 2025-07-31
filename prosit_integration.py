@@ -36,6 +36,18 @@ class ProSiTIntegration:
             event_log = pm4py.read_xes(xes_file_path)
             logger.info(f"Loaded {len(event_log)} traces from XES file")
             
+            # Debug: Check event log structure for ProSiT compatibility
+            if event_log and len(event_log) > 0:
+                first_trace = event_log[0]
+                if first_trace and len(first_trace) > 0:
+                    first_event = first_trace[0]
+                    logger.info(f"Event log structure - First event type: {type(first_event)}")
+                    logger.info(f"Event log structure - First event keys: {list(first_event.keys()) if hasattr(first_event, 'keys') else 'No keys'}")
+                    if hasattr(first_event, 'keys') and 'org:resource' in first_event:
+                        logger.info(f"Resource attribute found: {first_event['org:resource']}")
+                    else:
+                        logger.warning("No 'org:resource' attribute found in first event")
+            
             # Apply inductive miner to discover Petri net
             net, initial_marking, final_marking = pm4py.discover_petri_net_inductive(event_log, noise_threshold=noise_threshold)
             
@@ -106,7 +118,19 @@ class ProSiTIntegration:
             self.prosit_params = SimulatorParameters(net, initial_marking, final_marking)
             
             # Discover parameters from event log (max_depth_tree=0 disables rules mode)
-            self.prosit_params.discover_from_eventlog(event_log, max_depth_tree=0, verbose=True)
+            logger.info("Starting ProSiT parameter discovery...")
+            try:
+                self.prosit_params.discover_from_eventlog(event_log, max_depth_tree=0, verbose=True)
+                logger.info("ProSiT parameter discovery completed successfully")
+            except Exception as discovery_error:
+                logger.error(f"ProSiT discovery_from_eventlog failed: {str(discovery_error)}")
+                logger.error(f"Event log type: {type(event_log)}")
+                if hasattr(event_log, '__len__'):
+                    logger.error(f"Event log length: {len(event_log)}")
+                
+                # Try to create simplified parameters when ProSiT discovery fails
+                logger.info("Creating fallback parameters due to ProSiT discovery failure")
+                self._create_fallback_parameters(event_log, net, initial_marking, final_marking)
             
             # Convert ProSiT parameters to our application format
             parameters = self._convert_prosit_to_app_format(self.prosit_params)
@@ -259,6 +283,99 @@ class ProSiTIntegration:
             
         except Exception as e:
             logger.error(f"Error converting ProSiT parameters: {str(e)}")
+            raise
+    
+    def _create_fallback_parameters(self, event_log, net, initial_marking, final_marking):
+        """Create simplified parameters when ProSiT discovery fails"""
+        try:
+            logger.info("Creating fallback parameters...")
+            
+            # Initialize ProSiT parameters with basic structure
+            self.prosit_params = SimulatorParameters(net, initial_marking, final_marking)
+            
+            # Set basic transition weights (equal probability)
+            self.prosit_params.transition_weights = {}
+            for transition in net.transitions:
+                if transition.label:  # Skip silent transitions
+                    self.prosit_params.transition_weights[transition] = 1.0
+            
+            # Set basic resources from event log if available
+            resources = []
+            try:
+                if event_log and len(event_log) > 0:
+                    for trace in event_log:
+                        for event in trace:
+                            if hasattr(event, 'get') and event.get('org:resource'):
+                                resource = event['org:resource']
+                                if resource not in resources:
+                                    resources.append(resource)
+            except Exception:
+                pass
+            
+            # If no resources found, create default ones
+            if not resources:
+                resources = ['Resource_1', 'Resource_2', 'Resource_3']
+            
+            self.prosit_params.resources = resources
+            
+            # Set basic resource-activity probabilities
+            self.prosit_params.act_resource_prob = {}
+            activities = [t.label for t in net.transitions if t.label]
+            for activity in activities:
+                self.prosit_params.act_resource_prob[activity] = {
+                    resource: 1.0 / len(resources) for resource in resources
+                }
+            
+            # Set basic execution time distributions (normal distribution)
+            self.prosit_params.execution_time_distributions = {}
+            for activity in activities:
+                self.prosit_params.execution_time_distributions[activity] = {
+                    'dist_name': 'normal',
+                    'params': [10.0, 2.0],  # mean=10, std=2
+                    'min_value': 1.0,
+                    'max_value': 30.0
+                }
+            
+            # Set basic waiting time distributions
+            self.prosit_params.waiting_time_distributions = {}
+            for resource in resources:
+                self.prosit_params.waiting_time_distributions[resource] = {
+                    'dist_name': 'exponential',
+                    'params': [0.1],
+                    'min_value': 0.0,
+                    'max_value': 60.0
+                }
+            
+            # Set basic calendars (24/7 availability)
+            self.prosit_params.calendars = {}
+            for resource in resources:
+                calendar = {}
+                days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+                for day in days:
+                    calendar[day] = {str(hour): True for hour in range(24)}
+                self.prosit_params.calendars[resource] = calendar
+            
+            # Set basic arrival calendar
+            self.prosit_params.arrival_calendar = {
+                day: {str(hour): True for hour in range(24)} 
+                for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+            }
+            
+            # Set basic arrival time distribution
+            self.prosit_params.arrival_time_distributions = {
+                'dist_name': 'exponential',
+                'params': [0.1],
+                'min_value': 1.0,
+                'max_value': 100.0
+            }
+            
+            # Set multitasking resources (none by default)
+            self.prosit_params.multitasking_resources = []
+            
+            logger.info(f"Created fallback parameters with {len(resources)} resources and {len(activities)} activities")
+            
+        except Exception as e:
+            logger.error(f"Error creating fallback parameters: {str(e)}")
             raise
     
     def _generate_petri_net_visualization(self, net, initial_marking, final_marking):
