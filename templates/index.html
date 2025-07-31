@@ -1128,6 +1128,11 @@ function renderPetriNet(processModel) {
                     </div>
                 </div>
             `;
+            
+            // Add interactive functionality to the SVG after it's rendered
+            setTimeout(function() {
+                setupSVGInteractivity();
+            }, 100);
         }
         return;
     }
@@ -1207,10 +1212,40 @@ function toggleArrivalHour(day, hour, isActive) {
 window.navigateToActivity = function(activityName) {
     console.log('Navigating to activity:', activityName);
     
-    // Switch to execution time tab
+    // Check which tab is currently active to decide navigation target
+    const transitionTab = document.getElementById('transition-tab');
     const executionTab = document.getElementById('execution-tab');
+    const transitionPane = document.getElementById('transition-pane');
     const executionPane = document.getElementById('execution-pane');
     
+    // If transition tab is active, navigate to transition parameters
+    if (transitionTab && transitionTab.classList.contains('active')) {
+        // Stay on transition tab but highlight the relevant transition
+        if (transitionPane) {
+            // Look for transition weight control for this activity
+            const transitionControls = transitionPane.querySelectorAll('label');
+            let found = false;
+            
+            transitionControls.forEach(control => {
+                if (control.textContent.includes(activityName)) {
+                    control.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    control.style.background = 'rgba(111, 66, 193, 0.1)';
+                    control.style.transition = 'background 0.3s ease';
+                    setTimeout(() => {
+                        control.style.background = '';
+                    }, 2000);
+                    found = true;
+                }
+            });
+            
+            if (found) {
+                showAlert(`Viewing transition weights for: ${activityName}`, 'info');
+                return;
+            }
+        }
+    }
+    
+    // Default: Navigate to execution time parameters
     if (executionTab && executionPane) {
         // Activate execution tab
         document.querySelectorAll('.nav-link').forEach(tab => tab.classList.remove('active'));
@@ -1239,5 +1274,47 @@ window.navigateToActivity = function(activityName) {
         showAlert(`Navigated to execution parameters for: ${activityName}`, 'info');
     }
 };
+
+function setupSVGInteractivity() {
+    // Find all SVG nodes that represent transitions (activities)
+    const svgNodes = document.querySelectorAll('.petri-net-interactive g.node');
+    
+    svgNodes.forEach(function(node) {
+        const titleElement = node.querySelector('title');
+        if (titleElement && titleElement.textContent.trim() !== '') {
+            const activityName = titleElement.textContent.trim();
+            
+            // Skip empty or silent transitions (those that might be internal routing)
+            if (activityName && !activityName.startsWith('t_') && !activityName.includes('tau')) {
+                node.style.cursor = 'pointer';
+                node.addEventListener('mouseover', function() {
+                    this.style.opacity = '0.8';
+                });
+                node.addEventListener('mouseout', function() {
+                    this.style.opacity = '1';
+                });
+                node.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Clicked on activity:', activityName);
+                    
+                    // Check if we're on transitions tab, navigate to transitions
+                    const transitionTab = document.getElementById('transition-tab');
+                    const executionTab = document.getElementById('execution-tab');
+                    
+                    if (transitionTab && transitionTab.classList.contains('active')) {
+                        // We're on transitions tab, stay here but highlight transition
+                        showAlert(`Viewing transition: ${activityName}`, 'info');
+                    } else {
+                        // Navigate to execution parameters
+                        window.navigateToActivity(activityName);
+                    }
+                });
+            }
+        }
+    });
+    
+    console.log(`Set up interactivity for ${svgNodes.length} SVG nodes`);
+}
 </script>
 {% endblock %}

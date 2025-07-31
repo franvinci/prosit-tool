@@ -9,17 +9,39 @@ from xml.dom import minidom
 import pm4py
 from pm4py.visualization.petri_net import visualizer as pn_visualizer
 from pm4py.objects.conversion.log import converter as xes_converter
+from pm4py.objects.petri_net.obj import PetriNet
 
 import base64
 from io import BytesIO
 
 logger = logging.getLogger(__name__)
 
+def transition_to_name(t: PetriNet.Transition) -> str:
+    """Convert a Petri net transition to its display name"""
+    if t.label is not None:
+        name = t.label
+    else:
+        name = t.name
+    return name
+
+def name_to_transition(s: str, net: PetriNet) -> PetriNet.Transition:
+    """Find transition by name or label in Petri net"""
+    for t in net.transitions:
+        if s == t.name:
+            return t
+        if s == t.label:
+            return t
+    return None
+
 class ProSiTIntegration:
     """Integration layer for ProSiT library functionality"""
     
     def __init__(self):
         self.supported_formats = ['.xes']
+        self.petri_net = None
+        self.initial_marking = None
+        self.final_marking = None
+        self.transition_mappings = {}
     
     def discover_process_model(self, xes_file_path, noise_threshold=0.2):
         """
@@ -36,15 +58,25 @@ class ProSiTIntegration:
             # Apply inductive miner to discover Petri net
             net, initial_marking, final_marking = pm4py.discover_petri_net_inductive(event_log, noise_threshold=noise_threshold)
             
-            # Extract activities from the net
+            # Store the net and markings for later use
+            self.petri_net = net
+            self.initial_marking = initial_marking
+            self.final_marking = final_marking
+            
+            # Extract activities from the net and create transition mappings
             activities = []
             transitions = []
             places = []
+            self.transition_mappings = {}
             
             for transition in net.transitions:
                 if transition.label:  # Skip silent transitions
-                    activities.append(transition.label)
+                    transition_name = transition_to_name(transition)
+                    activities.append(transition_name)
                     transitions.append(transition.name)
+                    # Create bidirectional mapping
+                    self.transition_mappings[transition_name] = transition
+                    self.transition_mappings[transition.name] = transition
             
             for place in net.places:
                 places.append(place.name)
@@ -94,60 +126,27 @@ class ProSiTIntegration:
     def _enhance_svg_visualization(self, svg_content, net):
         """Enhance SVG with interactive elements and improved styling"""
         try:
-            # Add interactive styles and JavaScript to the SVG
+            # Add inline styling and interaction classes to SVG elements
             enhanced_svg = svg_content.replace(
                 '<svg',
-                '''<svg style="max-width: 100%; height: auto; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"'''
+                '''<svg class="petri-net-interactive" style="max-width: 100%; height: auto; background: white; border-radius: 8px;"'''
             )
             
-            # Add click handlers for transitions (activities)
+            # Collect activity transitions for click handling
             activity_transitions = []
             for transition in net.transitions:
                 if transition.label:  # Only labeled transitions (activities)
                     activity_transitions.append(transition.label)
             
-            # Add JavaScript for interactivity
-            js_code = '''
-            <script type="text/javascript">
-            <![CDATA[
-            function navigateToActivity(activityName) {
-                if (window.parent && window.parent.navigateToActivity) {
-                    window.parent.navigateToActivity(activityName);
-                } else {
-                    console.log('Navigate to activity:', activityName);
-                }
-            }
+            # Add data attributes and styling to transitions for better interactivity
+            for activity in activity_transitions:
+                # Find and enhance transition nodes with the activity label
+                enhanced_svg = enhanced_svg.replace(
+                    f'<title>{activity}</title>',
+                    f'<title>{activity}</title><desc class="activity-transition" data-activity="{activity}"></desc>'
+                )
             
-            // Add hover effects
-            document.addEventListener('DOMContentLoaded', function() {
-                var transitions = document.querySelectorAll('g.node');
-                transitions.forEach(function(transition) {
-                    var title = transition.querySelector('title');
-                    if (title && title.textContent.trim() !== '') {
-                        transition.style.cursor = 'pointer';
-                        transition.addEventListener('mouseover', function() {
-                            this.style.opacity = '0.8';
-                            this.style.transform = 'scale(1.05)';
-                        });
-                        transition.addEventListener('mouseout', function() {
-                            this.style.opacity = '1';
-                            this.style.transform = 'scale(1)';
-                        });
-                        transition.addEventListener('click', function() {
-                            var activityName = title.textContent.trim();
-                            navigateToActivity(activityName);
-                        });
-                    }
-                });
-            });
-            ]]>
-            </script>
-            '''
-            
-            # Insert JavaScript before closing SVG tag
-            enhanced_svg = enhanced_svg.replace('</svg>', js_code + '</svg>')
-            
-            # Improve styling of transitions and places
+            # Improve styling of transitions and places with purple/green theme
             enhanced_svg = enhanced_svg.replace(
                 'fill="lightblue"',
                 'fill="#6f42c1" stroke="#5a2d91" stroke-width="2"'
@@ -156,6 +155,35 @@ class ProSiTIntegration:
                 'fill="orange"',
                 'fill="#28a745" stroke="#1e7e34" stroke-width="2"'
             )
+            enhanced_svg = enhanced_svg.replace(
+                'fill="black"',
+                'fill="#333" stroke="#444" stroke-width="1"'
+            )
+            
+            # Add CSS for hover effects
+            style_css = '''
+            <defs>
+            <style type="text/css">
+            <![CDATA[
+            .petri-net-interactive g.node {
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            .petri-net-interactive g.node:hover {
+                opacity: 0.8;
+                transform: scale(1.05);
+            }
+            .petri-net-interactive text {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                font-size: 12px;
+            }
+            ]]>
+            </style>
+            </defs>
+            '''
+            
+            # Insert CSS after opening SVG tag
+            enhanced_svg = enhanced_svg.replace('<svg', style_css + '<svg', 1)
             
             return enhanced_svg
             
