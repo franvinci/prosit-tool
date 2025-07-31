@@ -246,9 +246,36 @@ class ProSiTIntegration:
                         }
                     }
                     logger.info(f"Activity {activity}: {dist_info.get('dist_name', 'norm')} with params {params}")
+                elif isinstance(dist_info, tuple) and len(dist_info) >= 5:
+                    # Handle ProSiT tuple format: (distribution_obj, params, min, max, mean)
+                    distribution_obj, params, min_val, max_val, mean_val = dist_info[:5]
+                    # Extract distribution name from scipy object
+                    dist_name = 'norm'  # default
+                    if hasattr(distribution_obj, 'name'):
+                        dist_name = distribution_obj.name
+                    elif 'norm' in str(distribution_obj):
+                        dist_name = 'norm'
+                    elif 'expon' in str(distribution_obj):
+                        dist_name = 'expon'
+                    elif 'lognorm' in str(distribution_obj):
+                        dist_name = 'lognorm'
+                    
+                    # Convert params to list if it's a tuple
+                    param_list = list(params) if hasattr(params, '__iter__') else [float(params)]
+                    
+                    execution_time_params[activity] = {
+                        'distribution': dist_name,
+                        'parameters': {
+                            'params': param_list,
+                            'min_value': float(min_val),
+                            'max_value': float(max_val),
+                            'mean_value': float(mean_val)
+                        }
+                    }
+                    logger.info(f"Activity {activity}: {dist_name} with params {param_list}, mean {mean_val}")
                 elif dist_info is not None:
-                    # Handle non-dict format - might be a different structure
-                    logger.info(f"Non-dict execution time data for {activity}: {dist_info}")
+                    # Handle other non-dict formats
+                    logger.info(f"Unknown execution time data format for {activity}: {dist_info}")
                     execution_time_params[activity] = {
                         'distribution': 'norm',
                         'parameters': {
@@ -323,9 +350,36 @@ class ProSiTIntegration:
                         }
                     }
                     logger.info(f"Resource {resource}: {dist_info.get('dist_name', 'expon')} waiting time with params {params}")
+                elif isinstance(dist_info, tuple) and len(dist_info) >= 5:
+                    # Handle ProSiT tuple format: (distribution_obj, params, min, max, mean)
+                    distribution_obj, params, min_val, max_val, mean_val = dist_info[:5]
+                    # Extract distribution name from scipy object
+                    dist_name = 'expon'  # default for waiting times
+                    if hasattr(distribution_obj, 'name'):
+                        dist_name = distribution_obj.name
+                    elif 'expon' in str(distribution_obj):
+                        dist_name = 'expon'
+                    elif 'norm' in str(distribution_obj):
+                        dist_name = 'norm'
+                    elif 'lognorm' in str(distribution_obj):
+                        dist_name = 'lognorm'
+                    
+                    # Convert params to list if it's a tuple
+                    param_list = list(params) if hasattr(params, '__iter__') else [float(params)]
+                    
+                    resource_waiting_times[resource] = {
+                        'distribution': dist_name,
+                        'parameters': {
+                            'params': param_list,
+                            'min_value': float(min_val),
+                            'max_value': float(max_val),
+                            'mean_value': float(mean_val)
+                        }
+                    }
+                    logger.info(f"Resource {resource}: {dist_name} waiting time with params {param_list}, mean {mean_val}")
                 elif dist_info is not None:
-                    # Handle non-dict format
-                    logger.info(f"Non-dict waiting time data for {resource}: {dist_info}")
+                    # Handle other non-dict formats
+                    logger.info(f"Unknown waiting time data format for {resource}: {dist_info}")
                     resource_waiting_times[resource] = {
                         'distribution': 'expon',
                         'parameters': {

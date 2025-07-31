@@ -369,9 +369,8 @@ function loadSessionData(sessionId, parameters, processModel = null) {
     // Hide welcome message
     document.getElementById('welcomeMessage').style.display = 'none';
     
-    // Show parameter and simulation cards
+    // Show parameter card
     document.getElementById('parametersCard').style.display = 'block';
-    document.getElementById('simulationCard').style.display = 'block';
     
     // Render parameters
     renderParameters(parameters);
