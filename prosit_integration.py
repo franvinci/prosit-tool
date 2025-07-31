@@ -461,7 +461,30 @@ class ProSiTIntegration:
             logger.info(f"Resources with waiting times: {list(resource_waiting_times.keys())}")
             
             # Ensure all data is JSON serializable
-            return self._make_json_serializable(parameters)
+            try:
+                import json
+                serialized_params = self._make_json_serializable(parameters)
+                # Test serialization
+                json.dumps(serialized_params)
+                logger.info("Parameters successfully serialized to JSON")
+                return serialized_params
+            except Exception as e:
+                logger.error(f"Failed to serialize parameters: {e}")
+                # Return a minimal fallback structure
+                return {
+                    'process_model': {
+                        'activities': activities,
+                        'places': places,
+                        'transitions': [{'id': str(t.get('id', '')), 'name': str(t.get('name', '')), 'label': str(t.get('label', ''))} for t in transitions],
+                        'arcs': [{'source': str(a.get('source', '')), 'target': str(a.get('target', '')), 'weight': float(a.get('weight', 1))} for a in arcs],
+                        'svg_content': str(svg_content) if svg_content else ""
+                    },
+                    'transition_params': {'transition_weights': {str(k): float(v) for k, v in transition_weights.items()}},
+                    'execution_time_params': {'activity_durations': {}},
+                    'resource_params': {'resources': [str(r) for r in resources], 'resource_weights': {}, 'multitasking_resource': [], 'act_to_resources': {}, 'calendars': {}},
+                    'waiting_time_params': {'resource_waiting_times': {}},
+                    'inter_arrival_params': {'inter_arrival_time': {}}
+                }
             
         except Exception as e:
             logger.error(f"Error converting ProSiT parameters: {str(e)}")
@@ -631,25 +654,48 @@ class ProSiTIntegration:
         """Convert object to JSON serializable format"""
         import json
         from datetime import datetime, date
+        import numpy as np
         
-        if isinstance(obj, dict):
-            return {key: self._make_json_serializable(value) for key, value in obj.items()}
-        elif isinstance(obj, list):
-            return [self._make_json_serializable(item) for item in obj]
+        # Handle numpy types
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif isinstance(obj, dict):
+            result = {}
+            for key, value in obj.items():
+                try:
+                    result[str(key)] = self._make_json_serializable(value)
+                except Exception as e:
+                    logger.warning(f"Skipping non-serializable key {key}: {e}")
+                    result[str(key)] = str(value)
+            return result
+        elif isinstance(obj, (list, tuple)):
+            result = []
+            for item in obj:
+                try:
+                    result.append(self._make_json_serializable(item))
+                except Exception as e:
+                    logger.warning(f"Converting list item to string: {e}")
+                    result.append(str(item))
+            return result
         elif isinstance(obj, (datetime, date)):
             return obj.isoformat()
-        elif hasattr(obj, '__dict__') and not isinstance(obj, (str, int, float, bool)):
-            # For complex objects, convert to string representation
-            return str(obj)
         elif obj is None or isinstance(obj, (str, int, float, bool)):
             return obj
         else:
-            # Try to convert to string for any other type
+            # For any other type, convert to string
             try:
-                json.dumps(obj)  # Test if it's already serializable
+                # Test if it's already JSON serializable
+                json.dumps(obj)
                 return obj
             except (TypeError, ValueError):
-                return str(obj)
+                # If not serializable, convert to string
+                obj_str = str(obj)
+                logger.debug(f"Converting non-serializable object {type(obj)} to string: {obj_str[:100]}...")
+                return obj_str
     
     def extract_parameters_from_pnml_and_log(self, pnml_filepath, xes_filepath):
         """Extract parameters using PNML model structure and XES event log data"""
