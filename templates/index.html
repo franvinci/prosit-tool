@@ -30,8 +30,78 @@
             </div>
         </div>
 
+        <!-- Process Model Discovery Card -->
+        <div class="card shadow-sm mt-4">
+            <div class="card-header" style="background: linear-gradient(135deg, #6f42c1 0%, #5a32a0 100%); color: white;">
+                <h5 class="card-title mb-0">
+                    <i data-feather="search" class="me-2"></i>
+                    Process Model Discovery
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Choose discovery method:</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="discoveryMethod" id="uploadPnml" value="upload" checked onchange="toggleDiscoveryMethod()">
+                        <label class="form-check-label" for="uploadPnml">
+                            Upload existing Petri Net (PNML file)
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="discoveryMethod" id="inductiveMiner" value="discover" onchange="toggleDiscoveryMethod()">
+                        <label class="form-check-label" for="inductiveMiner">
+                            Discover using Inductive Miner
+                        </label>
+                    </div>
+                </div>
+
+                <!-- PNML Upload Section -->
+                <div id="pnmlUploadSection">
+                    <form id="pnmlUploadForm" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="pnmlFile" class="form-label">Select PNML file</label>
+                            <input type="file" class="form-control" id="pnmlFile" name="pnmlFile" accept=".pnml" required>
+                            <div class="form-text">Upload a Petri Net Markup Language (PNML) file containing your process model.</div>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-lg" style="background: linear-gradient(135deg, #6f42c1 0%, #5a32a0 100%); border: none; color: white; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 15px rgba(111, 66, 193, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                                <i data-feather="upload" class="me-2"></i>
+                                Upload Process Model
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Inductive Miner Section -->
+                <div id="inductiveMinerSection" style="display: none;">
+                    <div class="alert alert-info">
+                        <i data-feather="info" class="me-2"></i>
+                        Please upload an XES event log file first to enable process discovery.
+                    </div>
+                    <form id="discoveryForm">
+                        <div class="mb-3">
+                            <label for="noiseThreshold" class="form-label">Noise Threshold</label>
+                            <input type="range" class="form-range" id="noiseThreshold" name="noiseThreshold" min="0" max="1" step="0.1" value="0.2" oninput="updateNoiseValue(this.value)">
+                            <div class="d-flex justify-content-between">
+                                <small class="text-muted">0.0 (No filtering)</small>
+                                <small class="text-muted">Current: <span id="noiseValue">0.2</span></small>
+                                <small class="text-muted">1.0 (Maximum filtering)</small>
+                            </div>
+                            <div class="form-text">Higher values filter out more infrequent behavior, resulting in simpler models.</div>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-lg" style="background: linear-gradient(135deg, #6f42c1 0%, #5a32a0 100%); border: none; color: white; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 15px rgba(111, 66, 193, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                                <i data-feather="search" class="me-2"></i>
+                                Discover Process Model
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
         <!-- Recent Sessions -->
-        <div class="card shadow-sm">
+        <div class="card shadow-sm mt-4">
             <div class="card-header bg-secondary text-white">
                 <h6 class="card-title mb-0">
                     <i data-feather="clock" class="me-2"></i>
@@ -229,76 +299,6 @@
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Process Model Discovery Card -->
-        <div class="card shadow-sm mt-4">
-            <div class="card-header" style="background: linear-gradient(135deg, #6f42c1 0%, #5a32a0 100%); color: white;">
-                <h5 class="card-title mb-0">
-                    <i data-feather="search" class="me-2"></i>
-                    Process Model Discovery
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <label class="form-label">Choose discovery method:</label>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="discoveryMethod" id="uploadPnml" value="upload" checked onchange="toggleDiscoveryMethod()">
-                        <label class="form-check-label" for="uploadPnml">
-                            Upload existing Petri Net (PNML file)
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="discoveryMethod" id="inductiveMiner" value="discover" onchange="toggleDiscoveryMethod()">
-                        <label class="form-check-label" for="inductiveMiner">
-                            Discover using Inductive Miner
-                        </label>
-                    </div>
-                </div>
-
-                <!-- PNML Upload Section -->
-                <div id="pnmlUploadSection">
-                    <form id="pnmlUploadForm" enctype="multipart/form-data">
-                        <div class="mb-3">
-                            <label for="pnmlFile" class="form-label">Select PNML file</label>
-                            <input type="file" class="form-control" id="pnmlFile" name="pnmlFile" accept=".pnml" required>
-                            <div class="form-text">Upload a Petri Net Markup Language (PNML) file containing your process model.</div>
-                        </div>
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-lg" style="background: linear-gradient(135deg, #6f42c1 0%, #5a32a0 100%); border: none; color: white; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 15px rgba(111, 66, 193, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                                <i data-feather="upload" class="me-2"></i>
-                                Upload Process Model
-                            </button>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Inductive Miner Section -->
-                <div id="inductiveMinerSection" style="display: none;">
-                    <div class="alert alert-info">
-                        <i data-feather="info" class="me-2"></i>
-                        Please upload an XES event log file first to enable process discovery.
-                    </div>
-                    <form id="discoveryForm">
-                        <div class="mb-3">
-                            <label for="noiseThreshold" class="form-label">Noise Threshold</label>
-                            <input type="range" class="form-range" id="noiseThreshold" name="noiseThreshold" min="0" max="1" step="0.1" value="0.2" oninput="updateNoiseValue(this.value)">
-                            <div class="d-flex justify-content-between">
-                                <small class="text-muted">0.0 (No filtering)</small>
-                                <small class="text-muted">Current: <span id="noiseValue">0.2</span></small>
-                                <small class="text-muted">1.0 (Maximum filtering)</small>
-                            </div>
-                            <div class="form-text">Higher values filter out more infrequent behavior, resulting in simpler models.</div>
-                        </div>
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-lg" style="background: linear-gradient(135deg, #6f42c1 0%, #5a32a0 100%); border: none; color: white; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 15px rgba(111, 66, 193, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                                <i data-feather="search" class="me-2"></i>
-                                Discover Process Model
-                            </button>
-                        </div>
-                    </form>
                 </div>
             </div>
         </div>
