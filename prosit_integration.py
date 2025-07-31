@@ -124,38 +124,13 @@ class ProSiTIntegration:
             return None
     
     def _enhance_svg_visualization(self, svg_content, net):
-        """Enhance SVG with interactive elements and improved styling"""
+        """Enhance SVG with improved styling for purple/green theme"""
         try:
-            # Add inline styling and interaction classes to SVG elements
+            # Add basic styling for better appearance
             enhanced_svg = svg_content.replace(
                 '<svg',
-                '''<svg class="petri-net-interactive" style="max-width: 100%; height: auto; background: white; border-radius: 8px;"'''
+                '''<svg style="max-width: 100%; height: auto; background: white; border-radius: 8px;"'''
             )
-            
-            # Create mapping from transition object IDs to labels
-            transition_mapping = {}
-            for transition in net.transitions:
-                if transition.label:  # Only labeled transitions (activities)
-                    # Map the transition object ID to its label
-                    transition_id = str(id(transition))
-                    transition_mapping[transition_id] = transition.label
-                    logger.debug(f"Mapping transition {transition_id} -> {transition.label}")
-            
-            # Replace internal IDs with activity names in title elements
-            for transition_id, activity_label in transition_mapping.items():
-                # Replace the memory address with the activity label
-                enhanced_svg = enhanced_svg.replace(
-                    f'<title>{transition_id}</title>',
-                    f'<title>{activity_label}</title>'
-                )
-            
-            # Also try to replace transition names if they appear
-            for transition in net.transitions:
-                if transition.label and transition.name:
-                    enhanced_svg = enhanced_svg.replace(
-                        f'<title>{transition.name}</title>',
-                        f'<title>{transition.label}</title>'
-                    )
             
             # Improve styling of transitions and places with purple/green theme
             enhanced_svg = enhanced_svg.replace(
@@ -171,20 +146,12 @@ class ProSiTIntegration:
                 'fill="#333" stroke="#444" stroke-width="1"'
             )
             
-            # Add CSS for hover effects
+            # Add basic CSS for better text appearance
             style_css = '''
             <defs>
             <style type="text/css">
             <![CDATA[
-            .petri-net-interactive g.node {
-                cursor: pointer;
-                transition: all 0.2s ease;
-            }
-            .petri-net-interactive g.node:hover {
-                opacity: 0.8;
-                transform: scale(1.05);
-            }
-            .petri-net-interactive text {
+            text {
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                 font-size: 12px;
             }
