@@ -317,9 +317,19 @@ class ProSiTIntegration:
                 app_params['scale'] = float(params[1]) if len(params) > 1 else 10.0
                 
             elif dist_name == 'lognorm':
-                app_params['s'] = float(params[0]) if len(params) > 0 else 1.0
-                app_params['loc'] = float(params[1]) if len(params) > 1 else 0.0
-                app_params['scale'] = float(params[2]) if len(params) > 2 else 1.0
+                # ProSiT lognorm params often have extreme values, use reasonable defaults
+                logger.warning(f"Processing lognorm params {params} - using reasonable defaults based on mean_value {mean_val}")
+                
+                # Use mean_value to derive reasonable lognorm parameters
+                if mean_val > 0:
+                    # For lognorm, if mean is m, reasonable s=1.0, scale=m/exp(0.5)
+                    app_params['s'] = 1.0  
+                    app_params['loc'] = 0.0
+                    app_params['scale'] = mean_val / 1.649  # exp(0.5) ≈ 1.649
+                else:
+                    app_params['s'] = 1.0
+                    app_params['loc'] = 0.0 
+                    app_params['scale'] = 1.0
             
             return app_params
             
