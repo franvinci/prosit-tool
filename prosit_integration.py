@@ -625,3 +625,26 @@ class ProSiTIntegration:
         except Exception as e:
             logger.error(f"Error enhancing SVG: {str(e)}")
             return svg_content
+    
+    def extract_parameters_from_pnml_and_log(self, pnml_filepath, xes_filepath):
+        """Extract parameters using PNML model structure and XES event log data"""
+        # This combines the structure from PNML with data statistics from the event log
+        
+        # First get the basic structure from PNML
+        pnml_params = self.extract_parameters_from_pnml(pnml_filepath)
+        
+        # Then extract timing and resource data from the event log
+        log_params = self.discover_process_model(xes_filepath, 0.0)
+        
+        # Combine them: use PNML structure with log-based timing data
+        combined_params = pnml_params.copy()
+        
+        # Update with actual timing data from the log if available
+        if 'execution_time_params' in log_params:
+            combined_params['execution_time_params'] = log_params['execution_time_params']
+        if 'waiting_time_params' in log_params:
+            combined_params['waiting_time_params'] = log_params['waiting_time_params']
+        if 'resource_params' in log_params:
+            combined_params['resource_params'] = log_params['resource_params']
+            
+        return combined_params

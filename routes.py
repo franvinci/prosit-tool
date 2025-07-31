@@ -273,6 +273,81 @@ def upload_pnml():
         logger.error(f"PNML upload error: {str(e)}")
         return jsonify({'error': f'PNML upload failed: {str(e)}'}), 500
 
+
+@app.route('/api/process-discovery', methods=['POST'])
+def process_discovery():
+    """Handle unified process discovery: upload event log + model source selection"""
+    try:
+        # Check required files
+        if 'event_log' not in request.files:
+            return jsonify({'error': 'No event log file provided'}), 400
+        
+        event_log_file = request.files['event_log']
+        model_source = request.form.get('model_source', 'discover')
+        
+        if event_log_file.filename == '':
+            return jsonify({'error': 'No event log file selected'}), 400
+        
+        if not (event_log_file.filename and event_log_file.filename.lower().endswith('.xes')):
+            return jsonify({'error': 'Please upload a XES event log file'}), 400
+        
+        # Create session
+        noise_threshold = float(request.form.get('noise_threshold', 0.2)) if model_source == 'discover' else 0.0
+        session = SimulationSession(
+            filename=event_log_file.filename,
+            noise_threshold=noise_threshold,
+            status='uploaded'
+        )
+        db.session.add(session)
+        db.session.commit()
+        
+        # Save event log file
+        event_log_filename = secure_filename(f"{session.id}_{event_log_file.filename}")
+        event_log_filepath = os.path.join(app.config['UPLOAD_FOLDER'], event_log_filename)
+        event_log_file.save(event_log_filepath)
+        
+        integration = ProSiTIntegration()
+        
+        if model_source == 'discover':
+            # Use inductive miner to discover process model from event log
+            parameters = integration.discover_process_model(event_log_filepath, noise_threshold)
+        else:
+            # Use uploaded PNML file for process model
+            if 'pnml_file' not in request.files:
+                return jsonify({'error': 'No PNML file provided for upload option'}), 400
+            
+            pnml_file = request.files['pnml_file']
+            if pnml_file.filename == '':
+                return jsonify({'error': 'No PNML file selected'}), 400
+            
+            if not (pnml_file.filename and pnml_file.filename.lower().endswith('.pnml')):
+                return jsonify({'error': 'Please upload a PNML file'}), 400
+            
+            # Save PNML file
+            pnml_filename = secure_filename(f"{session.id}_{pnml_file.filename}")
+            pnml_filepath = os.path.join(app.config['UPLOAD_FOLDER'], pnml_filename)
+            pnml_file.save(pnml_filepath)
+            
+            # Extract parameters using PNML model and event log
+            parameters = integration.extract_parameters_from_pnml_and_log(pnml_filepath, event_log_filepath)
+        
+        # Update session
+        session.parameters = parameters
+        session.status = 'ready'
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'session_id': session.id,
+            'parameters': parameters,
+            'process_model': parameters.get('process_model', {}),
+            'message': f'Process discovery completed successfully using {model_source} method'
+        })
+        
+    except Exception as e:
+        logger.error(f"Process discovery error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/discover-model', methods=['POST'])
 def discover_model():
     """Discover process model using inductive miner"""
