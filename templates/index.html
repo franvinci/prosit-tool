@@ -462,6 +462,7 @@ function renderExecutionTimeParameters(executionParams) {
     let html = '<h6 class="mb-3">Activity Duration Distributions</h6>';
     
     for (const [activity, params] of Object.entries(durations)) {
+        const distribution = params.distribution || 'norm';
         html += `
             <div class="card mb-3">
                 <div class="card-header py-2">
@@ -472,38 +473,16 @@ function renderExecutionTimeParameters(executionParams) {
                         <div class="col-md-6">
                             <label class="form-label small">Distribution</label>
                             <select class="form-select form-select-sm" 
-                                    onchange="updateExecutionParam('${activity}', 'distribution', this.value)">
-                                <option value="normal" ${params.distribution === 'normal' ? 'selected' : ''}>Normal</option>
-                                <option value="exponential" ${params.distribution === 'exponential' ? 'selected' : ''}>Exponential</option>
-                                <option value="uniform" ${params.distribution === 'uniform' ? 'selected' : ''}>Uniform</option>
-                                <option value="lognormal" ${params.distribution === 'lognormal' ? 'selected' : ''}>Log-Normal</option>
+                                    onchange="updateExecutionParam('${activity}', 'distribution', this.value); renderExecutionTimeParameters(currentParameters.execution_time_params);">
+                                <option value="fixed" ${distribution === 'fixed' ? 'selected' : ''}>Fixed</option>
+                                <option value="norm" ${distribution === 'norm' ? 'selected' : ''}>Normal</option>
+                                <option value="expon" ${distribution === 'expon' ? 'selected' : ''}>Exponential</option>
+                                <option value="lognorm" ${distribution === 'lognorm' ? 'selected' : ''}>Log-Normal</option>
+                                <option value="uniform" ${distribution === 'uniform' ? 'selected' : ''}>Uniform</option>
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label small">Mean (minutes)</label>
-                            <input type="number" class="form-control form-control-sm" 
-                                   min="1" value="${params.mean || 60}"
-                                   onchange="updateExecutionParam('${activity}', 'mean', parseFloat(this.value))">
-                        </div>
-                    </div>
-                    <div class="row mt-2">
-                        <div class="col-md-4">
-                            <label class="form-label small">Std Dev</label>
-                            <input type="number" class="form-control form-control-sm" 
-                                   min="0" value="${params.std || 15}"
-                                   onchange="updateExecutionParam('${activity}', 'std', parseFloat(this.value))">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label small">Min</label>
-                            <input type="number" class="form-control form-control-sm" 
-                                   min="1" value="${params.min || 5}"
-                                   onchange="updateExecutionParam('${activity}', 'min', parseFloat(this.value))">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label small">Max</label>
-                            <input type="number" class="form-control form-control-sm" 
-                                   min="1" value="${params.max || 480}"
-                                   onchange="updateExecutionParam('${activity}', 'max', parseFloat(this.value))">
+                            ${renderDistributionParameters(activity, distribution, params, 'execution')}
                         </div>
                     </div>
                 </div>
@@ -554,30 +533,27 @@ function renderWaitingTimeParameters(waitingParams) {
     
     const resourceWaiting = waitingParams.resource_waiting_times || {};
     for (const [resource, params] of Object.entries(resourceWaiting)) {
+        const distribution = params.distribution || 'norm';
         html += `
-            <div class="card mb-2">
-                <div class="card-body py-2">
-                    <div class="row align-items-center">
-                        <div class="col-md-3">
-                            <small class="fw-bold">${resource}</small>
-                        </div>
-                        <div class="col-md-3">
+            <div class="card mb-3">
+                <div class="card-header py-2">
+                    <h6 class="mb-0">${resource}</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label small">Distribution</label>
                             <select class="form-select form-select-sm" 
-                                    onchange="updateResourceWaitingParam('${resource}', 'distribution', this.value)">
-                                <option value="exponential" ${params.distribution === 'exponential' ? 'selected' : ''}>Exponential</option>
-                                <option value="normal" ${params.distribution === 'normal' ? 'selected' : ''}>Normal</option>
-                                <option value="uniform" ${params.distribution === 'uniform' ? 'selected' : ''}>Uniform</option>
+                                    onchange="updateResourceWaitingParam('${resource}', 'distribution', this.value); renderWaitingTimeParameters(currentParameters.waiting_time_params);">
+                                <option value="fixed" ${distribution === 'fixed' ? 'selected' : ''}>Fixed</option>
+                                <option value="norm" ${distribution === 'norm' ? 'selected' : ''}>Normal</option>
+                                <option value="expon" ${distribution === 'expon' ? 'selected' : ''}>Exponential</option>
+                                <option value="lognorm" ${distribution === 'lognorm' ? 'selected' : ''}>Log-Normal</option>
+                                <option value="uniform" ${distribution === 'uniform' ? 'selected' : ''}>Uniform</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
-                            <input type="number" class="form-control form-control-sm" 
-                                   placeholder="Mean" min="0" value="${params.mean || 15}"
-                                   onchange="updateResourceWaitingParam('${resource}', 'mean', parseFloat(this.value))">
-                        </div>
-                        <div class="col-md-3">
-                            <input type="number" class="form-control form-control-sm" 
-                                   placeholder="Std Dev" min="0" value="${params.std || 5}"
-                                   onchange="updateResourceWaitingParam('${resource}', 'std', parseFloat(this.value))">
+                        <div class="col-md-6">
+                            ${renderDistributionParameters(resource, distribution, params, 'waiting')}
                         </div>
                     </div>
                 </div>
@@ -867,32 +843,21 @@ function renderInterArrivalTimeParameters(waitingParams) {
     html += '<h6 class="mb-0">Inter-Arrival Time Distribution</h6>';
     html += '</div>';
     html += '<div class="card-body">';
-    html += '<div class="row">';
     
-    html += '<div class="col-md-4">';
+    const distribution = interArrival.distribution || 'expon';
+    html += '<div class="mb-3">';
     html += '<label class="form-label small">Distribution</label>';
-    html += '<select class="form-select form-select-sm" onchange="updateInterArrivalParam(\'distribution\', this.value)">';
-    html += `<option value="exponential" ${interArrival.distribution === 'exponential' ? 'selected' : ''}>Exponential</option>`;
-    html += `<option value="normal" ${interArrival.distribution === 'normal' ? 'selected' : ''}>Normal</option>`;
-    html += `<option value="uniform" ${interArrival.distribution === 'uniform' ? 'selected' : ''}>Uniform</option>`;
+    html += '<select class="form-select form-select-sm" onchange="updateInterArrivalParam(\'distribution\', this.value); renderInterArrivalTimeParameters(currentParameters.waiting_time_params);">';
+    html += `<option value="fixed" ${distribution === 'fixed' ? 'selected' : ''}>Fixed</option>`;
+    html += `<option value="norm" ${distribution === 'norm' ? 'selected' : ''}>Normal</option>`;
+    html += `<option value="expon" ${distribution === 'expon' ? 'selected' : ''}>Exponential</option>`;
+    html += `<option value="lognorm" ${distribution === 'lognorm' ? 'selected' : ''}>Log-Normal</option>`;
+    html += `<option value="uniform" ${distribution === 'uniform' ? 'selected' : ''}>Uniform</option>`;
     html += '</select>';
     html += '</div>';
     
-    html += '<div class="col-md-4">';
-    html += '<label class="form-label small">Mean (minutes)</label>';
-    html += `<input type="number" class="form-control form-control-sm" min="1" step="0.1" 
-             value="${interArrival.mean || 60}" 
-             onchange="updateInterArrivalParam('mean', parseFloat(this.value))">`;
-    html += '</div>';
+    html += renderDistributionParameters('inter_arrival_time', distribution, interArrival, 'inter_arrival');
     
-    html += '<div class="col-md-4">';
-    html += '<label class="form-label small">Std Deviation</label>';
-    html += `<input type="number" class="form-control form-control-sm" min="0" step="0.1" 
-             value="${interArrival.std || 15}" 
-             onchange="updateInterArrivalParam('std', parseFloat(this.value))">`;
-    html += '</div>';
-    
-    html += '</div>';
     html += '</div>';
     html += '</div>';
     html += '</div>';
@@ -921,6 +886,133 @@ function updateInterArrivalParam(param, value) {
         currentParameters.waiting_time_params.inter_arrival_time = {};
     }
     currentParameters.waiting_time_params.inter_arrival_time[param] = value;
+}
+
+function renderDistributionParameters(itemName, distribution, params, type) {
+    let html = '';
+    
+    switch(distribution) {
+        case 'fixed':
+            html = `
+                <label class="form-label small">Fixed Value</label>
+                <input type="number" class="form-control form-control-sm" 
+                       min="1" step="0.1" value="${params.value || 60}"
+                       onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'value', parseFloat(this.value))">
+            `;
+            break;
+            
+        case 'norm':
+            html = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label small">Mean</label>
+                        <input type="number" class="form-control form-control-sm" 
+                               min="1" step="0.1" value="${params.mean || 60}"
+                               onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'mean', parseFloat(this.value))">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small">Std Dev</label>
+                        <input type="number" class="form-control form-control-sm" 
+                               min="0" step="0.1" value="${params.std || 15}"
+                               onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'std', parseFloat(this.value))">
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-6">
+                        <label class="form-label small">Min</label>
+                        <input type="number" class="form-control form-control-sm" 
+                               min="0" step="0.1" value="${params.min || 1}"
+                               onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'min', parseFloat(this.value))">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small">Max</label>
+                        <input type="number" class="form-control form-control-sm" 
+                               min="1" step="0.1" value="${params.max || 480}"
+                               onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'max', parseFloat(this.value))">
+                    </div>
+                </div>
+            `;
+            break;
+            
+        case 'expon':
+            html = `
+                <div class="row">
+                    <div class="col-md-4">
+                        <label class="form-label small">Mean</label>
+                        <input type="number" class="form-control form-control-sm" 
+                               min="1" step="0.1" value="${params.mean || 60}"
+                               onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'mean', parseFloat(this.value))">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small">Min</label>
+                        <input type="number" class="form-control form-control-sm" 
+                               min="0" step="0.1" value="${params.min || 1}"
+                               onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'min', parseFloat(this.value))">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small">Max</label>
+                        <input type="number" class="form-control form-control-sm" 
+                               min="1" step="0.1" value="${params.max || 480}"
+                               onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'max', parseFloat(this.value))">
+                    </div>
+                </div>
+            `;
+            break;
+            
+        case 'lognorm':
+            html = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label small">Mean</label>
+                        <input type="number" class="form-control form-control-sm" 
+                               min="1" step="0.1" value="${params.mean || 60}"
+                               onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'mean', parseFloat(this.value))">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small">Std Dev</label>
+                        <input type="number" class="form-control form-control-sm" 
+                               min="0" step="0.1" value="${params.std || 15}"
+                               onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'std', parseFloat(this.value))">
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-6">
+                        <label class="form-label small">Min</label>
+                        <input type="number" class="form-control form-control-sm" 
+                               min="0" step="0.1" value="${params.min || 1}"
+                               onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'min', parseFloat(this.value))">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small">Max</label>
+                        <input type="number" class="form-control form-control-sm" 
+                               min="1" step="0.1" value="${params.max || 480}"
+                               onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'max', parseFloat(this.value))">
+                    </div>
+                </div>
+            `;
+            break;
+            
+        case 'uniform':
+            html = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label small">Min Value</label>
+                        <input type="number" class="form-control form-control-sm" 
+                               min="0" step="0.1" value="${params.min || 30}"
+                               onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'min', parseFloat(this.value))">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small">Max Value</label>
+                        <input type="number" class="form-control form-control-sm" 
+                               min="1" step="0.1" value="${params.max || 120}"
+                               onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'max', parseFloat(this.value))">
+                    </div>
+                </div>
+            `;
+            break;
+    }
+    
+    return html;
 }
 
 function renderArrivalCalendar(calendar) {

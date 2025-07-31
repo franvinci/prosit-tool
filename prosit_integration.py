@@ -178,25 +178,63 @@ class ProSiTIntegration:
         durations = {}
         
         for activity in activities:
-            # Generate realistic duration parameters (in minutes)
-            durations[activity] = {
-                "distribution": random.choice(["normal", "exponential", "uniform", "lognormal"]),
-                "mean": round(random.uniform(15, 480), 1),  # 15 minutes to 8 hours
-                "std": round(random.uniform(5, 120), 1),    # Standard deviation
-                "min": round(random.uniform(5, 30), 1),     # Minimum duration
-                "max": round(random.uniform(60, 1440), 1)   # Maximum duration (up to 24 hours)
-            }
+            durations[activity] = self._generate_duration_distribution()
             
         return durations
     
+    def _generate_duration_distribution(self):
+        """Generate a duration distribution"""
+        distributions = ['fixed', 'norm', 'expon', 'lognorm', 'uniform']
+        distribution = random.choice(distributions)
+        
+        if distribution == 'fixed':
+            value = round(random.uniform(30, 90), 1)  # 30 minutes to 1.5 hours
+            return {
+                "distribution": distribution,
+                "value": value
+            }
+        elif distribution == 'norm':
+            mean = round(random.uniform(15, 120), 1)  # 15 minutes to 2 hours
+            std = round(random.uniform(5, mean * 0.3), 1)
+            return {
+                "distribution": distribution,
+                "mean": mean,
+                "std": std,
+                "min": round(max(1, mean - 2 * std), 1),
+                "max": round(mean + 3 * std, 1)
+            }
+        elif distribution == 'expon':
+            mean = round(random.uniform(20, 90), 1)
+            return {
+                "distribution": distribution,
+                "mean": mean,
+                "min": 1,
+                "max": round(mean * 4, 1)
+            }
+        elif distribution == 'lognorm':
+            mean = round(random.uniform(25, 80), 1)
+            std = round(random.uniform(10, 30), 1)
+            return {
+                "distribution": distribution,
+                "mean": mean,
+                "std": std,
+                "min": 5,
+                "max": round(mean * 3, 1)
+            }
+        else:  # uniform
+            min_val = round(random.uniform(10, 30), 1)
+            max_val = round(random.uniform(min_val + 15, min_val + 90), 1)
+            return {
+                "distribution": distribution,
+                "min": min_val,
+                "max": max_val
+            }
+    
     def _generate_inter_arrival_time(self):
         """Generate inter-arrival time parameters"""
-        return {
-            "distribution": "exponential",
-            "mean": round(random.uniform(30, 240), 1),  # 30 minutes to 4 hours between cases
-            "std": round(random.uniform(15, 60), 1),
-            "calendar": self._generate_arrival_calendar()
-        }
+        params = self._generate_duration_distribution()
+        params["calendar"] = self._generate_arrival_calendar()
+        return params
     
     def _generate_arrival_calendar(self):
         """Generate arrival time calendar"""
@@ -222,11 +260,7 @@ class ProSiTIntegration:
         waiting_times = {}
         
         for resource in resources[:5]:  # Generate for first 5 resources as example
-            waiting_times[resource] = {
-                "distribution": "exponential",
-                "mean": round(random.uniform(5, 60), 1),  # 5 minutes to 1 hour waiting
-                "std": round(random.uniform(2, 30), 1)
-            }
+            waiting_times[resource] = self._generate_duration_distribution()
             
         return waiting_times
     
