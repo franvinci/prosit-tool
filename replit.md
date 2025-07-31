@@ -25,7 +25,8 @@ Preferred communication style: Simple, everyday language.
 - **Process Integration**: Custom ProSiT integration layer (mock implementation)
 
 ### Data Storage
-- **Primary Database**: SQLite (development) with support for PostgreSQL via DATABASE_URL environment variable
+- **Primary Database**: PostgreSQL database with automatic table creation
+- **Database Schema**: SimulationSession table with fields for filename, noise_threshold, parameters (JSON), created_at, and status
 - **File Storage**: Local filesystem for uploaded XES files and simulation results
 - **Session Management**: Flask sessions with configurable secret key
 
@@ -58,8 +59,9 @@ Preferred communication style: Simple, everyday language.
 1. **File Upload**: User uploads XES file through web interface
 2. **Session Creation**: New SimulationSession record created with 'uploaded' status
 3. **Process Discovery**: ProSiTIntegration analyzes file to extract process model
-4. **Parameter Storage**: Discovered parameters saved as JSON in database
+4. **Parameter Storage**: Discovered parameters saved as JSON in PostgreSQL database
 5. **Status Updates**: Session status progresses through: uploaded → discovered → ready → simulating → completed
+6. **Database Persistence**: All sessions and parameters are stored in PostgreSQL for reliability and scalability
 
 ## External Dependencies
 
@@ -82,13 +84,13 @@ Preferred communication style: Simple, everyday language.
 ## Deployment Strategy
 
 ### Development Setup
-- **Local SQLite**: Simple database for development
+- **PostgreSQL Database**: Full-featured database for development and production
 - **File System Storage**: Local directories for uploads
 - **Debug Mode**: Detailed logging and auto-reload
 - **Host Configuration**: Binds to all interfaces (0.0.0.0:5000)
 
 ### Production Considerations
-- **Database Migration**: Environment variable for PostgreSQL connection
+- **Database**: PostgreSQL database with connection pooling and health checks
 - **Proxy Support**: ProxyFix middleware for reverse proxy deployment
 - **Security**: Configurable session secrets via environment variables
 - **File Management**: Organized directory structure with timestamp prefixes
