@@ -654,25 +654,32 @@ function renderResourceParameters(resourceParams) {
     let activityHtml = '';
     const actToResources = resourceParams.act_to_resources || {};
     
-    for (const [activity, assignedResources] of Object.entries(actToResources)) {
-        activityHtml += `
-            <div class="mb-3">
-                <h6 class="small">${activity}</h6>
-                <div class="border rounded p-2" style="max-height: 150px; overflow-y: auto;">
-        `;
-        
-        (resourceParams.resources || []).forEach(resource => {
-            const isAssigned = assignedResources.includes(resource);
+    console.log('Activity-resource assignments:', actToResources);
+    console.log('Available resources:', resourceParams.resources);
+    
+    if (Object.keys(actToResources).length === 0) {
+        activityHtml = '<div class="alert alert-info"><small>No activity assignments available. Activities will be assigned to all resources by default during simulation.</small></div>';
+    } else {
+        for (const [activity, assignedResources] of Object.entries(actToResources)) {
             activityHtml += `
-                <div class="form-check form-check-sm">
-                    <input class="form-check-input" type="checkbox" ${isAssigned ? 'checked' : ''} 
-                           onchange="updateActivityResource('${activity}', '${resource}', this.checked)">
-                    <label class="form-check-label small">${resource}</label>
-                </div>
+                <div class="mb-3">
+                    <h6 class="small">${activity}</h6>
+                    <div class="border rounded p-2" style="max-height: 150px; overflow-y: auto;">
             `;
-        });
-        
-        activityHtml += '</div></div>';
+            
+            (resourceParams.resources || []).forEach(resource => {
+                const isAssigned = assignedResources.includes(resource);
+                activityHtml += `
+                    <div class="form-check form-check-sm">
+                        <input class="form-check-input" type="checkbox" ${isAssigned ? 'checked' : ''} 
+                               onchange="updateActivityResource('${activity}', '${resource}', this.checked)">
+                        <label class="form-check-label small">${resource}</label>
+                    </div>
+                `;
+            });
+            
+            activityHtml += '</div></div>';
+        }
     }
     
     activityContainer.innerHTML = activityHtml;
@@ -722,7 +729,20 @@ function renderWaitingTimeParameters(waitingParams) {
     // Only show resource waiting times (inter-arrival moved to separate section)
     let html = '<h6 class="mb-3">Resource Waiting Times</h6>';
     
+    // Get all resources from resource_params to ensure we show all resources
+    const allResources = currentParameters.resource_params?.resources || [];
     const resourceWaiting = waitingParams.waiting_time || {};
+    
+    // Ensure all resources have waiting time parameters
+    allResources.forEach(resource => {
+        if (!resourceWaiting[resource]) {
+            resourceWaiting[resource] = {
+                distribution: 'expon',
+                parameters: { mean: 120 }
+            };
+        }
+    });
+    
     for (const [resource, params] of Object.entries(resourceWaiting)) {
         const distribution = params.distribution || 'norm';
         html += `
