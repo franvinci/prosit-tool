@@ -797,7 +797,7 @@ function showResourceCalendar(resourceName) {
                 const isAvailable = calendar[day][hour.toString()] === true;
                 const hourStr = hour.toString().padStart(2, '0');
                 html += `
-                    <button type="button" class="btn btn-sm ${isAvailable ? 'btn-success' : 'btn-outline-secondary'}" 
+                    <button type="button" class="btn btn-sm ${isAvailable ? 'btn-purple' : 'btn-outline-secondary'}" 
                             style="width: 35px; height: 25px; font-size: 10px; padding: 2px;"
                             onclick="toggleResourceHour('${resourceName}', '${day}', '${hour}', ${!isAvailable})">
                         ${hourStr}
@@ -1031,7 +1031,7 @@ function renderArrivalCalendar(calendar) {
             const isActive = calendar[day] ? (calendar[day][hour.toString()] === true) : (hour >= 9 && hour <= 17); // Default business hours
             const hourStr = hour.toString().padStart(2, '0');
             html += `
-                <button type="button" class="btn btn-sm ${isActive ? 'btn-primary' : 'btn-outline-secondary'}" 
+                <button type="button" class="btn btn-sm ${isActive ? 'btn-purple' : 'btn-outline-secondary'}" 
                         style="width: 30px; height: 22px; font-size: 9px; padding: 1px;"
                         onclick="toggleArrivalHour('${day}', '${hour}', ${!isActive})">
                     ${hourStr}
