@@ -117,6 +117,13 @@
                             Waiting Times
                         </button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="arrival-tab" data-bs-toggle="tab" 
+                                data-bs-target="#arrival-pane" type="button" role="tab">
+                            <i data-feather="zap" class="me-2"></i>
+                            Inter-Arrival
+                        </button>
+                    </li>
                 </ul>
 
                 <!-- Tab Content -->
@@ -129,13 +136,17 @@
                     <!-- Resource Parameters -->
                     <div class="tab-pane fade" id="resource-pane" role="tabpanel">
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <h6>Resource Management</h6>
                                 <div id="resourceParams"></div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <h6>Activity Assignments</h6>
                                 <div id="activityResourceParams"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <h6>Resource Calendars</h6>
+                                <div id="resourceCalendars"></div>
                             </div>
                         </div>
                     </div>
@@ -148,6 +159,11 @@
                     <!-- Waiting Time Parameters -->
                     <div class="tab-pane fade" id="waiting-pane" role="tabpanel">
                         <div id="waitingParams"></div>
+                    </div>
+
+                    <!-- Inter-Arrival Time Parameters -->
+                    <div class="tab-pane fade" id="arrival-pane" role="tabpanel">
+                        <div id="arrivalParams"></div>
                     </div>
                 </div>
             </div>
@@ -336,6 +352,9 @@ function renderParameters(parameters) {
     
     // Render waiting time parameters
     renderWaitingTimeParameters(parameters.waiting_time_params);
+    
+    // Render inter-arrival time parameters
+    renderInterArrivalTimeParameters(parameters.waiting_time_params);
 }
 
 function renderTransitionParameters(transitionParams) {
@@ -364,6 +383,7 @@ function renderTransitionParameters(transitionParams) {
 function renderResourceParameters(resourceParams) {
     const container = document.getElementById('resourceParams');
     const activityContainer = document.getElementById('activityResourceParams');
+    const calendarContainer = document.getElementById('resourceCalendars');
     
     // Resource management
     let html = '<div class="mb-3">';
@@ -403,6 +423,9 @@ function renderResourceParameters(resourceParams) {
     html += '</div></div>';
     
     container.innerHTML = html;
+    
+    // Render resource calendars
+    renderResourceCalendars(resourceParams.calendars || {}, calendarContainer);
     
     // Activity-resource assignments
     let activityHtml = '';
@@ -756,6 +779,127 @@ async function handleSimulation(e) {
         hideLoading();
         showAlert(`Simulation error: ${error.message}`, 'danger');
     }
+}
+
+function renderResourceCalendars(calendars, container) {
+    let html = '<div class="mb-3">';
+    html += '<label class="form-label">Select Resource:</label>';
+    html += '<select class="form-select form-select-sm mb-2" id="calendarResourceSelect" onchange="showResourceCalendar(this.value)">';
+    html += '<option value="">Choose a resource...</option>';
+    
+    // Add all available resources to dropdown
+    Object.keys(calendars).forEach(resource => {
+        html += `<option value="${resource}">${resource}</option>`;
+    });
+    
+    html += '</select>';
+    html += '<div id="calendarDisplay" class="border rounded p-2" style="max-height: 300px; overflow-y: auto;"></div>';
+    html += '</div>';
+    
+    container.innerHTML = html;
+}
+
+function showResourceCalendar(resourceName) {
+    if (!resourceName || !currentParameters.resource_params.calendars || !currentParameters.resource_params.calendars[resourceName]) {
+        document.getElementById('calendarDisplay').innerHTML = '<p class="text-muted">No calendar data available</p>';
+        return;
+    }
+    
+    const calendar = currentParameters.resource_params.calendars[resourceName];
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    
+    let html = `<h6 class="mb-3">${resourceName} Calendar</h6>`;
+    html += '<div class="row">';
+    
+    days.forEach(day => {
+        if (calendar[day]) {
+            html += '<div class="col-md-6 mb-3">';
+            html += `<h6 class="small">${day}</h6>`;
+            html += '<div class="d-flex flex-wrap gap-1">';
+            
+            for (let hour = 0; hour < 24; hour++) {
+                const isAvailable = calendar[day][hour.toString()] === true;
+                const hourStr = hour.toString().padStart(2, '0');
+                html += `
+                    <button type="button" class="btn btn-sm ${isAvailable ? 'btn-success' : 'btn-outline-secondary'}" 
+                            style="width: 35px; height: 25px; font-size: 10px; padding: 2px;"
+                            onclick="toggleResourceHour('${resourceName}', '${day}', '${hour}', ${!isAvailable})">
+                        ${hourStr}
+                    </button>
+                `;
+            }
+            
+            html += '</div></div>';
+        }
+    });
+    
+    html += '</div>';
+    document.getElementById('calendarDisplay').innerHTML = html;
+}
+
+function toggleResourceHour(resourceName, day, hour, isAvailable) {
+    if (!currentParameters.resource_params.calendars) {
+        currentParameters.resource_params.calendars = {};
+    }
+    if (!currentParameters.resource_params.calendars[resourceName]) {
+        currentParameters.resource_params.calendars[resourceName] = {};
+    }
+    if (!currentParameters.resource_params.calendars[resourceName][day]) {
+        currentParameters.resource_params.calendars[resourceName][day] = {};
+    }
+    
+    currentParameters.resource_params.calendars[resourceName][day][hour] = isAvailable;
+    
+    // Refresh the calendar display
+    showResourceCalendar(resourceName);
+}
+
+function renderInterArrivalTimeParameters(waitingParams) {
+    const container = document.getElementById('arrivalParams');
+    const interArrival = waitingParams.inter_arrival_time || {};
+    
+    let html = '<div class="card">';
+    html += '<div class="card-header py-2">';
+    html += '<h6 class="mb-0">Inter-Arrival Time Configuration</h6>';
+    html += '</div>';
+    html += '<div class="card-body">';
+    html += '<div class="row">';
+    
+    html += '<div class="col-md-4">';
+    html += '<label class="form-label small">Distribution</label>';
+    html += '<select class="form-select form-select-sm" onchange="updateInterArrivalParam(\'distribution\', this.value)">';
+    html += `<option value="exponential" ${interArrival.distribution === 'exponential' ? 'selected' : ''}>Exponential</option>`;
+    html += `<option value="normal" ${interArrival.distribution === 'normal' ? 'selected' : ''}>Normal</option>`;
+    html += `<option value="uniform" ${interArrival.distribution === 'uniform' ? 'selected' : ''}>Uniform</option>`;
+    html += '</select>';
+    html += '</div>';
+    
+    html += '<div class="col-md-4">';
+    html += '<label class="form-label small">Mean (minutes)</label>';
+    html += `<input type="number" class="form-control form-control-sm" min="1" step="0.1" 
+             value="${interArrival.mean || 60}" 
+             onchange="updateInterArrivalParam('mean', parseFloat(this.value))">`;
+    html += '</div>';
+    
+    html += '<div class="col-md-4">';
+    html += '<label class="form-label small">Std Deviation</label>';
+    html += `<input type="number" class="form-control form-control-sm" min="0" step="0.1" 
+             value="${interArrival.std || 15}" 
+             onchange="updateInterArrivalParam('std', parseFloat(this.value))">`;
+    html += '</div>';
+    
+    html += '</div>';
+    html += '</div>';
+    html += '</div>';
+    
+    container.innerHTML = html;
+}
+
+function updateInterArrivalParam(param, value) {
+    if (!currentParameters.waiting_time_params.inter_arrival_time) {
+        currentParameters.waiting_time_params.inter_arrival_time = {};
+    }
+    currentParameters.waiting_time_params.inter_arrival_time[param] = value;
 }
 </script>
 {% endblock %}

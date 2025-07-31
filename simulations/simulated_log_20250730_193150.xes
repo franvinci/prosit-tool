@@ -1,0 +1,3645 @@
+<?xml version="1.0" ?>
+<log xmlns="http://www.xes-standard.org/" xes.version="1.0" xes.features="nested-attributes">
+  <extension name="Concept" prefix="concept" uri="http://www.xes-standard.org/concept.xes"/>
+  <extension name="Time" prefix="time" uri="http://www.xes-standard.org/time.xes"/>
+  <extension name="Organizational" prefix="org" uri="http://www.xes-standard.org/org.xes"/>
+  <global scope="trace">
+    <string key="concept:name" value="name"/>
+  </global>
+  <trace>
+    <string key="concept:name" value="Case_1"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.055495+00:00"/>
+      <string key="org:resource" value="Karen Clarens"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:14:43.194550+00:00"/>
+      <string key="org:resource" value="Esmeralda Clay"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:42:02.831921+00:00"/>
+      <string key="org:resource" value="Miu Hanwan"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T09:01:03.120748+00:00"/>
+      <string key="org:resource" value="Elvira Lores"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:54:34.753450+00:00"/>
+      <string key="org:resource" value="Maris Freeman"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:56:53.849166+00:00"/>
+      <string key="org:resource" value="Nico Ojenbeer"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_2"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.055610+00:00"/>
+      <string key="org:resource" value="Fjodor Kowalski"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:01:26.210884+00:00"/>
+      <string key="org:resource" value="Esmeralda Clay"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:20:51.576319+00:00"/>
+      <string key="org:resource" value="Heinz Gutschmidt"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:38:08.781499+00:00"/>
+      <string key="org:resource" value="Esmana Liubiata"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:29:07.087626+00:00"/>
+      <string key="org:resource" value="Anna Kaufmann"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:29:05.168246+00:00"/>
+      <string key="org:resource" value="Clement Duchot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T22:04:49.418786+00:00"/>
+      <string key="org:resource" value="Elvira Lores"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_3"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.055693+00:00"/>
+      <string key="org:resource" value="Clement Duchot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:58:36.066189+00:00"/>
+      <string key="org:resource" value="Kim Passa"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:24:37.613613+00:00"/>
+      <string key="org:resource" value="Penn Osterwalder"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:54:38.234312+00:00"/>
+      <string key="org:resource" value="Kim Passa"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:47:18.503234+00:00"/>
+      <string key="org:resource" value="Esmana Liubiata"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:30:06.460253+00:00"/>
+      <string key="org:resource" value="Alberto Duport"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T21:49:51.934909+00:00"/>
+      <string key="org:resource" value="Alberto Duport"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Choose best option"/>
+      <date key="time:timestamp" value="2025-08-01T03:38:38.707002+00:00"/>
+      <string key="org:resource" value="Penn Osterwalder"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_4"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.055771+00:00"/>
+      <string key="org:resource" value="Maris Freeman"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:14:58.286522+00:00"/>
+      <string key="org:resource" value="Elvira Lores"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:27:59.689113+00:00"/>
+      <string key="org:resource" value="Immanuel Karagianni"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:55:52.605781+00:00"/>
+      <string key="org:resource" value="Anna Kaufmann"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:47:35.703358+00:00"/>
+      <string key="org:resource" value="Maris Freeman"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_5"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.055801+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:52:24.368374+00:00"/>
+      <string key="org:resource" value="Tesca Lobes"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:21:18.164887+00:00"/>
+      <string key="org:resource" value="Carmen Finacse"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:37:41.293818+00:00"/>
+      <string key="org:resource" value="Esmeralda Clay"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_6"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.055823+00:00"/>
+      <string key="org:resource" value="Pedro Alvares"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:08:54.828634+00:00"/>
+      <string key="org:resource" value="Miu Hanwan"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:23:14.175784+00:00"/>
+      <string key="org:resource" value="Kim Passa"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_7"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.055840+00:00"/>
+      <string key="org:resource" value="Fjodor Kowalski"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:15:17.802490+00:00"/>
+      <string key="org:resource" value="Heinz Gutschmidt"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:42:30.696217+00:00"/>
+      <string key="org:resource" value="Penn Osterwalder"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_8"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.055867+00:00"/>
+      <string key="org:resource" value="Francois de Perrier"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:08:35.432227+00:00"/>
+      <string key="org:resource" value="Francois de Perrier"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:22:31.613903+00:00"/>
+      <string key="org:resource" value="Karalda Nimwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:45:53.138972+00:00"/>
+      <string key="org:resource" value="Heinz Gutschmidt"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:43:35.723162+00:00"/>
+      <string key="org:resource" value="Penn Osterwalder"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:24:41.132096+00:00"/>
+      <string key="org:resource" value="Carmen Finacse"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T22:11:08.419791+00:00"/>
+      <string key="org:resource" value="Christian Francois"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Choose best option"/>
+      <date key="time:timestamp" value="2025-08-01T03:56:45.700755+00:00"/>
+      <string key="org:resource" value="Heinz Gutschmidt"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_9"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.055911+00:00"/>
+      <string key="org:resource" value="Maris Freeman"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:57:13.074392+00:00"/>
+      <string key="org:resource" value="Esmeralda Clay"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:31:27.806704+00:00"/>
+      <string key="org:resource" value="Magdalena Predutta"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T09:00:12.176180+00:00"/>
+      <string key="org:resource" value="Kim Passa"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:38:51.741740+00:00"/>
+      <string key="org:resource" value="Sean Manney"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:20:28.060913+00:00"/>
+      <string key="org:resource" value="Fjodor Kowalski"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T21:55:53.471559+00:00"/>
+      <string key="org:resource" value="Kim Passa"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_10"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.056006+00:00"/>
+      <string key="org:resource" value="Elvira Lores"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:10:14.402374+00:00"/>
+      <string key="org:resource" value="Karen Clarens"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:25:44.984316+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:45:23.767696+00:00"/>
+      <string key="org:resource" value="Karalda Nimwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:32:22.961987+00:00"/>
+      <string key="org:resource" value="Anne Olwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_11"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.056141+00:00"/>
+      <string key="org:resource" value="Kiu Kan"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:49:04.706833+00:00"/>
+      <string key="org:resource" value="Miu Hanwan"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:29:02.640681+00:00"/>
+      <string key="org:resource" value="Fjodor Kowalski"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_12"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.056160+00:00"/>
+      <string key="org:resource" value="Esmana Liubiata"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:02:06.668682+00:00"/>
+      <string key="org:resource" value="Elvira Lores"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:34:49.083449+00:00"/>
+      <string key="org:resource" value="Karel de Groot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:54:10.223951+00:00"/>
+      <string key="org:resource" value="Elvira Lores"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:50:33.618670+00:00"/>
+      <string key="org:resource" value="Alberto Duport"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_13"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.056187+00:00"/>
+      <string key="org:resource" value="Penn Osterwalder"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:56:28.549800+00:00"/>
+      <string key="org:resource" value="Kiu Kan"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:35:29.577104+00:00"/>
+      <string key="org:resource" value="Magdalena Predutta"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:51:38.675211+00:00"/>
+      <string key="org:resource" value="Karen Clarens"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:25:49.149272+00:00"/>
+      <string key="org:resource" value="Magdalena Predutta"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:18:31.197324+00:00"/>
+      <string key="org:resource" value="Esmana Liubiata"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_14"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.056216+00:00"/>
+      <string key="org:resource" value="Magdalena Predutta"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:06:32.011635+00:00"/>
+      <string key="org:resource" value="Fjodor Kowalski"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:22:14.644186+00:00"/>
+      <string key="org:resource" value="Anne Olwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:50:09.960495+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:51:24.493132+00:00"/>
+      <string key="org:resource" value="Alberto Duport"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_15"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.056248+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:08:53.879082+00:00"/>
+      <string key="org:resource" value="Tesca Lobes"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:49:02.255500+00:00"/>
+      <string key="org:resource" value="Maris Freeman"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T09:13:53.069097+00:00"/>
+      <string key="org:resource" value="Anna Kaufmann"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T12:03:37.099084+00:00"/>
+      <string key="org:resource" value="Elvira Lores"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:50:42.608719+00:00"/>
+      <string key="org:resource" value="Sean Manney"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T22:21:59.645961+00:00"/>
+      <string key="org:resource" value="Alberto Duport"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Choose best option"/>
+      <date key="time:timestamp" value="2025-08-01T04:09:06.821798+00:00"/>
+      <string key="org:resource" value="Magdalena Predutta"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_16"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.056287+00:00"/>
+      <string key="org:resource" value="Penn Osterwalder"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:08:44.670917+00:00"/>
+      <string key="org:resource" value="Karel de Groot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:49:57.716659+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_17"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.056306+00:00"/>
+      <string key="org:resource" value="Esmeralda Clay"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:15:42.631694+00:00"/>
+      <string key="org:resource" value="Elvira Lores"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:40:32.853727+00:00"/>
+      <string key="org:resource" value="Pedro Alvares"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:57:05.791649+00:00"/>
+      <string key="org:resource" value="Karalda Nimwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:56:30.913753+00:00"/>
+      <string key="org:resource" value="Karen Clarens"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:56:29.352893+00:00"/>
+      <string key="org:resource" value="Immanuel Karagianni"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T22:45:53.631314+00:00"/>
+      <string key="org:resource" value="Clement Duchot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_18"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.056341+00:00"/>
+      <string key="org:resource" value="Miu Hanwan"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:59:56.790828+00:00"/>
+      <string key="org:resource" value="Pedro Alvares"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:32:43.935271+00:00"/>
+      <string key="org:resource" value="Karalda Nimwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_19"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.056358+00:00"/>
+      <string key="org:resource" value="Fjodor Kowalski"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:58:45.552935+00:00"/>
+      <string key="org:resource" value="Kiu Kan"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:28:58.478909+00:00"/>
+      <string key="org:resource" value="Francois de Perrier"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:32:59.800521+00:00"/>
+      <string key="org:resource" value="Pedro Alvares"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:28:31.575755+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:08:03.298011+00:00"/>
+      <string key="org:resource" value="Fjodor Kowalski"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T21:50:37.788075+00:00"/>
+      <string key="org:resource" value="Immanuel Karagianni"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Choose best option"/>
+      <date key="time:timestamp" value="2025-08-01T03:30:21.159608+00:00"/>
+      <string key="org:resource" value="Karel de Groot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_20"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.056398+00:00"/>
+      <string key="org:resource" value="Carmen Finacse"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:50:06.518984+00:00"/>
+      <string key="org:resource" value="Karel de Groot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:27:14.047953+00:00"/>
+      <string key="org:resource" value="Elvira Lores"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:46:48.885367+00:00"/>
+      <string key="org:resource" value="Heinz Gutschmidt"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:41:34.259693+00:00"/>
+      <string key="org:resource" value="Heinz Gutschmidt"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_21"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.056426+00:00"/>
+      <string key="org:resource" value="Maris Freeman"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:51:06.157062+00:00"/>
+      <string key="org:resource" value="Esmeralda Clay"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:13:51.941423+00:00"/>
+      <string key="org:resource" value="Penn Osterwalder"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:23:43.801815+00:00"/>
+      <string key="org:resource" value="Carmen Finacse"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:07:10.971523+00:00"/>
+      <string key="org:resource" value="Elvira Lores"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:12:46.077923+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T21:42:51.580784+00:00"/>
+      <string key="org:resource" value="Anne Olwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_22"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.056459+00:00"/>
+      <string key="org:resource" value="Karel de Groot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:04:47.195170+00:00"/>
+      <string key="org:resource" value="Tesca Lobes"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:34:28.161204+00:00"/>
+      <string key="org:resource" value="Elvira Lores"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_23"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.056478+00:00"/>
+      <string key="org:resource" value="Esmana Liubiata"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:49:19.300302+00:00"/>
+      <string key="org:resource" value="Clement Duchot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:19:08.115967+00:00"/>
+      <string key="org:resource" value="Esmeralda Clay"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:43:41.333370+00:00"/>
+      <string key="org:resource" value="Anne Olwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:28:38.056702+00:00"/>
+      <string key="org:resource" value="Christian Francois"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:18:44.952917+00:00"/>
+      <string key="org:resource" value="Penn Osterwalder"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_24"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.056509+00:00"/>
+      <string key="org:resource" value="Maris Freeman"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:15:20.274236+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:35:47.717397+00:00"/>
+      <string key="org:resource" value="Esmeralda Clay"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:48:29.379532+00:00"/>
+      <string key="org:resource" value="Elvira Lores"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:36:12.064894+00:00"/>
+      <string key="org:resource" value="Kiu Kan"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:39:38.898091+00:00"/>
+      <string key="org:resource" value="Anna Kaufmann"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T22:06:09.388258+00:00"/>
+      <string key="org:resource" value="Clement Duchot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Choose best option"/>
+      <date key="time:timestamp" value="2025-08-01T04:04:41.322118+00:00"/>
+      <string key="org:resource" value="Kiu Kan"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_25"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.056563+00:00"/>
+      <string key="org:resource" value="Heinz Gutschmidt"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:49:58.362885+00:00"/>
+      <string key="org:resource" value="Sean Manney"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:18:56.316432+00:00"/>
+      <string key="org:resource" value="Esmana Liubiata"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:43:05.336972+00:00"/>
+      <string key="org:resource" value="Francois de Perrier"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:43:07.042100+00:00"/>
+      <string key="org:resource" value="Maris Freeman"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_26"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.056590+00:00"/>
+      <string key="org:resource" value="Penn Osterwalder"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:05:00.232444+00:00"/>
+      <string key="org:resource" value="Clement Duchot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:28:46.488342+00:00"/>
+      <string key="org:resource" value="Tesca Lobes"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T09:01:37.214383+00:00"/>
+      <string key="org:resource" value="Alberto Duport"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:59:06.851167+00:00"/>
+      <string key="org:resource" value="Heinz Gutschmidt"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T18:00:17.250277+00:00"/>
+      <string key="org:resource" value="Carmen Finacse"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T22:37:44.182912+00:00"/>
+      <string key="org:resource" value="Christian Francois"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_27"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.056625+00:00"/>
+      <string key="org:resource" value="Kim Passa"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:05:35.177162+00:00"/>
+      <string key="org:resource" value="Maris Freeman"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:27:25.906178+00:00"/>
+      <string key="org:resource" value="Immanuel Karagianni"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:55:48.214738+00:00"/>
+      <string key="org:resource" value="Immanuel Karagianni"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_28"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.056670+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:14:16.779252+00:00"/>
+      <string key="org:resource" value="Elvira Lores"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:37:38.974285+00:00"/>
+      <string key="org:resource" value="Karen Clarens"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_29"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.056692+00:00"/>
+      <string key="org:resource" value="Esmeralda Clay"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:08:08.356944+00:00"/>
+      <string key="org:resource" value="Christian Francois"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:35:15.610205+00:00"/>
+      <string key="org:resource" value="Alberto Duport"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:49:52.699918+00:00"/>
+      <string key="org:resource" value="Esmana Liubiata"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_30"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.056716+00:00"/>
+      <string key="org:resource" value="Karalda Nimwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:58:12.976386+00:00"/>
+      <string key="org:resource" value="Sean Manney"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:21:13.202210+00:00"/>
+      <string key="org:resource" value="Christian Francois"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:33:59.923549+00:00"/>
+      <string key="org:resource" value="Kiu Kan"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:18:51.769954+00:00"/>
+      <string key="org:resource" value="Francois de Perrier"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:13:33.209025+00:00"/>
+      <string key="org:resource" value="Miu Hanwan"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T21:59:25.282641+00:00"/>
+      <string key="org:resource" value="Carmen Finacse"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_31"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.056749+00:00"/>
+      <string key="org:resource" value="Penn Osterwalder"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:54:13.141135+00:00"/>
+      <string key="org:resource" value="Penn Osterwalder"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:13:06.775708+00:00"/>
+      <string key="org:resource" value="Sean Manney"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_32"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.056766+00:00"/>
+      <string key="org:resource" value="Karel de Groot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:16:37.084640+00:00"/>
+      <string key="org:resource" value="Pedro Alvares"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:52:52.901576+00:00"/>
+      <string key="org:resource" value="Miu Hanwan"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_33"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.056785+00:00"/>
+      <string key="org:resource" value="Kim Passa"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:58:32.242785+00:00"/>
+      <string key="org:resource" value="Karen Clarens"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:16:36.909411+00:00"/>
+      <string key="org:resource" value="Elvira Lores"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:46:00.616313+00:00"/>
+      <string key="org:resource" value="Esmeralda Clay"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:23:02.990914+00:00"/>
+      <string key="org:resource" value="Karel de Groot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:23:40.506856+00:00"/>
+      <string key="org:resource" value="Esmeralda Clay"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T21:48:10.746685+00:00"/>
+      <string key="org:resource" value="Anne Olwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_34"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.056821+00:00"/>
+      <string key="org:resource" value="Miu Hanwan"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:01:57.969073+00:00"/>
+      <string key="org:resource" value="Esmeralda Clay"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:26:43.776018+00:00"/>
+      <string key="org:resource" value="Christian Francois"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:37:11.102942+00:00"/>
+      <string key="org:resource" value="Clement Duchot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:30:34.526742+00:00"/>
+      <string key="org:resource" value="Carmen Finacse"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_35"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.056845+00:00"/>
+      <string key="org:resource" value="Carmen Finacse"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:06:21.263195+00:00"/>
+      <string key="org:resource" value="Anna Kaufmann"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:25:35.094181+00:00"/>
+      <string key="org:resource" value="Magdalena Predutta"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:37:19.307765+00:00"/>
+      <string key="org:resource" value="Nico Ojenbeer"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:34:21.734487+00:00"/>
+      <string key="org:resource" value="Pedro Alvares"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_36"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.056877+00:00"/>
+      <string key="org:resource" value="Esmana Liubiata"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:12:13.007843+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:43:10.355220+00:00"/>
+      <string key="org:resource" value="Elvira Lores"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T09:15:42.010630+00:00"/>
+      <string key="org:resource" value="Esmeralda Clay"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T12:01:40.190193+00:00"/>
+      <string key="org:resource" value="Immanuel Karagianni"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_37"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.056904+00:00"/>
+      <string key="org:resource" value="Esmeralda Clay"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:56:40.353963+00:00"/>
+      <string key="org:resource" value="Kiu Kan"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:18:23.731700+00:00"/>
+      <string key="org:resource" value="Immanuel Karagianni"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:34:39.478563+00:00"/>
+      <string key="org:resource" value="Esmana Liubiata"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:33:00.913893+00:00"/>
+      <string key="org:resource" value="Karalda Nimwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:11:07.383228+00:00"/>
+      <string key="org:resource" value="Heinz Gutschmidt"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T21:38:32.294379+00:00"/>
+      <string key="org:resource" value="Immanuel Karagianni"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Choose best option"/>
+      <date key="time:timestamp" value="2025-08-01T03:09:02.946667+00:00"/>
+      <string key="org:resource" value="Clement Duchot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_38"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.056943+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:11:49.048624+00:00"/>
+      <string key="org:resource" value="Carmen Finacse"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:30:39.975768+00:00"/>
+      <string key="org:resource" value="Penn Osterwalder"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:43:37.109611+00:00"/>
+      <string key="org:resource" value="Maris Freeman"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:40:43.944238+00:00"/>
+      <string key="org:resource" value="Christian Francois"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:22:13.525288+00:00"/>
+      <string key="org:resource" value="Esmana Liubiata"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T21:57:42.522640+00:00"/>
+      <string key="org:resource" value="Sean Manney"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Choose best option"/>
+      <date key="time:timestamp" value="2025-08-01T03:43:43.472001+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_39"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.057053+00:00"/>
+      <string key="org:resource" value="Carmen Finacse"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:06:23.841986+00:00"/>
+      <string key="org:resource" value="Elvira Lores"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:47:42.980246+00:00"/>
+      <string key="org:resource" value="Immanuel Karagianni"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T09:14:26.377094+00:00"/>
+      <string key="org:resource" value="Anna Kaufmann"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:55:18.046157+00:00"/>
+      <string key="org:resource" value="Nico Ojenbeer"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:38:53.745372+00:00"/>
+      <string key="org:resource" value="Nico Ojenbeer"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T22:02:45.125296+00:00"/>
+      <string key="org:resource" value="Carmen Finacse"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_40"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.057092+00:00"/>
+      <string key="org:resource" value="Magdalena Predutta"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:00:29.558640+00:00"/>
+      <string key="org:resource" value="Clement Duchot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:22:50.248530+00:00"/>
+      <string key="org:resource" value="Clement Duchot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:33:38.017503+00:00"/>
+      <string key="org:resource" value="Christian Francois"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:34:33.735702+00:00"/>
+      <string key="org:resource" value="Karel de Groot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:23:38.067032+00:00"/>
+      <string key="org:resource" value="Penn Osterwalder"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T21:46:29.876590+00:00"/>
+      <string key="org:resource" value="Tesca Lobes"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_41"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.057134+00:00"/>
+      <string key="org:resource" value="Esmeralda Clay"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:53:20.218169+00:00"/>
+      <string key="org:resource" value="Karel de Groot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:15:07.474406+00:00"/>
+      <string key="org:resource" value="Clement Duchot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:27:32.924466+00:00"/>
+      <string key="org:resource" value="Sean Manney"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:05:59.385408+00:00"/>
+      <string key="org:resource" value="Clement Duchot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_42"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.057184+00:00"/>
+      <string key="org:resource" value="Magdalena Predutta"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:17:28.860731+00:00"/>
+      <string key="org:resource" value="Christian Francois"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:43:47.517443+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T09:01:36.169807+00:00"/>
+      <string key="org:resource" value="Anna Kaufmann"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:48:31.991041+00:00"/>
+      <string key="org:resource" value="Sean Manney"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_43"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.057212+00:00"/>
+      <string key="org:resource" value="Maris Freeman"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:13:19.279477+00:00"/>
+      <string key="org:resource" value="Karen Clarens"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:47:34.449696+00:00"/>
+      <string key="org:resource" value="Pedro Alvares"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T09:04:33.047796+00:00"/>
+      <string key="org:resource" value="Fjodor Kowalski"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:45:34.920679+00:00"/>
+      <string key="org:resource" value="Karel de Groot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:49:43.756033+00:00"/>
+      <string key="org:resource" value="Pedro Alvares"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T22:29:30.075514+00:00"/>
+      <string key="org:resource" value="Magdalena Predutta"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_44"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.057257+00:00"/>
+      <string key="org:resource" value="Anne Olwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:12:11.320516+00:00"/>
+      <string key="org:resource" value="Carmen Finacse"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:46:24.349054+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T09:14:36.008790+00:00"/>
+      <string key="org:resource" value="Esmana Liubiata"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:52:13.283719+00:00"/>
+      <string key="org:resource" value="Anne Olwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:30:47.926275+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T21:55:41.997872+00:00"/>
+      <string key="org:resource" value="Anne Olwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_45"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.057293+00:00"/>
+      <string key="org:resource" value="Tesca Lobes"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:15:34.508243+00:00"/>
+      <string key="org:resource" value="Heinz Gutschmidt"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:51:49.321810+00:00"/>
+      <string key="org:resource" value="Maris Freeman"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T09:06:00.546273+00:00"/>
+      <string key="org:resource" value="Kiu Kan"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:40:54.329474+00:00"/>
+      <string key="org:resource" value="Sean Manney"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:40:42.851935+00:00"/>
+      <string key="org:resource" value="Nico Ojenbeer"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T22:15:20.548133+00:00"/>
+      <string key="org:resource" value="Penn Osterwalder"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_46"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.057329+00:00"/>
+      <string key="org:resource" value="Alberto Duport"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:09:02.067648+00:00"/>
+      <string key="org:resource" value="Kim Passa"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:33:58.741438+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:43:15.090395+00:00"/>
+      <string key="org:resource" value="Maris Freeman"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:23:34.051222+00:00"/>
+      <string key="org:resource" value="Miu Hanwan"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:27:59.286771+00:00"/>
+      <string key="org:resource" value="Anna Kaufmann"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T21:49:31.229735+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Choose best option"/>
+      <date key="time:timestamp" value="2025-08-01T03:33:39.901521+00:00"/>
+      <string key="org:resource" value="Tesca Lobes"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_47"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.057367+00:00"/>
+      <string key="org:resource" value="Esmeralda Clay"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:05:57.160762+00:00"/>
+      <string key="org:resource" value="Esmana Liubiata"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:30:59.594246+00:00"/>
+      <string key="org:resource" value="Esmeralda Clay"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:38:43.152256+00:00"/>
+      <string key="org:resource" value="Karen Clarens"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:19:21.342031+00:00"/>
+      <string key="org:resource" value="Clement Duchot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:12:32.040601+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T21:45:15.036526+00:00"/>
+      <string key="org:resource" value="Penn Osterwalder"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_48"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.057419+00:00"/>
+      <string key="org:resource" value="Magdalena Predutta"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:07:07.441795+00:00"/>
+      <string key="org:resource" value="Elvira Lores"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:37:54.078703+00:00"/>
+      <string key="org:resource" value="Miu Hanwan"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:50:01.895058+00:00"/>
+      <string key="org:resource" value="Penn Osterwalder"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_49"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.057458+00:00"/>
+      <string key="org:resource" value="Magdalena Predutta"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:55:29.280315+00:00"/>
+      <string key="org:resource" value="Karel de Groot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:35:32.947851+00:00"/>
+      <string key="org:resource" value="Anne Olwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T09:02:38.146506+00:00"/>
+      <string key="org:resource" value="Kiu Kan"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:51:59.708808+00:00"/>
+      <string key="org:resource" value="Nico Ojenbeer"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:47:59.451068+00:00"/>
+      <string key="org:resource" value="Nico Ojenbeer"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_50"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.057516+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:11:39.890306+00:00"/>
+      <string key="org:resource" value="Carmen Finacse"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:50:26.101130+00:00"/>
+      <string key="org:resource" value="Nico Ojenbeer"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T09:17:08.004770+00:00"/>
+      <string key="org:resource" value="Karen Clarens"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:55:56.273456+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:36:02.313692+00:00"/>
+      <string key="org:resource" value="Alberto Duport"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T21:56:24.016491+00:00"/>
+      <string key="org:resource" value="Esmana Liubiata"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Choose best option"/>
+      <date key="time:timestamp" value="2025-08-01T03:26:24.969299+00:00"/>
+      <string key="org:resource" value="Nico Ojenbeer"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_51"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.057556+00:00"/>
+      <string key="org:resource" value="Francois de Perrier"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:55:41.056428+00:00"/>
+      <string key="org:resource" value="Pedro Alvares"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:36:06.245441+00:00"/>
+      <string key="org:resource" value="Sean Manney"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:57:51.118854+00:00"/>
+      <string key="org:resource" value="Pedro Alvares"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:45:54.536115+00:00"/>
+      <string key="org:resource" value="Francois de Perrier"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:52:19.321018+00:00"/>
+      <string key="org:resource" value="Anna Kaufmann"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T22:39:29.750748+00:00"/>
+      <string key="org:resource" value="Kim Passa"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Choose best option"/>
+      <date key="time:timestamp" value="2025-08-01T04:31:06.355206+00:00"/>
+      <string key="org:resource" value="Karalda Nimwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_52"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.057597+00:00"/>
+      <string key="org:resource" value="Tesca Lobes"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:55:43.799166+00:00"/>
+      <string key="org:resource" value="Maris Freeman"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:12:55.184864+00:00"/>
+      <string key="org:resource" value="Immanuel Karagianni"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_53"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.057613+00:00"/>
+      <string key="org:resource" value="Francois de Perrier"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:07:58.455794+00:00"/>
+      <string key="org:resource" value="Alberto Duport"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:45:13.295626+00:00"/>
+      <string key="org:resource" value="Magdalena Predutta"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:58:23.648864+00:00"/>
+      <string key="org:resource" value="Immanuel Karagianni"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:56:54.062200+00:00"/>
+      <string key="org:resource" value="Immanuel Karagianni"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:43:19.367555+00:00"/>
+      <string key="org:resource" value="Nico Ojenbeer"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_54"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.057655+00:00"/>
+      <string key="org:resource" value="Fjodor Kowalski"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:10:04.232531+00:00"/>
+      <string key="org:resource" value="Elvira Lores"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:32:57.247732+00:00"/>
+      <string key="org:resource" value="Francois de Perrier"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:51:11.408028+00:00"/>
+      <string key="org:resource" value="Magdalena Predutta"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:33:30.028910+00:00"/>
+      <string key="org:resource" value="Kim Passa"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:32:20.534633+00:00"/>
+      <string key="org:resource" value="Elvira Lores"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_55"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.057687+00:00"/>
+      <string key="org:resource" value="Anna Kaufmann"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:00:00.411017+00:00"/>
+      <string key="org:resource" value="Fjodor Kowalski"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:29:24.465214+00:00"/>
+      <string key="org:resource" value="Karel de Groot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:45:19.772677+00:00"/>
+      <string key="org:resource" value="Maris Freeman"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:31:57.331684+00:00"/>
+      <string key="org:resource" value="Immanuel Karagianni"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_56"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.057715+00:00"/>
+      <string key="org:resource" value="Karalda Nimwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:12:02.876214+00:00"/>
+      <string key="org:resource" value="Francois de Perrier"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:41:13.929938+00:00"/>
+      <string key="org:resource" value="Sean Manney"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_57"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.057748+00:00"/>
+      <string key="org:resource" value="Francois de Perrier"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:56:03.355820+00:00"/>
+      <string key="org:resource" value="Karel de Groot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:09:14.519921+00:00"/>
+      <string key="org:resource" value="Anne Olwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_58"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.057781+00:00"/>
+      <string key="org:resource" value="Maris Freeman"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:01:08.531432+00:00"/>
+      <string key="org:resource" value="Anne Olwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:31:40.945776+00:00"/>
+      <string key="org:resource" value="Carmen Finacse"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_59"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.057800+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:18:15.431720+00:00"/>
+      <string key="org:resource" value="Kim Passa"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:35:40.298311+00:00"/>
+      <string key="org:resource" value="Kim Passa"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T09:05:54.163626+00:00"/>
+      <string key="org:resource" value="Immanuel Karagianni"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:47:26.282874+00:00"/>
+      <string key="org:resource" value="Pedro Alvares"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:31:33.820908+00:00"/>
+      <string key="org:resource" value="Carmen Finacse"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T22:01:40.529977+00:00"/>
+      <string key="org:resource" value="Pedro Alvares"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Choose best option"/>
+      <date key="time:timestamp" value="2025-08-01T03:36:01.252092+00:00"/>
+      <string key="org:resource" value="Elvira Lores"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_60"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.057855+00:00"/>
+      <string key="org:resource" value="Maris Freeman"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:59:51.382947+00:00"/>
+      <string key="org:resource" value="Maris Freeman"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:40:41.980024+00:00"/>
+      <string key="org:resource" value="Elvira Lores"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_61"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.057883+00:00"/>
+      <string key="org:resource" value="Elvira Lores"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:00:04.835432+00:00"/>
+      <string key="org:resource" value="Heinz Gutschmidt"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:38:22.661380+00:00"/>
+      <string key="org:resource" value="Penn Osterwalder"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:45:28.289119+00:00"/>
+      <string key="org:resource" value="Carmen Finacse"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:39:51.977371+00:00"/>
+      <string key="org:resource" value="Anne Olwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_62"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.057934+00:00"/>
+      <string key="org:resource" value="Maris Freeman"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:56:35.508077+00:00"/>
+      <string key="org:resource" value="Alberto Duport"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:13:31.710404+00:00"/>
+      <string key="org:resource" value="Fjodor Kowalski"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:35:56.678784+00:00"/>
+      <string key="org:resource" value="Clement Duchot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:37:09.398999+00:00"/>
+      <string key="org:resource" value="Immanuel Karagianni"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:29:12.209886+00:00"/>
+      <string key="org:resource" value="Christian Francois"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T22:17:24.611982+00:00"/>
+      <string key="org:resource" value="Maris Freeman"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_63"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.057970+00:00"/>
+      <string key="org:resource" value="Immanuel Karagianni"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:07:56.619005+00:00"/>
+      <string key="org:resource" value="Kiu Kan"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:30:56.147459+00:00"/>
+      <string key="org:resource" value="Penn Osterwalder"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_64"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.058080+00:00"/>
+      <string key="org:resource" value="Tesca Lobes"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:10:40.703715+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:39:59.356182+00:00"/>
+      <string key="org:resource" value="Immanuel Karagianni"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T09:09:17.795372+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T12:08:10.526292+00:00"/>
+      <string key="org:resource" value="Carmen Finacse"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T18:08:48.805351+00:00"/>
+      <string key="org:resource" value="Karalda Nimwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_65"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.058142+00:00"/>
+      <string key="org:resource" value="Kiu Kan"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:16:31.918436+00:00"/>
+      <string key="org:resource" value="Karen Clarens"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:49:15.985369+00:00"/>
+      <string key="org:resource" value="Karen Clarens"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_66"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.058167+00:00"/>
+      <string key="org:resource" value="Heinz Gutschmidt"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:16:43.967370+00:00"/>
+      <string key="org:resource" value="Heinz Gutschmidt"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:58:35.106509+00:00"/>
+      <string key="org:resource" value="Clement Duchot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T09:25:27.287034+00:00"/>
+      <string key="org:resource" value="Magdalena Predutta"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T12:11:48.999906+00:00"/>
+      <string key="org:resource" value="Heinz Gutschmidt"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T18:00:41.140673+00:00"/>
+      <string key="org:resource" value="Nico Ojenbeer"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T22:31:20.939741+00:00"/>
+      <string key="org:resource" value="Esmana Liubiata"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_67"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.058218+00:00"/>
+      <string key="org:resource" value="Anne Olwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:11:17.518628+00:00"/>
+      <string key="org:resource" value="Anna Kaufmann"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:29:45.058503+00:00"/>
+      <string key="org:resource" value="Maris Freeman"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:49:48.772149+00:00"/>
+      <string key="org:resource" value="Clement Duchot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_68"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.058242+00:00"/>
+      <string key="org:resource" value="Kim Passa"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:04:59.079272+00:00"/>
+      <string key="org:resource" value="Magdalena Predutta"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:25:47.748734+00:00"/>
+      <string key="org:resource" value="Magdalena Predutta"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:44:56.383612+00:00"/>
+      <string key="org:resource" value="Kim Passa"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:45:24.804779+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:35:08.539832+00:00"/>
+      <string key="org:resource" value="Nico Ojenbeer"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_69"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.058283+00:00"/>
+      <string key="org:resource" value="Sean Manney"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:08:51.979895+00:00"/>
+      <string key="org:resource" value="Miu Hanwan"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:44:30.045914+00:00"/>
+      <string key="org:resource" value="Karalda Nimwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:51:04.343487+00:00"/>
+      <string key="org:resource" value="Esmana Liubiata"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:44:37.205734+00:00"/>
+      <string key="org:resource" value="Kim Passa"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:39:23.385530+00:00"/>
+      <string key="org:resource" value="Francois de Perrier"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T22:18:23.704934+00:00"/>
+      <string key="org:resource" value="Miu Hanwan"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Choose best option"/>
+      <date key="time:timestamp" value="2025-08-01T04:12:57.945615+00:00"/>
+      <string key="org:resource" value="Tesca Lobes"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_70"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.058323+00:00"/>
+      <string key="org:resource" value="Karen Clarens"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:08:22.335732+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:43:47.693555+00:00"/>
+      <string key="org:resource" value="Heinz Gutschmidt"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T09:02:38.771698+00:00"/>
+      <string key="org:resource" value="Miu Hanwan"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:58:04.367567+00:00"/>
+      <string key="org:resource" value="Esmana Liubiata"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_71"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.058351+00:00"/>
+      <string key="org:resource" value="Anne Olwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:18:04.156989+00:00"/>
+      <string key="org:resource" value="Clement Duchot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:31:28.985967+00:00"/>
+      <string key="org:resource" value="Sean Manney"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:46:15.899000+00:00"/>
+      <string key="org:resource" value="Pedro Alvares"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:37:22.186616+00:00"/>
+      <string key="org:resource" value="Esmeralda Clay"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_72"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.058376+00:00"/>
+      <string key="org:resource" value="Anne Olwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:08:44.076556+00:00"/>
+      <string key="org:resource" value="Christian Francois"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:40:16.411783+00:00"/>
+      <string key="org:resource" value="Elvira Lores"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T09:10:35.644675+00:00"/>
+      <string key="org:resource" value="Francois de Perrier"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_73"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.058400+00:00"/>
+      <string key="org:resource" value="Tesca Lobes"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:14:13.361420+00:00"/>
+      <string key="org:resource" value="Sean Manney"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:35:22.400258+00:00"/>
+      <string key="org:resource" value="Francois de Perrier"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:43:36.702995+00:00"/>
+      <string key="org:resource" value="Karel de Groot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:42:31.011859+00:00"/>
+      <string key="org:resource" value="Christian Francois"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_74"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.058422+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:48:57.795246+00:00"/>
+      <string key="org:resource" value="Sean Manney"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:20:20.231814+00:00"/>
+      <string key="org:resource" value="Francois de Perrier"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:28:13.822889+00:00"/>
+      <string key="org:resource" value="Karel de Groot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:04:57.724057+00:00"/>
+      <string key="org:resource" value="Christian Francois"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T16:55:50.095566+00:00"/>
+      <string key="org:resource" value="Magdalena Predutta"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T21:25:38.240562+00:00"/>
+      <string key="org:resource" value="Magdalena Predutta"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Choose best option"/>
+      <date key="time:timestamp" value="2025-08-01T03:10:14.385492+00:00"/>
+      <string key="org:resource" value="Miu Hanwan"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_75"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.058471+00:00"/>
+      <string key="org:resource" value="Heinz Gutschmidt"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:15:07.471135+00:00"/>
+      <string key="org:resource" value="Pedro Alvares"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:39:40.594588+00:00"/>
+      <string key="org:resource" value="Karel de Groot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:54:48.746685+00:00"/>
+      <string key="org:resource" value="Esmana Liubiata"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:56:18.943816+00:00"/>
+      <string key="org:resource" value="Magdalena Predutta"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_76"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.058498+00:00"/>
+      <string key="org:resource" value="Esmana Liubiata"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:01:54.363716+00:00"/>
+      <string key="org:resource" value="Clement Duchot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:17:49.636025+00:00"/>
+      <string key="org:resource" value="Tesca Lobes"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:38:22.589064+00:00"/>
+      <string key="org:resource" value="Penn Osterwalder"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:24:06.591543+00:00"/>
+      <string key="org:resource" value="Magdalena Predutta"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:13:02.188939+00:00"/>
+      <string key="org:resource" value="Anna Kaufmann"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_77"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.058527+00:00"/>
+      <string key="org:resource" value="Alberto Duport"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:53:07.243606+00:00"/>
+      <string key="org:resource" value="Immanuel Karagianni"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:29:44.099401+00:00"/>
+      <string key="org:resource" value="Anne Olwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_78"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.058560+00:00"/>
+      <string key="org:resource" value="Nico Ojenbeer"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:00:10.309066+00:00"/>
+      <string key="org:resource" value="Francois de Perrier"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:22:02.104231+00:00"/>
+      <string key="org:resource" value="Heinz Gutschmidt"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_79"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.058577+00:00"/>
+      <string key="org:resource" value="Anne Olwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:18:49.163485+00:00"/>
+      <string key="org:resource" value="Esmeralda Clay"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:32:18.285579+00:00"/>
+      <string key="org:resource" value="Fjodor Kowalski"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:42:03.462060+00:00"/>
+      <string key="org:resource" value="Karalda Nimwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:38:46.554726+00:00"/>
+      <string key="org:resource" value="Karel de Groot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:32:43.794792+00:00"/>
+      <string key="org:resource" value="Kim Passa"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T22:13:47.978587+00:00"/>
+      <string key="org:resource" value="Immanuel Karagianni"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_80"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.058613+00:00"/>
+      <string key="org:resource" value="Tesca Lobes"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:53:21.996032+00:00"/>
+      <string key="org:resource" value="Tesca Lobes"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:29:51.950858+00:00"/>
+      <string key="org:resource" value="Kim Passa"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:59:00.694603+00:00"/>
+      <string key="org:resource" value="Francois de Perrier"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_81"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.058634+00:00"/>
+      <string key="org:resource" value="Kim Passa"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:03:43.106387+00:00"/>
+      <string key="org:resource" value="Karel de Groot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:43:34.777151+00:00"/>
+      <string key="org:resource" value="Sean Manney"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_82"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.058651+00:00"/>
+      <string key="org:resource" value="Penn Osterwalder"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:06:53.394210+00:00"/>
+      <string key="org:resource" value="Carmen Finacse"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:24:28.972008+00:00"/>
+      <string key="org:resource" value="Immanuel Karagianni"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:55:59.595148+00:00"/>
+      <string key="org:resource" value="Miu Hanwan"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_83"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.058673+00:00"/>
+      <string key="org:resource" value="Carmen Finacse"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:14:00.968408+00:00"/>
+      <string key="org:resource" value="Alberto Duport"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:32:00.375006+00:00"/>
+      <string key="org:resource" value="Karen Clarens"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_84"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.058692+00:00"/>
+      <string key="org:resource" value="Clement Duchot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:12:40.686795+00:00"/>
+      <string key="org:resource" value="Karen Clarens"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:32:25.151608+00:00"/>
+      <string key="org:resource" value="Esmana Liubiata"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T09:03:57.123570+00:00"/>
+      <string key="org:resource" value="Carmen Finacse"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:39:07.792228+00:00"/>
+      <string key="org:resource" value="Elvira Lores"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:32:37.824587+00:00"/>
+      <string key="org:resource" value="Kim Passa"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_85"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.058720+00:00"/>
+      <string key="org:resource" value="Elvira Lores"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:16:53.292796+00:00"/>
+      <string key="org:resource" value="Karalda Nimwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:58:26.724521+00:00"/>
+      <string key="org:resource" value="Karel de Groot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T09:12:13.010145+00:00"/>
+      <string key="org:resource" value="Penn Osterwalder"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T12:01:30.828972+00:00"/>
+      <string key="org:resource" value="Esmeralda Clay"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T18:03:32.784171+00:00"/>
+      <string key="org:resource" value="Anne Olwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T22:41:08.598322+00:00"/>
+      <string key="org:resource" value="Fjodor Kowalski"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Choose best option"/>
+      <date key="time:timestamp" value="2025-08-01T04:19:59.269039+00:00"/>
+      <string key="org:resource" value="Immanuel Karagianni"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_86"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.058761+00:00"/>
+      <string key="org:resource" value="Kiu Kan"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:55:10.960711+00:00"/>
+      <string key="org:resource" value="Esmana Liubiata"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:16:25.650547+00:00"/>
+      <string key="org:resource" value="Anna Kaufmann"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:21:21.603787+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T10:57:00.749803+00:00"/>
+      <string key="org:resource" value="Karen Clarens"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_87"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.058786+00:00"/>
+      <string key="org:resource" value="Tesca Lobes"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:04:55.045491+00:00"/>
+      <string key="org:resource" value="Pedro Alvares"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:34:22.437479+00:00"/>
+      <string key="org:resource" value="Esmeralda Clay"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:52:56.356250+00:00"/>
+      <string key="org:resource" value="Fjodor Kowalski"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:34:44.298482+00:00"/>
+      <string key="org:resource" value="Heinz Gutschmidt"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:29:02.034266+00:00"/>
+      <string key="org:resource" value="Magdalena Predutta"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T22:05:06.176362+00:00"/>
+      <string key="org:resource" value="Esmeralda Clay"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_88"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.058822+00:00"/>
+      <string key="org:resource" value="Maris Freeman"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:49:55.235185+00:00"/>
+      <string key="org:resource" value="Immanuel Karagianni"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:14:30.545175+00:00"/>
+      <string key="org:resource" value="Karel de Groot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:41:58.845678+00:00"/>
+      <string key="org:resource" value="Fjodor Kowalski"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:24:58.551882+00:00"/>
+      <string key="org:resource" value="Maris Freeman"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:13:37.387318+00:00"/>
+      <string key="org:resource" value="Miu Hanwan"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_89"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.058852+00:00"/>
+      <string key="org:resource" value="Esmana Liubiata"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:01:33.240103+00:00"/>
+      <string key="org:resource" value="Clement Duchot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:34:10.810656+00:00"/>
+      <string key="org:resource" value="Elvira Lores"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_90"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.058875+00:00"/>
+      <string key="org:resource" value="Anna Kaufmann"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:48:54.862850+00:00"/>
+      <string key="org:resource" value="Nico Ojenbeer"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:31:10.982555+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:39:29.677830+00:00"/>
+      <string key="org:resource" value="Alberto Duport"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:34:13.368263+00:00"/>
+      <string key="org:resource" value="Clement Duchot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:36:47.611566+00:00"/>
+      <string key="org:resource" value="Tesca Lobes"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T22:23:41.241548+00:00"/>
+      <string key="org:resource" value="Kim Passa"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Choose best option"/>
+      <date key="time:timestamp" value="2025-08-01T04:18:49.159779+00:00"/>
+      <string key="org:resource" value="Tesca Lobes"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_91"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.058914+00:00"/>
+      <string key="org:resource" value="Anne Olwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:04:27.478573+00:00"/>
+      <string key="org:resource" value="Francois de Perrier"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:47:01.729740+00:00"/>
+      <string key="org:resource" value="Tesca Lobes"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T09:03:11.986674+00:00"/>
+      <string key="org:resource" value="Tesca Lobes"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:41:18.031987+00:00"/>
+      <string key="org:resource" value="Karen Clarens"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:44:06.985270+00:00"/>
+      <string key="org:resource" value="Karel de Groot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T22:27:34.656496+00:00"/>
+      <string key="org:resource" value="Kim Passa"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_92"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.058962+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:11:07.420111+00:00"/>
+      <string key="org:resource" value="Carmen Finacse"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:29:28.908688+00:00"/>
+      <string key="org:resource" value="Pedro Alvares"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T09:02:28.162599+00:00"/>
+      <string key="org:resource" value="Penn Osterwalder"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T12:03:18.788748+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:45:09.720518+00:00"/>
+      <string key="org:resource" value="Anna Kaufmann"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T22:31:34.213491+00:00"/>
+      <string key="org:resource" value="Heinz Gutschmidt"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_93"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.059017+00:00"/>
+      <string key="org:resource" value="Karel de Groot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:15:02.976250+00:00"/>
+      <string key="org:resource" value="Heinz Gutschmidt"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:28:12.947277+00:00"/>
+      <string key="org:resource" value="Nico Ojenbeer"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:45:32.720433+00:00"/>
+      <string key="org:resource" value="Carmen Finacse"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:32:05.186417+00:00"/>
+      <string key="org:resource" value="Pedro Alvares"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:21:15.099427+00:00"/>
+      <string key="org:resource" value="Magdalena Predutta"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T21:59:19.382861+00:00"/>
+      <string key="org:resource" value="Francois de Perrier"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Choose best option"/>
+      <date key="time:timestamp" value="2025-08-01T03:45:43.134101+00:00"/>
+      <string key="org:resource" value="Heinz Gutschmidt"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_94"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.059057+00:00"/>
+      <string key="org:resource" value="Elvira Lores"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:59:34.477402+00:00"/>
+      <string key="org:resource" value="Pedro Alvares"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:13:39.418259+00:00"/>
+      <string key="org:resource" value="Christian Francois"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:25:56.085689+00:00"/>
+      <string key="org:resource" value="Heinz Gutschmidt"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:00:06.655609+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T16:45:40.185951+00:00"/>
+      <string key="org:resource" value="Pedro Alvares"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T21:23:32.066266+00:00"/>
+      <string key="org:resource" value="Nico Ojenbeer"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_95"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.059093+00:00"/>
+      <string key="org:resource" value="Miu Hanwan"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:53:05.561166+00:00"/>
+      <string key="org:resource" value="Nico Ojenbeer"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:10:08.578965+00:00"/>
+      <string key="org:resource" value="Clement Duchot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:17:19.996065+00:00"/>
+      <string key="org:resource" value="Alberto Duport"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T10:58:30.588659+00:00"/>
+      <string key="org:resource" value="Anne Olwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_96"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.059122+00:00"/>
+      <string key="org:resource" value="Karel de Groot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:00:32.245015+00:00"/>
+      <string key="org:resource" value="Karalda Nimwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:25:50.402973+00:00"/>
+      <string key="org:resource" value="Anne Olwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:52:48.722347+00:00"/>
+      <string key="org:resource" value="Karel de Groot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_97"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.059145+00:00"/>
+      <string key="org:resource" value="Elvira Lores"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:09:12.203605+00:00"/>
+      <string key="org:resource" value="Heinz Gutschmidt"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:42:11.466208+00:00"/>
+      <string key="org:resource" value="Immanuel Karagianni"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T09:14:20.869972+00:00"/>
+      <string key="org:resource" value="Immanuel Karagianni"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:52:39.851824+00:00"/>
+      <string key="org:resource" value="Clement Duchot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:50:05.988346+00:00"/>
+      <string key="org:resource" value="Esmana Liubiata"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T22:39:31.186489+00:00"/>
+      <string key="org:resource" value="Esmana Liubiata"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Choose best option"/>
+      <date key="time:timestamp" value="2025-08-01T04:31:57.701148+00:00"/>
+      <string key="org:resource" value="Tesca Lobes"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_98"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.059198+00:00"/>
+      <string key="org:resource" value="Karalda Nimwada"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:55:04.475912+00:00"/>
+      <string key="org:resource" value="Anna Kaufmann"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:34:42.702223+00:00"/>
+      <string key="org:resource" value="Francis Odell"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:57:00.352658+00:00"/>
+      <string key="org:resource" value="Esmana Liubiata"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:47:03.458290+00:00"/>
+      <string key="org:resource" value="Sean Manney"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:53:35.504914+00:00"/>
+      <string key="org:resource" value="Esmeralda Clay"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T22:34:09.853130+00:00"/>
+      <string key="org:resource" value="Esmeralda Clay"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Choose best option"/>
+      <date key="time:timestamp" value="2025-08-01T04:15:41.824441+00:00"/>
+      <string key="org:resource" value="Sean Manney"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_99"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.059241+00:00"/>
+      <string key="org:resource" value="Karen Clarens"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T02:12:06.895653+00:00"/>
+      <string key="org:resource" value="Kiu Kan"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:48:34.532621+00:00"/>
+      <string key="org:resource" value="Esmana Liubiata"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T09:10:02.242834+00:00"/>
+      <string key="org:resource" value="Kim Passa"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:56:32.899819+00:00"/>
+      <string key="org:resource" value="Tesca Lobes"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:40:12.261195+00:00"/>
+      <string key="org:resource" value="Karel de Groot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case_100"/>
+    <event>
+      <string key="concept:name" value="Create Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-30T19:31:50.059272+00:00"/>
+      <string key="org:resource" value="Esmeralda Clay"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Purchase Requisition"/>
+      <date key="time:timestamp" value="2025-07-31T01:54:47.618193+00:00"/>
+      <string key="org:resource" value="Penn Osterwalder"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Request for Quotation Requester"/>
+      <date key="time:timestamp" value="2025-07-31T05:12:32.251512+00:00"/>
+      <string key="org:resource" value="Carmen Finacse"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Analyze Request for Quotation"/>
+      <date key="time:timestamp" value="2025-07-31T08:46:30.652776+00:00"/>
+      <string key="org:resource" value="Karel de Groot"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Send Request for Quotation to Supplier"/>
+      <date key="time:timestamp" value="2025-07-31T11:29:06.050483+00:00"/>
+      <string key="org:resource" value="Kim Passa"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Create Quotation comparison Map"/>
+      <date key="time:timestamp" value="2025-07-31T17:16:18.824453+00:00"/>
+      <string key="org:resource" value="Kim Passa"/>
+      <string key="lifecycle:transition" value="complete"/>
+    </event>
+  </trace>
+</log>
