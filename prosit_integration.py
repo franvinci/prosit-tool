@@ -409,6 +409,13 @@ class ProSiTIntegration:
             
             # Build the final parameters structure
             parameters = {
+                'process_model': {
+                    'activities': list(activities),
+                    'places': list(places),
+                    'transitions': transitions,
+                    'arcs': arcs,
+                    'svg_content': svg_content
+                },
                 'transition_params': {
                     'transition_weights': transition_weights
                 },
@@ -423,8 +430,10 @@ class ProSiTIntegration:
                     'calendars': calendars
                 },
                 'waiting_time_params': {
-                    'inter_arrival_time': inter_arrival_time,
                     'resource_waiting_times': resource_waiting_times
+                },
+                'inter_arrival_params': {
+                    'inter_arrival_time': inter_arrival_time
                 }
             }
             
