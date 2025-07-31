@@ -194,8 +194,27 @@ class ProSiTIntegration:
         return {
             "distribution": "exponential",
             "mean": round(random.uniform(30, 240), 1),  # 30 minutes to 4 hours between cases
-            "std": round(random.uniform(15, 60), 1)
+            "std": round(random.uniform(15, 60), 1),
+            "calendar": self._generate_arrival_calendar()
         }
+    
+    def _generate_arrival_calendar(self):
+        """Generate arrival time calendar"""
+        calendar = {}
+        days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        
+        for day in days:
+            calendar[day] = {}
+            for hour in range(24):
+                # Default business hours (9-17) for weekdays, reduced hours for weekends
+                if day in ["Saturday", "Sunday"]:
+                    # Weekend: reduced hours
+                    calendar[day][str(hour)] = 10 <= hour <= 16
+                else:
+                    # Weekdays: business hours with some variation
+                    calendar[day][str(hour)] = 9 <= hour <= 17
+        
+        return calendar
     
     def _generate_waiting_times(self):
         """Generate waiting time parameters for resource queues"""

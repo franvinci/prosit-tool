@@ -858,9 +858,13 @@ function renderInterArrivalTimeParameters(waitingParams) {
     const container = document.getElementById('arrivalParams');
     const interArrival = waitingParams.inter_arrival_time || {};
     
-    let html = '<div class="card">';
+    let html = '<div class="row">';
+    
+    // Distribution Parameters Column
+    html += '<div class="col-md-6">';
+    html += '<div class="card">';
     html += '<div class="card-header py-2">';
-    html += '<h6 class="mb-0">Inter-Arrival Time Configuration</h6>';
+    html += '<h6 class="mb-0">Inter-Arrival Time Distribution</h6>';
     html += '</div>';
     html += '<div class="card-body">';
     html += '<div class="row">';
@@ -891,6 +895,23 @@ function renderInterArrivalTimeParameters(waitingParams) {
     html += '</div>';
     html += '</div>';
     html += '</div>';
+    html += '</div>';
+    
+    // Arrival Calendar Column
+    html += '<div class="col-md-6">';
+    html += '<div class="card">';
+    html += '<div class="card-header py-2">';
+    html += '<h6 class="mb-0">Arrival Time Calendar</h6>';
+    html += '</div>';
+    html += '<div class="card-body">';
+    html += '<div id="arrivalCalendarDisplay">';
+    html += renderArrivalCalendar(interArrival.calendar || {});
+    html += '</div>';
+    html += '</div>';
+    html += '</div>';
+    html += '</div>';
+    
+    html += '</div>';
     
     container.innerHTML = html;
 }
@@ -900,6 +921,56 @@ function updateInterArrivalParam(param, value) {
         currentParameters.waiting_time_params.inter_arrival_time = {};
     }
     currentParameters.waiting_time_params.inter_arrival_time[param] = value;
+}
+
+function renderArrivalCalendar(calendar) {
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    
+    let html = '<div class="mb-2">';
+    html += '<small class="text-muted">Click hours to toggle when new cases can arrive:</small>';
+    html += '</div>';
+    
+    days.forEach(day => {
+        html += '<div class="mb-2">';
+        html += `<div class="small fw-bold mb-1">${day.substring(0, 3)}</div>`;
+        html += '<div class="d-flex flex-wrap gap-1">';
+        
+        for (let hour = 0; hour < 24; hour++) {
+            const isActive = calendar[day] ? (calendar[day][hour.toString()] === true) : (hour >= 9 && hour <= 17); // Default business hours
+            const hourStr = hour.toString().padStart(2, '0');
+            html += `
+                <button type="button" class="btn btn-sm ${isActive ? 'btn-primary' : 'btn-outline-secondary'}" 
+                        style="width: 30px; height: 22px; font-size: 9px; padding: 1px;"
+                        onclick="toggleArrivalHour('${day}', '${hour}', ${!isActive})">
+                    ${hourStr}
+                </button>
+            `;
+        }
+        
+        html += '</div></div>';
+    });
+    
+    return html;
+}
+
+function toggleArrivalHour(day, hour, isActive) {
+    if (!currentParameters.waiting_time_params.inter_arrival_time) {
+        currentParameters.waiting_time_params.inter_arrival_time = {};
+    }
+    if (!currentParameters.waiting_time_params.inter_arrival_time.calendar) {
+        currentParameters.waiting_time_params.inter_arrival_time.calendar = {};
+    }
+    if (!currentParameters.waiting_time_params.inter_arrival_time.calendar[day]) {
+        currentParameters.waiting_time_params.inter_arrival_time.calendar[day] = {};
+    }
+    
+    currentParameters.waiting_time_params.inter_arrival_time.calendar[day][hour] = isActive;
+    
+    // Refresh the calendar display
+    const calendarDisplay = document.getElementById('arrivalCalendarDisplay');
+    if (calendarDisplay) {
+        calendarDisplay.innerHTML = renderArrivalCalendar(currentParameters.waiting_time_params.inter_arrival_time.calendar);
+    }
 }
 </script>
 {% endblock %}
