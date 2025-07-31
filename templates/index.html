@@ -653,14 +653,12 @@ function renderResourceParameters(resourceParams) {
     // Activity-resource assignments
     let activityHtml = '';
     const actToResources = resourceParams.act_to_resources || {};
-    const actResourceProb = resourceParams.act_resource_prob || {};
     
     console.log('Activity-resource assignments (act_to_resources):', actToResources);
-    console.log('Activity-resource probabilities (act_resource_prob):', actResourceProb);
     console.log('Available resources:', resourceParams.resources);
     
-    // Use act_resource_prob if available, otherwise fall back to act_to_resources
-    const assignmentData = Object.keys(actResourceProb).length > 0 ? actResourceProb : actToResources;
+    // Use act_to_resources for activity assignments
+    const assignmentData = actToResources;
     
     if (Object.keys(assignmentData).length === 0) {
         activityHtml = '<div class="alert alert-info"><small>No activity assignments available. Activities will be assigned to all resources by default during simulation.</small></div>';
@@ -674,24 +672,17 @@ function renderResourceParameters(resourceParams) {
             
             (resourceParams.resources || []).forEach(resource => {
                 let isAssigned = false;
-                let probability = '';
                 
                 if (Array.isArray(resourceData)) {
-                    // Old format: act_to_resources with array of assigned resources
+                    // act_to_resources format: array of assigned resources
                     isAssigned = resourceData.includes(resource);
-                } else if (typeof resourceData === 'object') {
-                    // New format: act_resource_prob with probability values
-                    isAssigned = resourceData.hasOwnProperty(resource) && resourceData[resource] > 0;
-                    if (isAssigned) {
-                        probability = ` (${(resourceData[resource] * 100).toFixed(1)}%)`;
-                    }
                 }
                 
                 activityHtml += `
                     <div class="form-check form-check-sm">
                         <input class="form-check-input" type="checkbox" ${isAssigned ? 'checked' : ''} 
                                onchange="updateActivityResource('${activity}', '${resource}', this.checked)">
-                        <label class="form-check-label small">${resource}${probability}</label>
+                        <label class="form-check-label small">${resource}</label>
                     </div>
                 `;
             });
@@ -1644,12 +1635,7 @@ function addNewResource() {
         });
     }
     
-    // Also add to act_resource_prob if it exists
-    if (currentParameters.resource_params.act_resource_prob) {
-        Object.keys(currentParameters.resource_params.act_resource_prob).forEach(activity => {
-            currentParameters.resource_params.act_resource_prob[activity][resourceName] = 0.1; // Default probability
-        });
-    }
+
     
     // Add default waiting time parameters
     if (!currentParameters.waiting_time_params) {
@@ -1721,14 +1707,7 @@ function removeResource(resourceName) {
         });
     }
     
-    // Also remove from act_resource_prob if it exists
-    if (currentParameters.resource_params.act_resource_prob) {
-        Object.keys(currentParameters.resource_params.act_resource_prob).forEach(activity => {
-            if (currentParameters.resource_params.act_resource_prob[activity][resourceName] !== undefined) {
-                delete currentParameters.resource_params.act_resource_prob[activity][resourceName];
-            }
-        });
-    }
+
     
     // Remove waiting time parameters
     if (currentParameters.waiting_time_params && currentParameters.waiting_time_params.waiting_time) {
