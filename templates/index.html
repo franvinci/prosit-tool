@@ -20,14 +20,7 @@
                         <div class="form-text">Upload your XES event log file for analysis</div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="noiseThreshold" class="form-label">
-                            Noise Threshold: <span id="thresholdValue">0.2</span>
-                        </label>
-                        <input type="range" class="form-range" id="noiseThreshold" name="noise_threshold" 
-                               min="0" max="1" step="0.05" value="0.2">
-                        <div class="form-text">Controls process discovery sensitivity</div>
-                    </div>
+
                     
                     <button type="submit" class="btn btn-success w-100">
                         <i data-feather="upload" class="me-2"></i>
@@ -242,9 +235,9 @@
 
         <!-- Process Model Discovery Card -->
         <div class="card shadow-sm mt-4">
-            <div class="card-header" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white;">
+            <div class="card-header" style="background: linear-gradient(135deg, #6f42c1 0%, #5a32a0 100%); color: white;">
                 <h5 class="card-title mb-0">
-                    <i data-feather="target" class="me-2"></i>
+                    <i data-feather="search" class="me-2"></i>
                     Process Model Discovery
                 </h5>
             </div>
@@ -274,7 +267,7 @@
                             <div class="form-text">Upload a Petri Net Markup Language (PNML) file containing your process model.</div>
                         </div>
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-lg" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); border: none; color: white; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 15px rgba(40, 167, 69, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                            <button type="submit" class="btn btn-lg" style="background: linear-gradient(135deg, #6f42c1 0%, #5a32a0 100%); border: none; color: white; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 15px rgba(111, 66, 193, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
                                 <i data-feather="upload" class="me-2"></i>
                                 Upload Process Model
                             </button>
@@ -300,8 +293,8 @@
                             <div class="form-text">Higher values filter out more infrequent behavior, resulting in simpler models.</div>
                         </div>
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-lg" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); border: none; color: white; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 15px rgba(40, 167, 69, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                                <i data-feather="target" class="me-2"></i>
+                            <button type="submit" class="btn btn-lg" style="background: linear-gradient(135deg, #6f42c1 0%, #5a32a0 100%); border: none; color: white; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 15px rgba(111, 66, 193, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                                <i data-feather="search" class="me-2"></i>
                                 Discover Process Model
                             </button>
                         </div>
