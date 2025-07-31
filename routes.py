@@ -11,8 +11,11 @@ from prosit_integration import ProSiTIntegration
 logger = logging.getLogger(__name__)
 prosit = ProSiTIntegration()
 
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ['xes']
+def allowed_file(filename, file_types=['xes']):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in file_types
+
+def allowed_pnml_file(filename):
+    return allowed_file(filename, ['pnml'])
 
 @app.route('/')
 def index():
@@ -233,6 +236,85 @@ def simulate(session_id):
             session.status = 'error'
             db.session.commit()
         return jsonify({'error': f'Simulation failed: {str(e)}'}), 500
+
+@app.route('/api/upload-pnml', methods=['POST'])
+def upload_pnml():
+    """Handle PNML file upload for process model"""
+    try:
+        if 'pnmlFile' not in request.files:
+            return jsonify({'error': 'No PNML file provided'}), 400
+        
+        file = request.files['pnmlFile']
+        
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        if not allowed_pnml_file(file.filename):
+            return jsonify({'error': 'Invalid file type. Only PNML files are supported'}), 400
+        
+        # Save file
+        if file.filename is None:
+            return jsonify({'error': 'Invalid filename'}), 400
+            
+        filename = secure_filename(file.filename)
+        timestamp = int(datetime.now().timestamp())
+        filename = f"{timestamp}_{filename}"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+        
+        logger.info(f"PNML file uploaded successfully: {filename}")
+        return jsonify({
+            'success': True,
+            'filename': filename,
+            'message': 'PNML file uploaded successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"PNML upload error: {str(e)}")
+        return jsonify({'error': f'PNML upload failed: {str(e)}'}), 500
+
+@app.route('/api/discover-model', methods=['POST'])
+def discover_model():
+    """Discover process model using inductive miner"""
+    try:
+        noise_threshold = float(request.form.get('noiseThreshold', 0.2))
+        
+        # Check if there's an active session with uploaded XES file
+        # For now, we'll use the most recent session
+        session = SimulationSession.query.order_by(SimulationSession.created_at.desc()).first()
+        
+        if not session:
+            return jsonify({'error': 'No XES event log file found. Please upload an XES file first.'}), 400
+        
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], session.filename)
+        
+        if not os.path.exists(filepath):
+            return jsonify({'error': 'Event log file not found. Please upload an XES file first.'}), 400
+        
+        # Update session with new noise threshold
+        session.noise_threshold = noise_threshold
+        session.status = 'discovering'
+        db.session.commit()
+        
+        # Discover parameters using the updated noise threshold
+        parameters = prosit.discover_parameters(filepath, noise_threshold)
+        
+        # Update session with discovered parameters
+        session.parameters = json.dumps(parameters)
+        session.status = 'discovered'
+        db.session.commit()
+        
+        logger.info(f"Process model discovered with noise threshold {noise_threshold}")
+        return jsonify({
+            'success': True,
+            'session_id': session.id,
+            'parameters': parameters,
+            'message': f'Process model discovered successfully with noise threshold {noise_threshold}'
+        })
+        
+    except Exception as e:
+        logger.error(f"Model discovery error: {str(e)}")
+        return jsonify({'error': f'Model discovery failed: {str(e)}'}), 500
 
 @app.route('/api/download/<path:filename>')
 def download_file(filename):
