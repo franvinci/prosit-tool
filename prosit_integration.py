@@ -72,25 +72,96 @@ class ProSiTIntegration:
             return self._create_mock_process_model()
     
     def _generate_petri_net_visualization(self, net, initial_marking, final_marking):
-        """Generate Petri net visualization using PM4Py and return as base64"""
+        """Generate interactive Petri net visualization using PM4Py and return as SVG"""
         try:
-            # Generate visualization
+            # Generate visualization with custom styling
             gviz = pn_visualizer.apply(net, initial_marking, final_marking, parameters={
-                pn_visualizer.Variants.WO_DECORATION.value.Parameters.FORMAT: "png"
+                pn_visualizer.Variants.WO_DECORATION.value.Parameters.FORMAT: "svg"
             })
             
-            # Save to BytesIO
-            img_buffer = BytesIO()
-            gviz.pipe(format='png', encoding=None)
-            img_data = gviz.pipe(format='png')
+            # Get SVG content
+            svg_content = gviz.pipe(format='svg', encoding='utf-8')
             
-            # Convert to base64
-            img_base64 = base64.b64encode(img_data).decode('utf-8')
-            return f"data:image/png;base64,{img_base64}"
+            # Enhance SVG with interactive elements and better styling
+            enhanced_svg = self._enhance_svg_visualization(svg_content, net)
+            
+            return enhanced_svg
             
         except Exception as e:
             logger.error(f"Error generating visualization: {str(e)}")
             return None
+    
+    def _enhance_svg_visualization(self, svg_content, net):
+        """Enhance SVG with interactive elements and improved styling"""
+        try:
+            # Add interactive styles and JavaScript to the SVG
+            enhanced_svg = svg_content.replace(
+                '<svg',
+                '''<svg style="max-width: 100%; height: auto; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"'''
+            )
+            
+            # Add click handlers for transitions (activities)
+            activity_transitions = []
+            for transition in net.transitions:
+                if transition.label:  # Only labeled transitions (activities)
+                    activity_transitions.append(transition.label)
+            
+            # Add JavaScript for interactivity
+            js_code = '''
+            <script type="text/javascript">
+            <![CDATA[
+            function navigateToActivity(activityName) {
+                if (window.parent && window.parent.navigateToActivity) {
+                    window.parent.navigateToActivity(activityName);
+                } else {
+                    console.log('Navigate to activity:', activityName);
+                }
+            }
+            
+            // Add hover effects
+            document.addEventListener('DOMContentLoaded', function() {
+                var transitions = document.querySelectorAll('g.node');
+                transitions.forEach(function(transition) {
+                    var title = transition.querySelector('title');
+                    if (title && title.textContent.trim() !== '') {
+                        transition.style.cursor = 'pointer';
+                        transition.addEventListener('mouseover', function() {
+                            this.style.opacity = '0.8';
+                            this.style.transform = 'scale(1.05)';
+                        });
+                        transition.addEventListener('mouseout', function() {
+                            this.style.opacity = '1';
+                            this.style.transform = 'scale(1)';
+                        });
+                        transition.addEventListener('click', function() {
+                            var activityName = title.textContent.trim();
+                            navigateToActivity(activityName);
+                        });
+                    }
+                });
+            });
+            ]]>
+            </script>
+            '''
+            
+            # Insert JavaScript before closing SVG tag
+            enhanced_svg = enhanced_svg.replace('</svg>', js_code + '</svg>')
+            
+            # Improve styling of transitions and places
+            enhanced_svg = enhanced_svg.replace(
+                'fill="lightblue"',
+                'fill="#6f42c1" stroke="#5a2d91" stroke-width="2"'
+            )
+            enhanced_svg = enhanced_svg.replace(
+                'fill="orange"',
+                'fill="#28a745" stroke="#1e7e34" stroke-width="2"'
+            )
+            
+            return enhanced_svg
+            
+        except Exception as e:
+            logger.error(f"Error enhancing SVG: {str(e)}")
+            return svg_content
     
     def _create_mock_process_model(self):
         """Create mock process model as fallback"""
