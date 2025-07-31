@@ -101,10 +101,14 @@ def discover_parameters(session_id):
         
     except Exception as e:
         logger.error(f"Discovery error: {str(e)}")
-        session = SimulationSession.query.get(session_id)
-        if session:
-            session.status = 'error'
-            db.session.commit()
+        db.session.rollback()
+        try:
+            session = SimulationSession.query.get(session_id)
+            if session:
+                session.status = 'error'
+                db.session.commit()
+        except Exception:
+            db.session.rollback()
         return jsonify({'error': f'Parameter discovery failed: {str(e)}'}), 500
 
 @app.route('/api/parameters/<int:session_id>')
