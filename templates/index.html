@@ -6,32 +6,69 @@
     <div class="col-lg-4">
         <!-- Upload Card -->
         <div class="card shadow-sm mb-4">
-            <div class="card-header bg-primary text-white">
+            <div class="card-header" style="background: linear-gradient(135deg, #6f42c1 0%, #5a32a0 100%); color: white;">
                 <h5 class="card-title mb-0">
                     <i data-feather="upload" class="me-2"></i>
-                    Upload Event Log
+                    Upload Process Data
                 </h5>
             </div>
             <div class="card-body">
+                <!-- Input Type Selection -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold">Choose Input Type</label>
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="inputType" id="xesInput" value="xes" checked>
+                                <label class="form-check-label" for="xesInput">
+                                    <strong>XES Event Log</strong><br>
+                                    <small class="text-muted">Discover process model using inductive miner</small>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="inputType" id="pnmlInput" value="pnml">
+                                <label class="form-check-label" for="pnmlInput">
+                                    <strong>PNML Petri Net</strong><br>
+                                    <small class="text-muted">Import existing Petri net model</small>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <form id="uploadForm" enctype="multipart/form-data">
-                    <div class="mb-3">
-                        <label for="xesFile" class="form-label">XES Event Log File</label>
-                        <input type="file" class="form-control" id="xesFile" name="file" accept=".xes" required>
-                        <div class="form-text">Upload your XES event log file for analysis</div>
+                    <!-- XES Upload Section -->
+                    <div id="xesSection" class="upload-section">
+                        <div class="mb-3">
+                            <label for="xesFile" class="form-label">XES Event Log File</label>
+                            <input type="file" class="form-control" id="xesFile" name="file" accept=".xes">
+                            <div class="form-text">Upload your XES event log file for process discovery</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="noiseThreshold" class="form-label">
+                                Noise Threshold: <span id="thresholdValue">0.2</span>
+                            </label>
+                            <input type="range" class="form-range" id="noiseThreshold" name="noise_threshold" 
+                                   min="0" max="1" step="0.05" value="0.2">
+                            <div class="form-text">Controls process discovery sensitivity</div>
+                        </div>
+                    </div>
+
+                    <!-- PNML Upload Section -->
+                    <div id="pnmlSection" class="upload-section" style="display: none;">
+                        <div class="mb-3">
+                            <label for="pnmlFile" class="form-label">PNML Petri Net File</label>
+                            <input type="file" class="form-control" id="pnmlFile" name="file" accept=".pnml">
+                            <div class="form-text">Upload your PNML Petri net model file</div>
+                        </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="noiseThreshold" class="form-label">
-                            Noise Threshold: <span id="thresholdValue">0.2</span>
-                        </label>
-                        <input type="range" class="form-range" id="noiseThreshold" name="noise_threshold" 
-                               min="0" max="1" step="0.05" value="0.2">
-                        <div class="form-text">Controls process discovery sensitivity</div>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-success w-100">
+                    <button type="submit" class="btn w-100" id="uploadBtn" style="background: linear-gradient(135deg, #6f42c1 0%, #5a32a0 100%); border: none; color: white;">
                         <i data-feather="upload" class="me-2"></i>
-                        Upload & Discover
+                        <span id="uploadBtnText">Upload & Discover</span>
                     </button>
                 </form>
             </div>
@@ -337,9 +374,44 @@ document.addEventListener('DOMContentLoaded', function() {
     const thresholdSlider = document.getElementById('noiseThreshold');
     const thresholdValue = document.getElementById('thresholdValue');
     
-    thresholdSlider.addEventListener('input', function() {
-        thresholdValue.textContent = this.value;
-    });
+    if (thresholdSlider && thresholdValue) {
+        thresholdSlider.addEventListener('input', function() {
+            thresholdValue.textContent = this.value;
+        });
+    }
+    
+    // Handle input type changes
+    const xesInput = document.getElementById('xesInput');
+    const pnmlInput = document.getElementById('pnmlInput');
+    const xesSection = document.getElementById('xesSection');
+    const pnmlSection = document.getElementById('pnmlSection');
+    const uploadBtnText = document.getElementById('uploadBtnText');
+    
+    function toggleInputSections() {
+        if (xesInput && xesInput.checked) {
+            xesSection.style.display = 'block';
+            pnmlSection.style.display = 'none';
+            uploadBtnText.textContent = 'Upload & Discover';
+            // Make XES file required
+            document.getElementById('xesFile').required = true;
+            document.getElementById('pnmlFile').required = false;
+        } else if (pnmlInput && pnmlInput.checked) {
+            xesSection.style.display = 'none';
+            pnmlSection.style.display = 'block';
+            uploadBtnText.textContent = 'Upload & Import';
+            // Make PNML file required
+            document.getElementById('xesFile').required = false;
+            document.getElementById('pnmlFile').required = true;
+        }
+    }
+    
+    if (xesInput && pnmlInput) {
+        xesInput.addEventListener('change', toggleInputSections);
+        pnmlInput.addEventListener('change', toggleInputSections);
+        
+        // Initialize with XES selected
+        toggleInputSections();
+    }
 
     // Setup form handlers
     setupFormHandlers();

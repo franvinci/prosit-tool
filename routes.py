@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 prosit = ProSiTIntegration()
 
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ['xes']
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ['xes', 'pnml']
 
 @app.route('/')
 def index():
@@ -34,7 +34,7 @@ def upload_file():
             return jsonify({'error': 'No file selected'}), 400
         
         if not allowed_file(file.filename):
-            return jsonify({'error': 'Invalid file type. Only XES files are supported'}), 400
+            return jsonify({'error': 'Invalid file type. Only XES and PNML files are supported'}), 400
         
         # Save file
         if file.filename is None:
@@ -68,10 +68,14 @@ def upload_file():
 
 @app.route('/api/discover/<int:session_id>', methods=['POST'])
 def discover_parameters(session_id):
-    """Discover parameters from uploaded XES file"""
+    """Discover parameters from uploaded file (XES or PNML)"""
     try:
         session = SimulationSession.query.get_or_404(session_id)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], session.filename)
+        
+        # Determine file type
+        is_pnml = session.filename.lower().endswith('.pnml')
+        is_xes = session.filename.lower().endswith('.xes')
         
         if not os.path.exists(filepath):
             return jsonify({'error': 'File not found'}), 404
@@ -80,13 +84,18 @@ def discover_parameters(session_id):
         session.status = 'discovering'
         db.session.commit()
         
-        # Discover process model
-        logger.info(f"Discovering process model for session {session_id}")
-        process_model = prosit.discover_process_model(filepath, session.noise_threshold)
-        
-        # Discover parameters
-        logger.info(f"Discovering parameters for session {session_id}")
-        parameters = prosit.discover_parameters(filepath, process_model)
+        # Process file based on type
+        if is_pnml:
+            logger.info(f"Importing PNML model for session {session_id}")
+            parameters = prosit.import_pnml_model(filepath)
+            process_model = parameters.get('process_model', {})
+        else:
+            logger.info(f"Discovering process model for session {session_id}")
+            process_model = prosit.discover_process_model(filepath, session.noise_threshold)
+            
+            # Discover parameters
+            logger.info(f"Discovering parameters for session {session_id}")
+            parameters = prosit.discover_parameters(filepath, process_model)
         
         # Save parameters
         session.set_parameters(parameters)
@@ -97,12 +106,12 @@ def discover_parameters(session_id):
             'success': True,
             'parameters': parameters,
             'process_model': {
-                'visualization': process_model.get('visualization'),
+                'visualization': process_model.get('visualization') or process_model.get('svg_content'),
                 'activities': process_model.get('activities', []),
                 'transitions': process_model.get('transitions', []),
                 'places': process_model.get('places', [])
             },
-            'message': 'Parameters discovered successfully'
+            'message': 'Parameters processed successfully'
         })
         
     except Exception as e:

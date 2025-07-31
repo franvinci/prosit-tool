@@ -18,7 +18,7 @@ class ProSiTIntegration:
     """Integration layer for ProSiT library functionality"""
     
     def __init__(self):
-        self.supported_formats = ['.xes']
+        self.supported_formats = ['.xes', '.pnml']
         self.petri_net = None
         self.initial_marking = None
         self.final_marking = None
@@ -467,6 +467,171 @@ class ProSiTIntegration:
             logger.error(f"ProSiT params attributes: {dir(prosit_params)}")
             raise
     
+    def import_pnml_model(self, pnml_file_path):
+        """
+        Import process model from PNML file using pm4py.read_pnml
+        Returns: process model structure with extracted parameters
+        """
+        try:
+            logger.info(f"Importing PNML model from {pnml_file_path}")
+            
+            # Import PNML file using PM4Py
+            net, initial_marking, final_marking = pm4py.read_pnml(pnml_file_path)
+            
+            # Store the net and markings
+            self.petri_net = net
+            self.initial_marking = initial_marking
+            self.final_marking = final_marking
+            
+            # Extract activities from the net and create transition mappings
+            activities = []
+            transitions = []
+            places = []
+            arcs = []
+            self.transition_mappings = {}
+            
+            for transition in net.transitions:
+                if transition.label:  # Skip silent transitions
+                    transition_name = transition_to_name(transition)
+                    activities.append(transition_name)
+                    transitions.append({
+                        'id': transition.name or transition.label,
+                        'name': transition.label,
+                        'label': transition.label
+                    })
+                    # Create bidirectional mapping
+                    self.transition_mappings[transition_name] = transition
+                    self.transition_mappings[transition.name] = transition
+            
+            for place in net.places:
+                places.append(place.name)
+            
+            # Build arc structure
+            for arc in net.arcs:
+                arcs.append({
+                    'source': arc.source.name or str(arc.source),
+                    'target': arc.target.name or str(arc.target),
+                    'weight': getattr(arc, 'weight', 1)
+                })
+            
+            # Generate visualization
+            svg_content = ""
+            try:
+                gviz = pn_visualizer.apply(net, initial_marking, final_marking, parameters={"format": "svg"})
+                svg_content = str(gviz)
+            except Exception as viz_e:
+                logger.warning(f"Failed to generate visualization: {str(viz_e)}")
+                svg_content = ""
+            
+            # Create process model structure
+            process_model = {
+                'activities': activities,
+                'transitions': transitions,
+                'places': places,
+                'arcs': arcs,
+                'svg_content': svg_content
+            }
+            
+            logger.info(f"PNML model imported successfully: {len(activities)} activities, {len(places)} places")
+            
+            # Generate default parameters for imported model
+            parameters = self._generate_default_parameters_for_pnml(process_model)
+            
+            return parameters
+            
+        except Exception as e:
+            logger.error(f"Failed to import PNML model: {str(e)}")
+            raise e
+    
+    def _generate_default_parameters_for_pnml(self, process_model):
+        """Generate default simulation parameters for imported PNML model"""
+        try:
+            activities = process_model.get('activities', [])
+            
+            # Create default execution time parameters
+            execution_time_params = {}
+            for activity in activities:
+                execution_time_params[activity] = {
+                    'distribution': 'norm',
+                    'parameters': {
+                        'mean': 60.0,  # 60 minutes default
+                        'std': 15.0,   # 15 minutes std dev
+                        'min': 5.0,    # minimum 5 minutes
+                        'max': 480.0   # maximum 8 hours
+                    }
+                }
+            
+            # Create default transition weights (equal probability)
+            transition_weights = {}
+            for transition in process_model.get('transitions', []):
+                transition_weights[transition.get('id', '')] = 1.0
+            
+            # Create default resource assignments (single resource per activity)
+            resource_assignments = {}
+            default_resources = ['Resource_1', 'Resource_2', 'Resource_3', 'Resource_4']
+            for i, activity in enumerate(activities):
+                resource_assignments[activity] = [default_resources[i % len(default_resources)]]
+            
+            # Create default resource calendars (24/7 availability)
+            resource_calendars = {}
+            for resource in default_resources:
+                resource_calendars[resource] = self._create_default_calendar()
+            
+            # Create default waiting time parameters
+            waiting_time_params = {
+                'resource_waiting_times': {}
+            }
+            for resource in default_resources:
+                waiting_time_params['resource_waiting_times'][resource] = {
+                    'distribution': 'expon',
+                    'parameters': {
+                        'scale': 30.0  # 30 minutes mean waiting time
+                    }
+                }
+            
+            # Create default inter-arrival parameters
+            inter_arrival_params = {
+                'inter_arrival_time': {
+                    'distribution': 'expon',
+                    'parameters': {
+                        'scale': 60.0  # 60 minutes mean inter-arrival time
+                    },
+                    'calendar': self._create_default_calendar()
+                }
+            }
+            
+            parameters = {
+                'process_model': process_model,
+                'execution_time_params': execution_time_params,
+                'transition_params': {
+                    'transition_weights': transition_weights
+                },
+                'resource_params': {
+                    'resources': default_resources,
+                    'resource_weights': {res: 1.0 for res in default_resources},
+                    'multitasking_resource': [],
+                    'act_to_resources': resource_assignments,
+                    'calendars': resource_calendars
+                },
+                'waiting_time_params': waiting_time_params,
+                'inter_arrival_params': inter_arrival_params
+            }
+            
+            logger.info(f"Generated default parameters for {len(activities)} activities")
+            return parameters
+            
+        except Exception as e:
+            logger.error(f"Failed to generate default parameters: {str(e)}")
+            raise e
+    
+    def _create_default_calendar(self):
+        """Create a default 24/7 calendar"""
+        calendar = {}
+        days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+        for day in days:
+            calendar[day] = {str(hour): True for hour in range(24)}
+        return calendar
+
     def _create_fallback_parameters(self, event_log, net, initial_marking, final_marking):
         """Create simplified parameters when ProSiT discovery fails"""
         try:
