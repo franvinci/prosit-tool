@@ -284,6 +284,11 @@ def convert_app_to_prosit_format(app_params, prosit_json):
                         0.0,
                         param_values.get('scale', param_values.get('mean_value', 10.0))
                     ]
+                elif dist == 'uniform':
+                    prosit_entry['params'] = [
+                        param_values.get('min_value', 0.0),
+                        param_values.get('max_value', 100.0)
+                    ]
                 elif dist == 'lognorm':
                     prosit_entry['params'] = [
                         param_values.get('s', 1.0),
@@ -318,6 +323,11 @@ def convert_app_to_prosit_format(app_params, prosit_json):
                     prosit_entry['params'] = [
                         0.0,
                         param_values.get('scale', param_values.get('mean_value', 120.0))
+                    ]
+                elif dist == 'uniform':
+                    prosit_entry['params'] = [
+                        param_values.get('min_value', 0.0),
+                        param_values.get('max_value', 1000.0)
                     ]
                 elif dist == 'lognorm':
                     prosit_entry['params'] = [

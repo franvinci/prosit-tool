@@ -79,6 +79,8 @@ Preferred communication style: Simple, everyday language.
 - **Fixed simulation data source**: Simulations now use stored modified parameters from JSON files instead of rediscovering from original XES files
 - **Enhanced resource addition**: New resources automatically added to all parameter sections (weights, calendars, waiting times) with proper alphabetical sorting
 - **Parameter validation**: Improved conversion logic to preserve user modifications during format conversions
+- **ProSiT JSON compatibility**: Fixed missing 'params' fields in uniform distributions and enhanced parameter conversion logic
+- **Known limitation**: ProSiT library runtime error with DecisionRules during simulation execution (library compatibility issue)
 
 ## External Dependencies
 
