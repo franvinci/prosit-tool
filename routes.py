@@ -332,7 +332,7 @@ def process_discovery():
             parameters = integration.extract_parameters_from_pnml_and_log(pnml_filepath, event_log_filepath)
         
         # Update session
-        session.parameters = parameters
+        session.set_parameters(parameters)
         session.status = 'ready'
         db.session.commit()
         

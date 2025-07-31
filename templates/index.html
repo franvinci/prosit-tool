@@ -403,8 +403,11 @@ function setupFormHandlers() {
         processDiscoveryForm.addEventListener('submit', handleProcessDiscovery);
     }
     
-    // Simulation form
-    document.getElementById('simulationForm').addEventListener('submit', handleSimulation);
+    // Simulation form - check if exists first
+    const simulationForm = document.getElementById('simulationForm');
+    if (simulationForm) {
+        simulationForm.addEventListener('submit', handleSimulation);
+    }
 }
 
 async function handleProcessDiscovery(e) {
@@ -465,6 +468,31 @@ async function handleProcessDiscovery(e) {
     } catch (error) {
         hideLoading();
         showAlert(`Error: ${error.message}`, 'danger');
+    }
+}
+
+function toggleModelSource() {
+    const inductiveMinerOption = document.getElementById('inductiveMinerOption');
+    const pnmlUploadOption = document.getElementById('pnmlUploadOption');
+    const inductiveMinerSettings = document.getElementById('inductiveMinerSettings');
+    const pnmlUploadSettings = document.getElementById('pnmlUploadSettings');
+    const submitButtonText = document.getElementById('submitButtonText');
+    
+    if (inductiveMinerOption && inductiveMinerOption.checked) {
+        inductiveMinerSettings.style.display = 'block';
+        pnmlUploadSettings.style.display = 'none';
+        if (submitButtonText) submitButtonText.textContent = 'Discover Process Model';
+    } else if (pnmlUploadOption && pnmlUploadOption.checked) {
+        inductiveMinerSettings.style.display = 'none';
+        pnmlUploadSettings.style.display = 'block';
+        if (submitButtonText) submitButtonText.textContent = 'Upload & Process Model';
+    }
+}
+
+function updateNoiseThreshold(value) {
+    const noiseThresholdValue = document.getElementById('noiseThresholdValue');
+    if (noiseThresholdValue) {
+        noiseThresholdValue.textContent = value;
     }
 }
 
