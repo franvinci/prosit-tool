@@ -346,6 +346,26 @@ def convert_app_to_prosit_format(app_params, prosit_json):
         logger.error(f"Error converting app to ProSiT format: {str(e)}")
         raise
 
+@app.route('/api/load_test_json')
+def load_test_json():
+    """Load test JSON file for debugging"""
+    try:
+        json_path = os.path.join(app.config['UPLOAD_FOLDER'], 'test_params.json')
+        if not os.path.exists(json_path):
+            return jsonify({'error': 'Test JSON file not found'}), 404
+        
+        parameters = prosit.load_parameters_from_json_file(json_path)
+        
+        return jsonify({
+            'success': True,
+            'parameters': parameters,
+            'message': 'Test JSON loaded successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error loading test JSON: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/simulate/<int:session_id>', methods=['POST'])
 def simulate(session_id):
     """Generate simulated event log"""

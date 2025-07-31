@@ -236,6 +236,17 @@ class ProSiTIntegration:
             act_to_resources = resource_params.get('act_to_resources', {})
             calendars = resource_params.get('calendars', {})
             
+            # Convert act_to_resources to act_resource_prob format (with equal probabilities)
+            act_resource_prob = {}
+            for activity, assigned_resources in act_to_resources.items():
+                if assigned_resources:
+                    prob_per_resource = 1.0 / len(assigned_resources)
+                    act_resource_prob[activity] = {
+                        resource: prob_per_resource for resource in assigned_resources
+                    }
+            
+            logger.info(f"Extracted resource data: {len(resources)} resources, {len(resource_weights)} with weights, {len(act_to_resources)} activities with assignments")
+            
             # Extract waiting time parameters
             waiting_time_params = {}
             wait_time_dists = prosit_json.get('waiting_time_params', {}).get('waiting_time_distributions', {})
@@ -275,7 +286,7 @@ class ProSiTIntegration:
                     'resource_weights': resource_weights,
                     'multitasking_resource': multitasking_resources,
                     'act_to_resources': act_to_resources,
-                    'act_resource_prob': {},  # Will be computed from act_to_resources if needed
+                    'act_resource_prob': act_resource_prob,
                     'calendars': calendars
                 },
                 'waiting_time_params': {
@@ -285,6 +296,11 @@ class ProSiTIntegration:
             }
             
             logger.info(f"Converted JSON parameters: {len(resources)} resources, {len(execution_time_params)} activities with execution times, {len(multitasking_resources)} multitasking resources")
+            logger.info(f"Resource weights: {len(resource_weights)} resources have weights")
+            logger.info(f"Activity assignments: {len(act_resource_prob)} activities have resource assignments")
+            if act_resource_prob:
+                sample_activity = list(act_resource_prob.keys())[0]
+                logger.info(f"Sample assignment - {sample_activity}: {act_resource_prob[sample_activity]}")
             return parameters
             
         except Exception as e:
