@@ -910,18 +910,31 @@ async function runSimulation() {
 }
 
 function renderResourceCalendars(calendars, container) {
+    console.log('renderResourceCalendars called with calendars:', calendars);
+    
     let html = '<div class="mb-3">';
     html += '<label class="form-label">Select Resource:</label>';
     html += '<select class="form-select form-select-sm mb-2" id="calendarResourceSelect" onchange="showResourceCalendar(this.value)">';
     html += '<option value="">Choose a resource...</option>';
     
     // Add all available resources to dropdown
-    Object.keys(calendars).forEach(resource => {
+    const resourceNames = Object.keys(calendars);
+    console.log('Available resources for calendars:', resourceNames);
+    
+    resourceNames.forEach(resource => {
         html += `<option value="${resource}">${resource}</option>`;
     });
     
     html += '</select>';
-    html += '<div id="calendarDisplay" class="border rounded p-2" style="max-height: 300px; overflow-y: auto;"></div>';
+    html += '<div id="calendarDisplay" class="border rounded p-2" style="max-height: 300px; overflow-y: auto;">';
+    
+    if (resourceNames.length === 0) {
+        html += '<p class="text-muted">No calendar data available</p>';
+    } else {
+        html += '<p class="text-muted">Select a resource to view calendar</p>';
+    }
+    
+    html += '</div>';
     html += '</div>';
     
     container.innerHTML = html;
