@@ -1132,7 +1132,7 @@ function renderPetriNet(processModel) {
             // Add interactive functionality to the SVG after it's rendered
             setTimeout(function() {
                 setupSVGInteractivity();
-            }, 100);
+            }, 500);
         }
         return;
     }
@@ -1276,45 +1276,95 @@ window.navigateToActivity = function(activityName) {
 };
 
 function setupSVGInteractivity() {
-    // Find all SVG nodes that represent transitions (activities)
-    const svgNodes = document.querySelectorAll('.petri-net-interactive g.node');
+    console.log('Setting up SVG interactivity...');
     
-    svgNodes.forEach(function(node) {
-        const titleElement = node.querySelector('title');
-        if (titleElement && titleElement.textContent.trim() !== '') {
-            const activityName = titleElement.textContent.trim();
-            
-            // Skip empty or silent transitions (those that might be internal routing)
-            if (activityName && !activityName.startsWith('t_') && !activityName.includes('tau')) {
-                node.style.cursor = 'pointer';
-                node.addEventListener('mouseover', function() {
-                    this.style.opacity = '0.8';
-                });
-                node.addEventListener('mouseout', function() {
-                    this.style.opacity = '1';
-                });
-                node.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('Clicked on activity:', activityName);
+    // Try multiple selectors to find SVG elements
+    const petriNetContainer = document.querySelector('.petri-net-svg-container');
+    if (!petriNetContainer) {
+        console.log('No petri net container found');
+        return;
+    }
+    
+    // Find the SVG element
+    const svgElement = petriNetContainer.querySelector('svg');
+    if (!svgElement) {
+        console.log('No SVG element found in container');
+        return;
+    }
+    
+    console.log('SVG element found:', svgElement);
+    
+    // Try different selectors for nodes
+    const selectors = [
+        'g.node',           // Standard graphviz node
+        'g[class*="node"]', // Node with class containing "node"
+        'g > text',         // Text elements in groups
+        'g > ellipse',      // Ellipse elements (transitions)
+        'g > polygon',      // Polygon elements (places)
+        'g'                 // All groups
+    ];
+    
+    let foundNodes = [];
+    
+    selectors.forEach(selector => {
+        const nodes = svgElement.querySelectorAll(selector);
+        console.log(`Selector "${selector}" found ${nodes.length} nodes`);
+        
+        nodes.forEach(node => {
+            const titleElement = node.querySelector('title');
+            if (titleElement && titleElement.textContent.trim() !== '') {
+                const activityName = titleElement.textContent.trim();
+                console.log(`Found node with title: "${activityName}"`);
+                
+                // Skip empty or silent transitions and places
+                if (activityName && 
+                    !activityName.startsWith('t_') && 
+                    !activityName.includes('tau') &&
+                    !activityName.startsWith('p_') &&
+                    !activityName.startsWith('source') &&
+                    !activityName.startsWith('sink')) {
                     
-                    // Check if we're on transitions tab, navigate to transitions
-                    const transitionTab = document.getElementById('transition-tab');
-                    const executionTab = document.getElementById('execution-tab');
-                    
-                    if (transitionTab && transitionTab.classList.contains('active')) {
-                        // We're on transitions tab, stay here but highlight transition
-                        showAlert(`Viewing transition: ${activityName}`, 'info');
-                    } else {
-                        // Navigate to execution parameters
-                        window.navigateToActivity(activityName);
-                    }
-                });
+                    foundNodes.push({node, activityName});
+                }
             }
-        }
+        });
     });
     
-    console.log(`Set up interactivity for ${svgNodes.length} SVG nodes`);
+    console.log(`Found ${foundNodes.length} clickable nodes`);
+    
+    // Add interactivity to found nodes
+    foundNodes.forEach(({node, activityName}) => {
+        node.style.cursor = 'pointer';
+        node.style.transition = 'all 0.2s ease';
+        
+        node.addEventListener('mouseover', function() {
+            this.style.opacity = '0.8';
+            this.style.transform = 'scale(1.05)';
+            console.log('Hovering over:', activityName);
+        });
+        
+        node.addEventListener('mouseout', function() {
+            this.style.opacity = '1';
+            this.style.transform = 'scale(1)';
+        });
+        
+        node.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Clicked on activity:', activityName);
+            
+            // Check if we're on transitions tab
+            const transitionTab = document.getElementById('transition-tab');
+            
+            if (transitionTab && transitionTab.classList.contains('active')) {
+                showAlert(`Viewing transition: ${activityName}`, 'info');
+            } else {
+                window.navigateToActivity(activityName);
+            }
+        });
+    });
+    
+    console.log(`Set up interactivity for ${foundNodes.length} SVG nodes`);
 }
 </script>
 {% endblock %}
