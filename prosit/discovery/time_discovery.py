@@ -13,7 +13,7 @@ from prosit.utils.distribution_utils import return_best_distribution, sampling_f
 from prosit.utils.rule_utils import DecisionRules
 
 
-DIST_SEARCH = ['fixed', 'norm', 'expon', 'lognorm', 'uniform']
+DIST_SEARCH = ['fixed', 'norm', 'expon', 'uniform']
 
 
 # DISCOVERY

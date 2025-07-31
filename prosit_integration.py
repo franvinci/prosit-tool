@@ -223,6 +223,11 @@ class ProSiTIntegration:
                 max_val = dist_info.get('max_value', 100.0)
                 mean_val = dist_info.get('mean_value', 10.0)
                 
+                # Convert lognormal to normal since it's no longer supported
+                if dist_name == 'lognorm':
+                    logger.info(f"Converting lognormal to normal for activity: {activity}")
+                    dist_name = 'norm'
+                
                 execution_time_params[activity] = {
                     'distribution': dist_name,
                     'parameters': self._convert_prosit_params_to_app(dist_name, params, min_val, max_val, mean_val)
@@ -248,6 +253,11 @@ class ProSiTIntegration:
                 min_val = dist_info.get('min_value', 0.0)
                 max_val = dist_info.get('max_value', 1000.0)
                 mean_val = dist_info.get('mean_value', 120.0)
+                
+                # Convert lognormal to normal since it's no longer supported
+                if dist_name == 'lognorm':
+                    logger.info(f"Converting lognormal to normal for resource: {resource}")
+                    dist_name = 'norm'
                 
                 waiting_time_params[resource] = {
                     'distribution': dist_name,
@@ -306,7 +316,15 @@ class ProSiTIntegration:
                 'mean_value': float(mean_val)
             }
             
-            if dist_name == 'fixed':
+            # Convert lognormal to normal distribution since it's no longer supported
+            if dist_name == 'lognorm':
+                logger.info(f"Converting lognormal to normal distribution with mean={mean_val}")
+                dist_name = 'norm'
+                # Use mean_value as mean, and reasonable std (20% of mean)
+                app_params['mean'] = float(mean_val)
+                app_params['std'] = max(1.0, float(mean_val) * 0.2)
+                
+            elif dist_name == 'fixed':
                 app_params['value'] = float(params[0]) if params else 10.0
                 
             elif dist_name == 'norm':
@@ -314,22 +332,17 @@ class ProSiTIntegration:
                 app_params['std'] = float(params[1]) if len(params) > 1 else 2.0
                 
             elif dist_name == 'expon':
-                app_params['scale'] = float(params[1]) if len(params) > 1 else 10.0
+                # ProSiT expon params: [loc, scale] - use scale as mean
+                app_params['scale'] = float(params[1]) if len(params) > 1 else mean_val
                 
-            elif dist_name == 'lognorm':
-                # ProSiT lognorm params often have extreme values, use reasonable defaults
-                logger.warning(f"Processing lognorm params {params} - using reasonable defaults based on mean_value {mean_val}")
-                
-                # Use mean_value to derive reasonable lognorm parameters
-                if mean_val > 0:
-                    # For lognorm, if mean is m, reasonable s=1.0, scale=m/exp(0.5)
-                    app_params['s'] = 1.0  
-                    app_params['loc'] = 0.0
-                    app_params['scale'] = mean_val / 1.649  # exp(0.5) ≈ 1.649
+            elif dist_name == 'uniform':
+                # ProSiT uniform params: [min, max] 
+                if len(params) >= 2:
+                    app_params['min'] = float(params[0])
+                    app_params['max'] = float(params[1])
                 else:
-                    app_params['s'] = 1.0
-                    app_params['loc'] = 0.0 
-                    app_params['scale'] = 1.0
+                    app_params['min'] = float(min_val)
+                    app_params['max'] = float(max_val)
             
             return app_params
             
