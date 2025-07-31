@@ -191,6 +191,136 @@ class ProSiTIntegration:
             logger.error(f"Error running simulation: {str(e)}")
             raise
     
+    def load_parameters_from_json_file(self, json_path):
+        """Load parameters directly from JSON file and convert to app format"""
+        try:
+            with open(json_path, 'r') as f:
+                prosit_json = json.load(f)
+            
+            logger.info(f"Loading parameters from JSON file: {json_path}")
+            return self._convert_prosit_json_to_app_format(prosit_json)
+            
+        except Exception as e:
+            logger.error(f"Error loading parameters from JSON file: {str(e)}")
+            raise
+
+    def _convert_prosit_json_to_app_format(self, prosit_json):
+        """Convert ProSiT JSON format to our application's format"""
+        try:
+            logger.info("Converting ProSiT JSON to application format...")
+            
+            # Extract transition weights
+            transition_weights = prosit_json.get('transition_params', {}).get('transition_weights', {})
+            
+            # Extract execution time parameters 
+            execution_time_params = {}
+            exec_time_dists = prosit_json.get('execution_time_params', {}).get('execution_time_distributions', {})
+            
+            for activity, dist_info in exec_time_dists.items():
+                dist_name = dist_info.get('dist_name', 'norm')
+                params = dist_info.get('params', [10.0, 2.0])
+                min_val = dist_info.get('min_value', 0.0)
+                max_val = dist_info.get('max_value', 100.0)
+                mean_val = dist_info.get('mean_value', 10.0)
+                
+                execution_time_params[activity] = {
+                    'distribution': dist_name,
+                    'parameters': self._convert_prosit_params_to_app(dist_name, params, min_val, max_val, mean_val)
+                }
+            
+            # Extract resource parameters
+            resource_params = prosit_json.get('resource_params', {})
+            resources = resource_params.get('resources', [])
+            resource_weights = resource_params.get('resource_weights', {})
+            multitasking_resources = resource_params.get('multitasking_resource', [])
+            act_to_resources = resource_params.get('act_to_resources', {})
+            calendars = resource_params.get('calendars', {})
+            
+            # Extract waiting time parameters
+            waiting_time_params = {}
+            wait_time_dists = prosit_json.get('waiting_time_params', {}).get('waiting_time_distributions', {})
+            
+            for resource, dist_info in wait_time_dists.items():
+                dist_name = dist_info.get('dist_name', 'expon')
+                params = dist_info.get('params', [0.0, 120.0])
+                min_val = dist_info.get('min_value', 0.0)
+                max_val = dist_info.get('max_value', 1000.0)
+                mean_val = dist_info.get('mean_value', 120.0)
+                
+                waiting_time_params[resource] = {
+                    'distribution': dist_name,
+                    'parameters': self._convert_prosit_params_to_app(dist_name, params, min_val, max_val, mean_val)
+                }
+            
+            # Extract inter-arrival time parameters
+            inter_arrival_params = prosit_json.get('inter_arrival_params', {})
+            
+            # Create process model info (will be loaded separately)
+            process_model = {
+                'activities': list(exec_time_dists.keys()),
+                'transitions': list(transition_weights.keys()),
+                'places': []  # Will be filled when process model is loaded
+            }
+            
+            parameters = {
+                'process_model': process_model,
+                'transition_params': {
+                    'transition_weights': transition_weights
+                },
+                'execution_time_params': {
+                    'activity_durations': execution_time_params
+                },
+                'resource_params': {
+                    'resources': resources,
+                    'resource_weights': resource_weights,
+                    'multitasking_resource': multitasking_resources,
+                    'act_to_resources': act_to_resources,
+                    'act_resource_prob': {},  # Will be computed from act_to_resources if needed
+                    'calendars': calendars
+                },
+                'waiting_time_params': {
+                    'waiting_time': waiting_time_params
+                },
+                'inter_arrival_params': inter_arrival_params
+            }
+            
+            logger.info(f"Converted JSON parameters: {len(resources)} resources, {len(execution_time_params)} activities with execution times, {len(multitasking_resources)} multitasking resources")
+            return parameters
+            
+        except Exception as e:
+            logger.error(f"Error converting ProSiT JSON to app format: {str(e)}")
+            raise
+
+    def _convert_prosit_params_to_app(self, dist_name, params, min_val, max_val, mean_val):
+        """Convert ProSiT parameter format to application format"""
+        try:
+            app_params = {
+                'min_value': float(min_val),
+                'max_value': float(max_val),
+                'mean_value': float(mean_val)
+            }
+            
+            if dist_name == 'fixed':
+                app_params['value'] = float(params[0]) if params else 10.0
+                
+            elif dist_name == 'norm':
+                app_params['mean'] = float(params[0]) if len(params) > 0 else 10.0
+                app_params['std'] = float(params[1]) if len(params) > 1 else 2.0
+                
+            elif dist_name == 'expon':
+                app_params['scale'] = float(params[1]) if len(params) > 1 else 10.0
+                
+            elif dist_name == 'lognorm':
+                app_params['s'] = float(params[0]) if len(params) > 0 else 1.0
+                app_params['loc'] = float(params[1]) if len(params) > 1 else 0.0
+                app_params['scale'] = float(params[2]) if len(params) > 2 else 1.0
+            
+            return app_params
+            
+        except Exception as e:
+            logger.error(f"Error converting parameters for {dist_name}: {str(e)}")
+            return {'mean': 10.0, 'std': 2.0, 'min_value': 0.0, 'max_value': 100.0, 'mean_value': 10.0}
+
     def _convert_prosit_to_app_format(self, prosit_params, net=None):
         """Convert ProSiT parameters to our application's format"""
         try:

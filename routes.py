@@ -122,14 +122,29 @@ def discover_parameters(session_id):
             process_model = prosit.discover_process_model(filepath, session.noise_threshold)
             parameters = prosit.discover_parameters(filepath, process_model)
         
-        # Save parameters
-        session.set_parameters(parameters)
+        # Save parameters to JSON file
+        timestamp = int(datetime.now().timestamp())
+        json_filename = f"{timestamp}_parameters.json"
+        json_filepath = os.path.join(app.config['UPLOAD_FOLDER'], json_filename)
+        prosit.save_parameters_to_json(json_filepath)
+        
+        # Store metadata in session
+        session.set_parameters({
+            'json_filename': json_filename,
+            'process_model': {
+                'visualization': process_model.get('visualization') or process_model.get('svg_content'),
+                'activities': process_model.get('activities', []),
+                'transitions': process_model.get('transitions', []),
+                'places': process_model.get('places', [])
+            }
+        })
         session.status = 'ready'
         db.session.commit()
         
         return jsonify({
             'success': True,
             'parameters': parameters,
+            'json_filename': json_filename,
             'process_model': {
                 'visualization': process_model.get('visualization') or process_model.get('svg_content'),
                 'activities': process_model.get('activities', []),
@@ -156,14 +171,33 @@ def get_parameters(session_id):
     """Get parameters for a session"""
     try:
         session = SimulationSession.query.get_or_404(session_id)
-        parameters = session.get_parameters()
+        session_metadata = session.get_parameters()
         
-        if not parameters:
-            return jsonify({'error': 'No parameters found'}), 404
+        if not session_metadata:
+            return jsonify({'error': 'No session metadata found'}), 404
         
+        # Check if we have a JSON file to load from
+        json_filename = session_metadata.get('json_filename')
+        if json_filename:
+            json_filepath = os.path.join(app.config['UPLOAD_FOLDER'], json_filename)
+            if os.path.exists(json_filepath):
+                # Load parameters from JSON file
+                parameters = prosit.load_parameters_from_json_file(json_filepath)
+                # Merge with process model info from metadata
+                if 'process_model' in session_metadata:
+                    parameters['process_model'].update(session_metadata['process_model'])
+                
+                return jsonify({
+                    'success': True,
+                    'parameters': parameters,
+                    'status': session.status,
+                    'json_filename': json_filename
+                })
+        
+        # Fallback to stored parameters (legacy)
         return jsonify({
             'success': True,
-            'parameters': parameters,
+            'parameters': session_metadata,
             'status': session.status
         })
         
@@ -173,24 +207,37 @@ def get_parameters(session_id):
 
 @app.route('/api/parameters/<int:session_id>', methods=['PUT'])
 def update_parameters(session_id):
-    """Update parameters for a session"""
+    """Update parameters for a session and save to JSON"""
     try:
         session = SimulationSession.query.get_or_404(session_id)
+        session_metadata = session.get_parameters()
         
         new_parameters = request.get_json()
         if not new_parameters:
             return jsonify({'error': 'No parameters provided'}), 400
         
-        # Validate parameters structure
-        required_sections = ['transition_params', 'resource_params', 'execution_time_params', 'waiting_time_params']
-        for section in required_sections:
-            if section not in new_parameters:
-                return jsonify({'error': f'Missing required section: {section}'}), 400
+        # Get the JSON filename from session metadata
+        json_filename = session_metadata.get('json_filename')
+        if not json_filename:
+            return jsonify({'error': 'No JSON file associated with this session'}), 400
         
-        # Update parameters
-        session.set_parameters(new_parameters)
-        db.session.commit()
+        json_filepath = os.path.join(app.config['UPLOAD_FOLDER'], json_filename)
         
+        # Load current JSON parameters
+        if os.path.exists(json_filepath):
+            with open(json_filepath, 'r') as f:
+                prosit_json = json.load(f)
+        else:
+            return jsonify({'error': 'Parameter JSON file not found'}), 404
+        
+        # Convert app format back to ProSiT JSON format and update
+        prosit_json = convert_app_to_prosit_format(new_parameters, prosit_json)
+        
+        # Save updated parameters back to JSON
+        with open(json_filepath, 'w') as f:
+            json.dump(prosit_json, f, indent=4)
+        
+        logger.info(f"Parameters updated for session {session_id} and saved to {json_filename}")
         return jsonify({
             'success': True,
             'message': 'Parameters updated successfully'
@@ -199,6 +246,105 @@ def update_parameters(session_id):
     except Exception as e:
         logger.error(f"Update parameters error: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+def convert_app_to_prosit_format(app_params, prosit_json):
+    """Convert application parameters back to ProSiT JSON format"""
+    try:
+        # Update transition weights
+        if 'transition_params' in app_params and 'transition_weights' in app_params['transition_params']:
+            prosit_json['transition_params']['transition_weights'] = app_params['transition_params']['transition_weights']
+        
+        # Update execution time parameters
+        if 'execution_time_params' in app_params and 'activity_durations' in app_params['execution_time_params']:
+            for activity, params in app_params['execution_time_params']['activity_durations'].items():
+                dist = params.get('distribution', 'norm')
+                param_values = params.get('parameters', {})
+                
+                prosit_entry = {
+                    'dist_name': dist,
+                    'min_value': param_values.get('min_value', 0.0),
+                    'max_value': param_values.get('max_value', 100.0),
+                    'mean_value': param_values.get('mean_value', 10.0)
+                }
+                
+                # Convert parameters based on distribution type
+                if dist == 'fixed':
+                    prosit_entry['params'] = [param_values.get('value', 10.0)]
+                elif dist == 'norm':
+                    prosit_entry['params'] = [
+                        param_values.get('mean', 10.0),
+                        param_values.get('std', 2.0)
+                    ]
+                elif dist == 'expon':
+                    prosit_entry['params'] = [
+                        0.0,
+                        param_values.get('scale', 10.0)
+                    ]
+                elif dist == 'lognorm':
+                    prosit_entry['params'] = [
+                        param_values.get('s', 1.0),
+                        param_values.get('loc', 0.0),
+                        param_values.get('scale', 1.0)
+                    ]
+                
+                prosit_json['execution_time_params']['execution_time_distributions'][activity] = prosit_entry
+        
+        # Update waiting time parameters
+        if 'waiting_time_params' in app_params and 'waiting_time' in app_params['waiting_time_params']:
+            for resource, params in app_params['waiting_time_params']['waiting_time'].items():
+                dist = params.get('distribution', 'expon')
+                param_values = params.get('parameters', {})
+                
+                prosit_entry = {
+                    'dist_name': dist,
+                    'min_value': param_values.get('min_value', 0.0),
+                    'max_value': param_values.get('max_value', 1000.0),
+                    'mean_value': param_values.get('mean_value', 120.0)
+                }
+                
+                # Convert parameters based on distribution type
+                if dist == 'fixed':
+                    prosit_entry['params'] = [param_values.get('value', 120.0)]
+                elif dist == 'norm':
+                    prosit_entry['params'] = [
+                        param_values.get('mean', 120.0),
+                        param_values.get('std', 30.0)
+                    ]
+                elif dist == 'expon':
+                    prosit_entry['params'] = [
+                        0.0,
+                        param_values.get('scale', 120.0)
+                    ]
+                elif dist == 'lognorm':
+                    prosit_entry['params'] = [
+                        param_values.get('s', 1.0),
+                        param_values.get('loc', 0.0),
+                        param_values.get('scale', 120.0)
+                    ]
+                
+                prosit_json['waiting_time_params']['waiting_time_distributions'][resource] = prosit_entry
+        
+        # Update resource parameters
+        if 'resource_params' in app_params:
+            resource_params = app_params['resource_params']
+            
+            if 'resource_weights' in resource_params:
+                prosit_json['resource_params']['resource_weights'] = resource_params['resource_weights']
+            
+            if 'multitasking_resource' in resource_params:
+                prosit_json['resource_params']['multitasking_resource'] = resource_params['multitasking_resource']
+            
+            if 'act_to_resources' in resource_params:
+                prosit_json['resource_params']['act_to_resources'] = resource_params['act_to_resources']
+            
+            if 'calendars' in resource_params:
+                prosit_json['resource_params']['calendars'] = resource_params['calendars']
+        
+        return prosit_json
+        
+    except Exception as e:
+        logger.error(f"Error converting app to ProSiT format: {str(e)}")
+        raise
 
 @app.route('/api/simulate/<int:session_id>', methods=['POST'])
 def simulate(session_id):
