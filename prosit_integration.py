@@ -211,85 +211,124 @@ class ProSiTIntegration:
     def _convert_prosit_to_app_format(self, prosit_params):
         """Convert ProSiT parameters to our application's format"""
         try:
-            # Get the ProSiT parameter dictionary
-            prosit_dict = prosit_params.to_dict()
+            logger.info("Converting ProSiT parameters to application format...")
             
-            # Extract execution time parameters and convert to our format
-            execution_time_params = {}
-            prosit_exec_times = prosit_dict.get('execution_time_params', {}).get('execution_time_distributions', {})
-            
-            for activity, dist_info in prosit_exec_times.items():
-                if isinstance(dist_info, dict):
-                    execution_time_params[activity] = {
-                        'distribution': dist_info.get('dist_name', 'normal'),
-                        'parameters': {
-                            'params': dist_info.get('params', []),
-                            'min_value': dist_info.get('min_value', 0),
-                            'max_value': dist_info.get('max_value', 100),
-                            'mean_value': dist_info.get('mean_value', 50)
-                        }
-                    }
-            
-            # Extract arrival time parameters
-            arrival_params = prosit_dict.get('arrival_params', {})
-            arrival_dist = arrival_params.get('arrival_time_distributions', {})
-            
-            inter_arrival_time = {
-                'distribution': arrival_dist.get('dist_name', 'exponential'),
-                'parameters': {
-                    'params': arrival_dist.get('params', [0.1]),
-                    'min_value': arrival_dist.get('min_value', 1),
-                    'max_value': arrival_dist.get('max_value', 100),
-                    'mean_value': arrival_dist.get('mean_value', 10)
-                },
-                'calendar': arrival_params.get('arrival_calendar', {})
-            }
-            
-            # Convert transition weights
+            # Access ProSiT parameters directly (not through to_dict())
+            # Get transition weights - convert transition objects to names
             transition_weights = {}
-            prosit_transitions = prosit_dict.get('transition_params', {}).get('transition_weights', {})
-            for trans_name, weight in prosit_transitions.items():
-                transition_weights[trans_name] = weight
+            if hasattr(prosit_params, 'transition_weights'):
+                for transition, weight in prosit_params.transition_weights.items():
+                    if hasattr(transition, 'label') and transition.label:
+                        transition_weights[transition.label] = float(weight)
+                    elif hasattr(transition, 'name'):
+                        transition_weights[transition.name] = float(weight)
             
-            # Extract resource parameters
-            resource_params = prosit_dict.get('resource_params', {})
-            
-            # Convert waiting time parameters
-            waiting_time_distributions = {}
-            prosit_waiting = prosit_dict.get('waiting_time_params', {}).get('waiting_time_distributions', {})
-            for resource, dist_info in prosit_waiting.items():
-                if isinstance(dist_info, dict):
-                    waiting_time_distributions[resource] = {
-                        'distribution': dist_info.get('dist_name', 'exponential'),
-                        'parameters': {
-                            'params': dist_info.get('params', [0.1]),
-                            'min_value': dist_info.get('min_value', 1),
-                            'max_value': dist_info.get('max_value', 60),
-                            'mean_value': dist_info.get('mean_value', 5)
+            # Get execution time distributions  
+            execution_time_params = {}
+            if hasattr(prosit_params, 'execution_time_distributions'):
+                for activity, dist_info in prosit_params.execution_time_distributions.items():
+                    if isinstance(dist_info, dict):
+                        execution_time_params[activity] = {
+                            'distribution': dist_info.get('dist_name', 'normal'),
+                            'parameters': {
+                                'params': dist_info.get('params', [10.0, 2.0]),
+                                'min_value': dist_info.get('min_value', 1.0),
+                                'max_value': dist_info.get('max_value', 100.0),
+                                'mean_value': dist_info.get('params', [10.0])[0] if dist_info.get('params') else 10.0
+                            }
                         }
-                    }
             
-            # Return in our application's format
+            # Get resources and activity-resource assignments
+            resources = getattr(prosit_params, 'resources', [])
+            act_resource_prob = getattr(prosit_params, 'act_resource_prob', {})
+            multitasking_resources = getattr(prosit_params, 'multitasking_resources', [])
+            
+            # Convert activity-resource probabilities to resource weights and assignments
+            resource_weights = {}
+            act_to_resources = {}
+            
+            for resource in resources:
+                # Calculate average weight across all activities
+                total_weight = 0
+                activity_count = 0
+                for activity, res_probs in act_resource_prob.items():
+                    if resource in res_probs:
+                        total_weight += res_probs[resource]
+                        activity_count += 1
+                resource_weights[resource] = total_weight / activity_count if activity_count > 0 else 0.1
+            
+            # Create activity-to-resource assignments
+            for activity, res_probs in act_resource_prob.items():
+                assigned_resources = []
+                for resource, prob in res_probs.items():
+                    if prob > 0:  # Only include resources with non-zero probability
+                        assigned_resources.append(resource)
+                act_to_resources[activity] = assigned_resources
+            
+            # Get calendars
+            calendars = getattr(prosit_params, 'calendars', {})
+            
+            # Get waiting time distributions (resource-specific)
+            waiting_time_distributions = {}
+            resource_waiting_times = {}
+            if hasattr(prosit_params, 'waiting_time_distributions'):
+                for resource, dist_info in prosit_params.waiting_time_distributions.items():
+                    if isinstance(dist_info, dict):
+                        resource_waiting_times[resource] = {
+                            'distribution': dist_info.get('dist_name', 'exponential'),
+                            'parameters': {
+                                'params': dist_info.get('params', [0.1]),
+                                'min_value': dist_info.get('min_value', 0.0),
+                                'max_value': dist_info.get('max_value', 60.0),
+                                'mean_value': dist_info.get('params', [5.0])[0] if dist_info.get('params') else 5.0
+                            }
+                        }
+            
+            # Get arrival time parameters
+            arrival_dist = getattr(prosit_params, 'arrival_time_distributions', {})
+            arrival_calendar = getattr(prosit_params, 'arrival_calendar', {})
+            
+            inter_arrival_time = {}
+            if isinstance(arrival_dist, dict):
+                inter_arrival_time = {
+                    'distribution': arrival_dist.get('dist_name', 'exponential'),
+                    'parameters': {
+                        'params': arrival_dist.get('params', [0.1]),
+                        'min_value': arrival_dist.get('min_value', 1.0),
+                        'max_value': arrival_dist.get('max_value', 100.0),
+                        'mean_value': arrival_dist.get('params', [10.0])[0] if arrival_dist.get('params') else 10.0
+                    },
+                    'calendar': arrival_calendar
+                }
+            
+            # Build the final parameters structure
             parameters = {
                 'transition_params': {
                     'transition_weights': transition_weights
                 },
-                'execution_time_params': execution_time_params,
+                'execution_time_params': {
+                    'activity_durations': execution_time_params
+                },
                 'resource_params': {
-                    'resources': resource_params.get('resources', ['Resource_1']),
-                    'resource_probabilities': resource_params.get('resource_probabilities', {}),
-                    'calendars': resource_params.get('calendars', {})
+                    'resources': resources,
+                    'resource_weights': resource_weights,
+                    'multitasking_resource': multitasking_resources,
+                    'act_to_resources': act_to_resources,
+                    'calendars': calendars
                 },
                 'waiting_time_params': {
                     'inter_arrival_time': inter_arrival_time,
-                    'waiting_time_distributions': waiting_time_distributions
+                    'resource_waiting_times': resource_waiting_times
                 }
             }
+            
+            logger.info(f"Converted parameters: {len(resources)} resources, {len(execution_time_params)} activities, {len(multitasking_resources)} multitasking resources")
             
             return parameters
             
         except Exception as e:
             logger.error(f"Error converting ProSiT parameters: {str(e)}")
+            logger.error(f"ProSiT params attributes: {dir(prosit_params)}")
             raise
     
     def _create_fallback_parameters(self, event_log, net, initial_marking, final_marking):
