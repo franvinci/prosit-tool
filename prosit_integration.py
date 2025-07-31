@@ -333,7 +333,10 @@ class ProSiTIntegration:
                 
             elif dist_name == 'expon':
                 # ProSiT expon params: [loc, scale] - use scale as mean
-                app_params['scale'] = float(params[1]) if len(params) > 1 else mean_val
+                scale_val = float(params[1]) if len(params) > 1 else mean_val
+                app_params['scale'] = scale_val
+                # Add mean for interface display (same as scale for exponential)
+                app_params['mean'] = scale_val
                 
             elif dist_name == 'uniform':
                 # ProSiT uniform params: [min, max] 
