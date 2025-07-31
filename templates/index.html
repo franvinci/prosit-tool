@@ -371,7 +371,7 @@ async function handleUpload(e) {
         showAlert('Parameters discovered successfully', 'success');
         
         // Load the session
-        loadSessionData(uploadResult.session_id, discoverResult.parameters);
+        loadSessionData(uploadResult.session_id, discoverResult.parameters, discoverResult.process_model);
         
     } catch (error) {
         hideLoading();
@@ -399,7 +399,7 @@ async function loadSession(sessionId) {
     }
 }
 
-function loadSessionData(sessionId, parameters) {
+function loadSessionData(sessionId, parameters, processModel = null) {
     currentSessionId = sessionId;
     currentParameters = parameters;
     
@@ -412,6 +412,11 @@ function loadSessionData(sessionId, parameters) {
     
     // Render parameters
     renderParameters(parameters);
+    
+    // Render process model if provided separately
+    if (processModel) {
+        renderPetriNet(processModel);
+    }
     
     // Re-initialize feather icons
     feather.replace();

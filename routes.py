@@ -96,6 +96,12 @@ def discover_parameters(session_id):
         return jsonify({
             'success': True,
             'parameters': parameters,
+            'process_model': {
+                'visualization': process_model.get('visualization'),
+                'activities': process_model.get('activities', []),
+                'transitions': process_model.get('transitions', []),
+                'places': process_model.get('places', [])
+            },
             'message': 'Parameters discovered successfully'
         })
         

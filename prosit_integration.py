@@ -223,20 +223,24 @@ class ProSiTIntegration:
                     elif hasattr(transition, 'name'):
                         transition_weights[transition.name] = float(weight)
             
-            # Get execution time distributions  
+            # Get execution time distributions from ProSiT parameters
             execution_time_params = {}
-            if hasattr(prosit_params, 'execution_time_distributions'):
-                for activity, dist_info in prosit_params.execution_time_distributions.items():
-                    if isinstance(dist_info, dict):
-                        execution_time_params[activity] = {
-                            'distribution': dist_info.get('dist_name', 'normal'),
-                            'parameters': {
-                                'params': dist_info.get('params', [10.0, 2.0]),
-                                'min_value': dist_info.get('min_value', 1.0),
-                                'max_value': dist_info.get('max_value', 100.0),
-                                'mean_value': dist_info.get('params', [10.0])[0] if dist_info.get('params') else 10.0
-                            }
+            exec_time_dists = getattr(prosit_params, 'execution_time_distributions', {})
+            logger.info(f"Found execution time distributions for {len(exec_time_dists)} activities")
+            
+            for activity, dist_info in exec_time_dists.items():
+                if isinstance(dist_info, dict):
+                    params = dist_info.get('params', [10.0, 2.0])
+                    execution_time_params[activity] = {
+                        'distribution': dist_info.get('dist_name', 'normal'),
+                        'parameters': {
+                            'params': params,
+                            'min_value': dist_info.get('min_value', 1.0),
+                            'max_value': dist_info.get('max_value', 100.0),
+                            'mean_value': params[0] if params and len(params) > 0 else 10.0
                         }
+                    }
+                    logger.info(f"Activity {activity}: {dist_info.get('dist_name', 'normal')} with params {params}")
             
             # Get resources and activity-resource assignments
             resources = getattr(prosit_params, 'resources', [])
@@ -267,22 +271,27 @@ class ProSiTIntegration:
             
             # Get calendars
             calendars = getattr(prosit_params, 'calendars', {})
+            logger.info(f"Found calendars for {len(calendars)} resources: {list(calendars.keys())}")
             
             # Get waiting time distributions (resource-specific)
             waiting_time_distributions = {}
             resource_waiting_times = {}
-            if hasattr(prosit_params, 'waiting_time_distributions'):
-                for resource, dist_info in prosit_params.waiting_time_distributions.items():
-                    if isinstance(dist_info, dict):
-                        resource_waiting_times[resource] = {
-                            'distribution': dist_info.get('dist_name', 'exponential'),
-                            'parameters': {
-                                'params': dist_info.get('params', [0.1]),
-                                'min_value': dist_info.get('min_value', 0.0),
-                                'max_value': dist_info.get('max_value', 60.0),
-                                'mean_value': dist_info.get('params', [5.0])[0] if dist_info.get('params') else 5.0
-                            }
+            wait_time_dists = getattr(prosit_params, 'waiting_time_distributions', {})
+            logger.info(f"Found waiting time distributions for {len(wait_time_dists)} resources")
+            
+            for resource, dist_info in wait_time_dists.items():
+                if isinstance(dist_info, dict):
+                    params = dist_info.get('params', [0.1])
+                    resource_waiting_times[resource] = {
+                        'distribution': dist_info.get('dist_name', 'exponential'),
+                        'parameters': {
+                            'params': params,
+                            'min_value': dist_info.get('min_value', 0.0),
+                            'max_value': dist_info.get('max_value', 60.0),
+                            'mean_value': params[0] if params and len(params) > 0 else 5.0
                         }
+                    }
+                    logger.info(f"Resource {resource}: {dist_info.get('dist_name', 'exponential')} waiting time with params {params}")
             
             # Get arrival time parameters
             arrival_dist = getattr(prosit_params, 'arrival_time_distributions', {})
