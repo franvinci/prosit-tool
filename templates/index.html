@@ -157,14 +157,14 @@
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="arrival-tab" data-bs-toggle="tab" 
                                 data-bs-target="#arrival-pane" type="button" role="tab">
-                            <i data-feather="calendar" class="me-2"></i>
+                            <i data-feather="clock" class="me-2"></i>
                             Arrival Times
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="execution-tab" data-bs-toggle="tab" 
                                 data-bs-target="#execution-pane" type="button" role="tab">
-                            <i data-feather="clock" class="me-2"></i>
+                            <i data-feather="zap" class="me-2"></i>
                             Execution Times
                         </button>
                     </li>
@@ -570,9 +570,13 @@ function renderResourceParameters(resourceParams) {
     const activityContainer = document.getElementById('activityResourceParams');
     const calendarContainer = document.getElementById('resourceCalendars');
     
-    // Resource management
+    // Resource management with add functionality
     let html = '<div class="mb-3">';
-    html += '<h6>Available Resources</h6>';
+    html += '<div class="d-flex justify-content-between align-items-center mb-2">';
+    html += '<h6 class="mb-0">Available Resources</h6>';
+    html += '<button class="btn btn-outline-success btn-sm" onclick="showAddResourceModal()">';
+    html += '<i data-feather="plus" class="me-1"></i>Add Resource</button>';
+    html += '</div>';
     html += '<div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">';
     
     (resourceParams.resources || []).forEach(resource => {
@@ -580,32 +584,66 @@ function renderResourceParameters(resourceParams) {
         html += `
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <span class="small">${resource}</span>
-                <input type="number" class="form-control form-control-sm" style="width: 80px;" 
-                       min="0" max="1" step="0.01" value="${weight}"
-                       onchange="updateResourceWeight('${resource}', this.value)">
+                <div class="d-flex align-items-center gap-2">
+                    <input type="number" class="form-control form-control-sm" style="width: 80px;" 
+                           min="0" max="1" step="0.01" value="${weight}"
+                           onchange="updateResourceWeight('${resource}', this.value)">
+                    <button class="btn btn-outline-danger btn-sm" style="padding: 2px 6px;" 
+                            onclick="removeResource('${resource}')" title="Remove resource">
+                        <i data-feather="x" style="width: 12px; height: 12px;"></i>
+                    </button>
+                </div>
             </div>
         `;
     });
     
     html += '</div></div>';
     
-    // Multitasking resources
+    // Multitasking resources with dropdown for many resources
     html += '<div class="mb-3">';
     html += '<h6>Multitasking Resources</h6>';
-    html += '<div class="border rounded p-2">';
     
-    (resourceParams.resources || []).forEach(resource => {
-        const isMultitasking = (resourceParams.multitasking_resource || []).includes(resource);
-        html += `
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" ${isMultitasking ? 'checked' : ''} 
-                       onchange="updateMultitaskingResource('${resource}', this.checked)">
-                <label class="form-check-label small">${resource}</label>
-            </div>
-        `;
-    });
-    
-    html += '</div></div>';
+    const resources = resourceParams.resources || [];
+    if (resources.length > 10) {
+        // Use dropdown for many resources
+        html += '<div class="border rounded p-2">';
+        html += '<select class="form-select form-select-sm mb-2" id="multitaskingSelect" onchange="toggleMultitaskingFromDropdown()">';
+        html += '<option value="">Select resource to toggle multitasking...</option>';
+        resources.forEach(resource => {
+            const isMultitasking = (resourceParams.multitasking_resource || []).includes(resource);
+            const status = isMultitasking ? ' (Multitasking)' : ' (Single task)';
+            html += `<option value="${resource}">${resource}${status}</option>`;
+        });
+        html += '</select>';
+        
+        // Show current multitasking resources
+        const multitaskingResources = resourceParams.multitasking_resource || [];
+        if (multitaskingResources.length > 0) {
+            html += '<div class="mt-2">';
+            html += '<small class="text-muted">Current multitasking resources:</small>';
+            html += '<div class="d-flex flex-wrap gap-1 mt-1">';
+            multitaskingResources.forEach(resource => {
+                html += `<span class="badge bg-success">${resource}</span>`;
+            });
+            html += '</div></div>';
+        }
+        html += '</div>';
+    } else {
+        // Use checkboxes for fewer resources
+        html += '<div class="border rounded p-2">';
+        resources.forEach(resource => {
+            const isMultitasking = (resourceParams.multitasking_resource || []).includes(resource);
+            html += `
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" ${isMultitasking ? 'checked' : ''} 
+                           onchange="updateMultitaskingResource('${resource}', this.checked)">
+                    <label class="form-check-label small">${resource}</label>
+                </div>
+            `;
+        });
+        html += '</div>';
+    }
+    html += '</div>';
     
     container.innerHTML = html;
     
@@ -1433,6 +1471,220 @@ function toggleArrivalHour(day, hour, isActive) {
     if (calendarDisplay) {
         calendarDisplay.innerHTML = renderArrivalCalendar(currentParameters.waiting_time_params.inter_arrival_time.calendar);
     }
+}
+
+// Resource management functions
+function showAddResourceModal() {
+    const modalHtml = `
+        <div class="modal fade" id="addResourceModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Add New Resource</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="newResourceName" class="form-label">Resource Name</label>
+                            <input type="text" class="form-control" id="newResourceName" 
+                                   placeholder="Enter resource name">
+                        </div>
+                        <div class="mb-3">
+                            <label for="newResourceWeight" class="form-label">Resource Weight</label>
+                            <input type="number" class="form-control" id="newResourceWeight" 
+                                   min="0" max="1" step="0.01" value="0.1">
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="newResourceMultitasking">
+                            <label class="form-check-label" for="newResourceMultitasking">
+                                Can handle multiple tasks simultaneously
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-success" onclick="addNewResource()">Add Resource</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('addResourceModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('addResourceModal'));
+    modal.show();
+}
+
+function addNewResource() {
+    const resourceName = document.getElementById('newResourceName').value.trim();
+    const resourceWeight = parseFloat(document.getElementById('newResourceWeight').value);
+    const isMultitasking = document.getElementById('newResourceMultitasking').checked;
+    
+    if (!resourceName) {
+        alert('Please enter a resource name');
+        return;
+    }
+    
+    if (currentParameters.resource_params.resources.includes(resourceName)) {
+        alert('Resource already exists');
+        return;
+    }
+    
+    // Add to resources list
+    currentParameters.resource_params.resources.push(resourceName);
+    
+    // Add resource weight
+    if (!currentParameters.resource_params.resource_weights) {
+        currentParameters.resource_params.resource_weights = {};
+    }
+    currentParameters.resource_params.resource_weights[resourceName] = resourceWeight;
+    
+    // Add to multitasking if checked
+    if (isMultitasking) {
+        if (!currentParameters.resource_params.multitasking_resource) {
+            currentParameters.resource_params.multitasking_resource = [];
+        }
+        currentParameters.resource_params.multitasking_resource.push(resourceName);
+    }
+    
+    // Add default calendar (9-17 weekdays)
+    if (!currentParameters.resource_params.calendars) {
+        currentParameters.resource_params.calendars = {};
+    }
+    currentParameters.resource_params.calendars[resourceName] = {
+        'Monday': createDefaultWorkingHours(),
+        'Tuesday': createDefaultWorkingHours(),
+        'Wednesday': createDefaultWorkingHours(),
+        'Thursday': createDefaultWorkingHours(),
+        'Friday': createDefaultWorkingHours(),
+        'Saturday': {},
+        'Sunday': {}
+    };
+    
+    // Add to activity assignments (assign to all activities by default)
+    if (currentParameters.resource_params.act_to_resources) {
+        Object.keys(currentParameters.resource_params.act_to_resources).forEach(activity => {
+            currentParameters.resource_params.act_to_resources[activity].push(resourceName);
+        });
+    }
+    
+    // Add default waiting time parameters
+    if (!currentParameters.waiting_time_params) {
+        currentParameters.waiting_time_params = {};
+    }
+    if (!currentParameters.waiting_time_params.waiting_time) {
+        currentParameters.waiting_time_params.waiting_time = {};
+    }
+    currentParameters.waiting_time_params.waiting_time[resourceName] = {
+        distribution: 'expon',
+        parameters: { mean: 120, min: 1, max: 480 }
+    };
+    
+    // Refresh the UI
+    renderResourceParameters(currentParameters.resource_params);
+    renderWaitingTimeParameters(currentParameters.waiting_time_params);
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('addResourceModal'));
+    modal.hide();
+    
+    feather.replace();
+}
+
+function createDefaultWorkingHours() {
+    const hours = {};
+    for (let i = 0; i < 24; i++) {
+        hours[i.toString()] = (i >= 9 && i <= 17); // 9 AM to 5 PM
+    }
+    return hours;
+}
+
+function removeResource(resourceName) {
+    if (!confirm(`Are you sure you want to remove resource "${resourceName}"?`)) {
+        return;
+    }
+    
+    // Remove from resources list
+    const index = currentParameters.resource_params.resources.indexOf(resourceName);
+    if (index > -1) {
+        currentParameters.resource_params.resources.splice(index, 1);
+    }
+    
+    // Remove resource weight
+    if (currentParameters.resource_params.resource_weights) {
+        delete currentParameters.resource_params.resource_weights[resourceName];
+    }
+    
+    // Remove from multitasking
+    if (currentParameters.resource_params.multitasking_resource) {
+        const mtIndex = currentParameters.resource_params.multitasking_resource.indexOf(resourceName);
+        if (mtIndex > -1) {
+            currentParameters.resource_params.multitasking_resource.splice(mtIndex, 1);
+        }
+    }
+    
+    // Remove calendar
+    if (currentParameters.resource_params.calendars) {
+        delete currentParameters.resource_params.calendars[resourceName];
+    }
+    
+    // Remove from activity assignments
+    if (currentParameters.resource_params.act_to_resources) {
+        Object.keys(currentParameters.resource_params.act_to_resources).forEach(activity => {
+            const resIndex = currentParameters.resource_params.act_to_resources[activity].indexOf(resourceName);
+            if (resIndex > -1) {
+                currentParameters.resource_params.act_to_resources[activity].splice(resIndex, 1);
+            }
+        });
+    }
+    
+    // Remove waiting time parameters
+    if (currentParameters.waiting_time_params && currentParameters.waiting_time_params.waiting_time) {
+        delete currentParameters.waiting_time_params.waiting_time[resourceName];
+    }
+    
+    // Refresh the UI
+    renderResourceParameters(currentParameters.resource_params);
+    renderWaitingTimeParameters(currentParameters.waiting_time_params);
+    
+    feather.replace();
+}
+
+function toggleMultitaskingFromDropdown() {
+    const select = document.getElementById('multitaskingSelect');
+    const resourceName = select.value;
+    
+    if (!resourceName) return;
+    
+    if (!currentParameters.resource_params.multitasking_resource) {
+        currentParameters.resource_params.multitasking_resource = [];
+    }
+    
+    const isCurrentlyMultitasking = currentParameters.resource_params.multitasking_resource.includes(resourceName);
+    
+    if (isCurrentlyMultitasking) {
+        // Remove from multitasking
+        const index = currentParameters.resource_params.multitasking_resource.indexOf(resourceName);
+        currentParameters.resource_params.multitasking_resource.splice(index, 1);
+    } else {
+        // Add to multitasking
+        currentParameters.resource_params.multitasking_resource.push(resourceName);
+    }
+    
+    // Reset dropdown
+    select.value = '';
+    
+    // Refresh UI
+    renderResourceParameters(currentParameters.resource_params);
 }
 
 
