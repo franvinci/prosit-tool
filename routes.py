@@ -332,8 +332,18 @@ def convert_app_to_prosit_format(app_params, prosit_json):
         if 'resource_params' in app_params:
             resource_params = app_params['resource_params']
             
+            # Update the main resources list first
+            if 'resources' in resource_params:
+                prosit_json['resource_params']['resources'] = resource_params['resources']
+            
+            # Ensure all resources are also added to specific parameter sections
+            current_resources = set(prosit_json['resource_params'].get('resources', []))
+            
             if 'resource_weights' in resource_params:
                 prosit_json['resource_params']['resource_weights'] = resource_params['resource_weights']
+                # Add any new resources from weights to the main list
+                for resource in resource_params['resource_weights'].keys():
+                    current_resources.add(resource)
             
             if 'multitasking_resource' in resource_params:
                 prosit_json['resource_params']['multitasking_resource'] = resource_params['multitasking_resource']
@@ -343,6 +353,45 @@ def convert_app_to_prosit_format(app_params, prosit_json):
             
             if 'calendars' in resource_params:
                 prosit_json['resource_params']['calendars'] = resource_params['calendars']
+                # Add any new resources from calendars to the main list
+                for resource in resource_params['calendars'].keys():
+                    current_resources.add(resource)
+            
+            # Update the main resources list with all discovered resources
+            prosit_json['resource_params']['resources'] = sorted(list(current_resources))
+            
+            # Ensure new resources have default parameters if missing
+            for resource in current_resources:
+                # Add default resource weight if missing
+                if resource not in prosit_json['resource_params'].get('resource_weights', {}):
+                    if 'resource_weights' not in prosit_json['resource_params']:
+                        prosit_json['resource_params']['resource_weights'] = {}
+                    prosit_json['resource_params']['resource_weights'][resource] = 0.1  # Default weight
+                
+                # Add default calendar if missing
+                if resource not in prosit_json['resource_params'].get('calendars', {}):
+                    if 'calendars' not in prosit_json['resource_params']:
+                        prosit_json['resource_params']['calendars'] = {}
+                    # Default 9-to-5 weekday calendar
+                    prosit_json['resource_params']['calendars'][resource] = {
+                        day: {str(hour): (9 <= hour <= 17) for hour in range(24)} 
+                        for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+                    }
+                
+                # Add default waiting time distribution if missing
+                if resource not in prosit_json.get('waiting_time_params', {}).get('waiting_time_distributions', {}):
+                    if 'waiting_time_params' not in prosit_json:
+                        prosit_json['waiting_time_params'] = {}
+                    if 'waiting_time_distributions' not in prosit_json['waiting_time_params']:
+                        prosit_json['waiting_time_params']['waiting_time_distributions'] = {}
+                    # Default exponential waiting time distribution
+                    prosit_json['waiting_time_params']['waiting_time_distributions'][resource] = {
+                        'dist_name': 'expon',
+                        'params': [0.0, 120.0],  # scale = 120 minutes
+                        'min_value': 0.0,
+                        'max_value': 1000.0,
+                        'mean_value': 120.0
+                    }
         
         return prosit_json
         
