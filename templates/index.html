@@ -13,37 +13,37 @@
                 </h5>
             </div>
             <div class="card-body">
-                <!-- Petri Net Source Selection -->
-                <div class="mb-4">
-                    <label class="form-label fw-bold">Choose Petri Net Source</label>
-                    <div class="row g-2">
-                        <div class="col-md-6">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="petriNetSource" id="discoverNet" value="discover" checked>
-                                <label class="form-check-label" for="discoverNet">
-                                    <strong>Discover from XES</strong><br>
-                                    <small class="text-muted">Use inductive miner to discover Petri net</small>
-                                </label>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="petriNetSource" id="importNet" value="import">
-                                <label class="form-check-label" for="importNet">
-                                    <strong>Import PNML Model</strong><br>
-                                    <small class="text-muted">Use existing Petri net from PNML file</small>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <form id="uploadForm" enctype="multipart/form-data">
                     <!-- XES File (Always Required) -->
                     <div class="mb-3">
                         <label for="xesFile" class="form-label">XES Event Log File</label>
                         <input type="file" class="form-control" id="xesFile" name="xes_file" accept=".xes" required>
                         <div class="form-text">Upload your XES event log file for parameter discovery</div>
+                    </div>
+
+                    <!-- Petri Net Source Selection -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Choose Petri Net Source</label>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="petriNetSource" id="discoverNet" value="discover" checked>
+                                    <label class="form-check-label" for="discoverNet">
+                                        <strong>Discover from XES</strong><br>
+                                        <small class="text-muted">Use inductive miner to discover Petri net</small>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="petriNetSource" id="importNet" value="import">
+                                    <label class="form-check-label" for="importNet">
+                                        <strong>Import PNML Model</strong><br>
+                                        <small class="text-muted">Use existing Petri net from PNML file</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
                     <!-- Discovery Options Section -->
