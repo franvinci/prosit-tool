@@ -179,9 +179,35 @@ def simulate(session_id):
         session.status = 'simulating'
         db.session.commit()
         
-        # Generate simulation
+        # Get start timestamp from request or use current time
+        start_timestamp_str = request_data.get('start_timestamp')
+        if start_timestamp_str:
+            from datetime import datetime
+            start_timestamp = datetime.fromisoformat(start_timestamp_str.replace('Z', '+00:00'))
+        else:
+            start_timestamp = None
+        
+        # Load process model and run simulation using ProSiT
         logger.info(f"Starting simulation for session {session_id} with {num_instances} instances")
-        output_path = prosit.simulate_event_log(parameters, num_instances)
+        
+        # Get original file path to reload process model
+        original_filename = session.filename
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], original_filename)
+        
+        # Reload process model
+        process_model = prosit.discover_process_model(filepath, session.noise_threshold)
+        
+        # Discover parameters from the event log to get ProSiT params object
+        prosit.discover_parameters(filepath, process_model)
+        
+        # Run simulation using ProSiT
+        result_df = prosit.run_simulation(n_traces=num_instances, start_timestamp=start_timestamp)
+        
+        # Save simulation results as XES file
+        output_filename = f'simulation_{session_id}_{num_instances}traces.csv'
+        output_path = os.path.join(app.config.get('SIMULATION_FOLDER', 'simulations'), output_filename)
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        result_df.to_csv(output_path, index=False)
         
         # Update status
         session.status = 'completed'
@@ -189,8 +215,9 @@ def simulate(session_id):
         
         return jsonify({
             'success': True,
-            'output_path': output_path,
-            'message': f'Simulation completed with {num_instances} instances'
+            'output_path': output_filename,
+            'num_events': len(result_df),
+            'message': f'Simulation completed with {num_instances} instances, generated {len(result_df)} events'
         })
         
     except Exception as e:

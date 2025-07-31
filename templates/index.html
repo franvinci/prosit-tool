@@ -137,6 +137,13 @@
                             Inter-Arrival
                         </button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="simulation-tab" data-bs-toggle="tab" 
+                                data-bs-target="#simulation-pane" type="button" role="tab">
+                            <i data-feather="play" class="me-2"></i>
+                            Run Simulation
+                        </button>
+                    </li>
                 </ul>
 
                 <!-- Tab Content -->
@@ -177,6 +184,63 @@
                     <!-- Inter-Arrival Time Parameters -->
                     <div class="tab-pane fade" id="arrival-pane" role="tabpanel">
                         <div id="arrivalParams"></div>
+                    </div>
+
+                    <!-- Simulation Parameters -->
+                    <div class="tab-pane fade" id="simulation-pane" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="numInstances" class="form-label">Number of Instances</label>
+                                    <input type="number" class="form-control" id="numInstances" 
+                                           min="1" max="10000" value="100" required>
+                                    <div class="form-text">Number of process instances to simulate (1-10,000)</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="startTimestamp" class="form-label">Start Timestamp (Optional)</label>
+                                    <input type="datetime-local" class="form-control" id="startTimestamp">
+                                    <div class="form-text">Start timestamp for simulation (leave empty for current time)</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-primary btn-lg" onclick="runSimulation()">
+                                <i data-feather="play" class="me-2"></i>
+                                Generate Simulated Event Log
+                            </button>
+                        </div>
+                        
+                        <div id="simulationProgress" class="mt-3" style="display: none;">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2 text-muted">Running simulation...</p>
+                            </div>
+                        </div>
+                        
+                        <div id="simulationResults" class="mt-3" style="display: none;">
+                            <div class="alert alert-success">
+                                <h6 class="mb-2">
+                                    <i data-feather="check-circle" class="me-2"></i>
+                                    Simulation Complete!
+                                </h6>
+                                <p class="mb-2" id="simulationResultText">Your simulated event log has been generated successfully.</p>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-success btn-sm" id="downloadSimulationBtn">
+                                        <i data-feather="download" class="me-1"></i>
+                                        Download CSV File
+                                    </button>
+                                    <button class="btn btn-outline-success btn-sm" onclick="runSimulation()">
+                                        <i data-feather="refresh-cw" class="me-1"></i>
+                                        Run Again
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -769,6 +833,73 @@ async function handleSimulation(e) {
         
     } catch (error) {
         hideLoading();
+        showAlert(`Simulation error: ${error.message}`, 'danger');
+    }
+}
+
+async function runSimulation() {
+    if (!currentSessionId) {
+        showAlert('No session available for simulation', 'warning');
+        return;
+    }
+    
+    const numInstances = parseInt(document.getElementById('numInstances').value);
+    const startTimestamp = document.getElementById('startTimestamp').value;
+    
+    // Hide previous results
+    document.getElementById('simulationResults').style.display = 'none';
+    
+    // Show progress
+    document.getElementById('simulationProgress').style.display = 'block';
+    
+    try {
+        const requestBody = {
+            num_instances: numInstances
+        };
+        
+        if (startTimestamp) {
+            requestBody.start_timestamp = startTimestamp;
+        }
+        
+        const response = await fetch(`/api/simulate/${currentSessionId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+        });
+        
+        const result = await response.json();
+        
+        // Hide progress
+        document.getElementById('simulationProgress').style.display = 'none';
+        
+        if (result.success) {
+            // Update result text
+            const resultText = document.getElementById('simulationResultText');
+            resultText.textContent = `Generated ${result.num_events} events in ${numInstances} process instances.`;
+            
+            // Setup download button
+            const downloadBtn = document.getElementById('downloadSimulationBtn');
+            downloadBtn.onclick = () => {
+                window.location.href = `/api/download/${result.output_path}`;
+            };
+            
+            // Show results
+            document.getElementById('simulationResults').style.display = 'block';
+            
+            // Update feather icons
+            feather.replace();
+            
+            showAlert(result.message, 'success');
+            
+        } else {
+            throw new Error(result.error);
+        }
+        
+    } catch (error) {
+        // Hide progress
+        document.getElementById('simulationProgress').style.display = 'none';
         showAlert(`Simulation error: ${error.message}`, 'danger');
     }
 }
