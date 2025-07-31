@@ -52,18 +52,13 @@ class ProSiTIntegration:
             # Generate visualization
             visualization_base64 = self._generate_petri_net_visualization(net, initial_marking, final_marking)
             
-            # Create process model structure
+            # Create process model structure (exclude non-serializable objects)
             process_model = {
                 'activities': activities,
                 'transitions': transitions,
                 'places': places,
                 'start_activities': activities[:1] if activities else [],
                 'end_activities': activities[-1:] if activities else [],
-                'petri_net': {
-                    'net': net,
-                    'initial_marking': initial_marking,
-                    'final_marking': final_marking
-                },
                 'visualization': visualization_base64
             }
             
