@@ -543,6 +543,80 @@ class ProSiTIntegration:
             logger.error(f"Failed to import PNML model: {str(e)}")
             raise e
     
+    def import_petri_net_from_pnml(self, pnml_file_path):
+        """
+        Import only the Petri net structure from PNML file for use with XES parameter discovery
+        Returns: process model structure without parameters (parameters come from XES)
+        """
+        try:
+            logger.info(f"Importing Petri net structure from {pnml_file_path}")
+            
+            # Import PNML file using PM4Py
+            net, initial_marking, final_marking = pm4py.read_pnml(pnml_file_path)
+            
+            # Store the net and markings
+            self.petri_net = net
+            self.initial_marking = initial_marking
+            self.final_marking = final_marking
+            
+            # Extract activities from the net and create transition mappings
+            activities = []
+            transitions = []
+            places = []
+            arcs = []
+            self.transition_mappings = {}
+            
+            for transition in net.transitions:
+                if transition.label:  # Skip silent transitions
+                    transition_name = transition_to_name(transition)
+                    activities.append(transition_name)
+                    transitions.append({
+                        'id': transition.name or transition.label,
+                        'name': transition.label,
+                        'label': transition.label
+                    })
+                    # Create bidirectional mapping
+                    self.transition_mappings[transition_name] = transition
+                    self.transition_mappings[transition.name] = transition
+            
+            for place in net.places:
+                places.append(place.name)
+            
+            # Build arc structure
+            for arc in net.arcs:
+                arcs.append({
+                    'source': arc.source.name or str(arc.source),
+                    'target': arc.target.name or str(arc.target),
+                    'weight': getattr(arc, 'weight', 1)
+                })
+            
+            # Generate visualization
+            svg_content = ""
+            try:
+                gviz = pn_visualizer.apply(net, initial_marking, final_marking, parameters={"format": "svg"})
+                svg_content = str(gviz)
+            except Exception as viz_e:
+                logger.warning(f"Failed to generate visualization: {str(viz_e)}")
+                svg_content = ""
+            
+            # Create process model structure (without parameters)
+            process_model = {
+                'activities': activities,
+                'transitions': transitions,
+                'places': places,
+                'arcs': arcs,
+                'svg_content': svg_content,
+                'visualization': svg_content
+            }
+            
+            logger.info(f"PNML Petri net imported successfully: {len(activities)} activities, {len(places)} places")
+            
+            return process_model
+            
+        except Exception as e:
+            logger.error(f"Failed to import Petri net from PNML: {str(e)}")
+            raise e
+    
     def _generate_default_parameters_for_pnml(self, process_model):
         """Generate default simulation parameters for imported PNML model"""
         try:

@@ -13,25 +13,25 @@
                 </h5>
             </div>
             <div class="card-body">
-                <!-- Input Type Selection -->
+                <!-- Petri Net Source Selection -->
                 <div class="mb-4">
-                    <label class="form-label fw-bold">Choose Input Type</label>
+                    <label class="form-label fw-bold">Choose Petri Net Source</label>
                     <div class="row g-2">
                         <div class="col-md-6">
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="inputType" id="xesInput" value="xes" checked>
-                                <label class="form-check-label" for="xesInput">
-                                    <strong>XES Event Log</strong><br>
-                                    <small class="text-muted">Discover process model using inductive miner</small>
+                                <input class="form-check-input" type="radio" name="petriNetSource" id="discoverNet" value="discover" checked>
+                                <label class="form-check-label" for="discoverNet">
+                                    <strong>Discover from XES</strong><br>
+                                    <small class="text-muted">Use inductive miner to discover Petri net</small>
                                 </label>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="inputType" id="pnmlInput" value="pnml">
-                                <label class="form-check-label" for="pnmlInput">
-                                    <strong>PNML Petri Net</strong><br>
-                                    <small class="text-muted">Import existing Petri net model</small>
+                                <input class="form-check-input" type="radio" name="petriNetSource" id="importNet" value="import">
+                                <label class="form-check-label" for="importNet">
+                                    <strong>Import PNML Model</strong><br>
+                                    <small class="text-muted">Use existing Petri net from PNML file</small>
                                 </label>
                             </div>
                         </div>
@@ -39,14 +39,15 @@
                 </div>
 
                 <form id="uploadForm" enctype="multipart/form-data">
-                    <!-- XES Upload Section -->
-                    <div id="xesSection" class="upload-section">
-                        <div class="mb-3">
-                            <label for="xesFile" class="form-label">XES Event Log File</label>
-                            <input type="file" class="form-control" id="xesFile" name="file" accept=".xes">
-                            <div class="form-text">Upload your XES event log file for process discovery</div>
-                        </div>
-                        
+                    <!-- XES File (Always Required) -->
+                    <div class="mb-3">
+                        <label for="xesFile" class="form-label">XES Event Log File</label>
+                        <input type="file" class="form-control" id="xesFile" name="xes_file" accept=".xes" required>
+                        <div class="form-text">Upload your XES event log file for parameter discovery</div>
+                    </div>
+                    
+                    <!-- Discovery Options Section -->
+                    <div id="discoverySection" class="upload-section">
                         <div class="mb-3">
                             <label for="noiseThreshold" class="form-label">
                                 Noise Threshold: <span id="thresholdValue">0.2</span>
@@ -57,12 +58,12 @@
                         </div>
                     </div>
 
-                    <!-- PNML Upload Section -->
+                    <!-- PNML Import Section -->
                     <div id="pnmlSection" class="upload-section" style="display: none;">
                         <div class="mb-3">
                             <label for="pnmlFile" class="form-label">PNML Petri Net File</label>
-                            <input type="file" class="form-control" id="pnmlFile" name="file" accept=".pnml">
-                            <div class="form-text">Upload your PNML Petri net model file</div>
+                            <input type="file" class="form-control" id="pnmlFile" name="pnml_file" accept=".pnml">
+                            <div class="form-text">Upload your PNML Petri net model file (parameters will be discovered from XES)</div>
                         </div>
                     </div>
                     
@@ -380,37 +381,37 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Handle input type changes
-    const xesInput = document.getElementById('xesInput');
-    const pnmlInput = document.getElementById('pnmlInput');
-    const xesSection = document.getElementById('xesSection');
+    // Handle Petri net source changes
+    const discoverNet = document.getElementById('discoverNet');
+    const importNet = document.getElementById('importNet');
+    const discoverySection = document.getElementById('discoverySection');
     const pnmlSection = document.getElementById('pnmlSection');
     const uploadBtnText = document.getElementById('uploadBtnText');
     
-    function toggleInputSections() {
-        if (xesInput && xesInput.checked) {
-            xesSection.style.display = 'block';
+    function togglePetriNetSections() {
+        if (discoverNet && discoverNet.checked) {
+            discoverySection.style.display = 'block';
             pnmlSection.style.display = 'none';
             uploadBtnText.textContent = 'Upload & Discover';
-            // Make XES file required
-            document.getElementById('xesFile').required = true;
-            document.getElementById('pnmlFile').required = false;
-        } else if (pnmlInput && pnmlInput.checked) {
-            xesSection.style.display = 'none';
+            // PNML file not required for discovery
+            const pnmlFile = document.getElementById('pnmlFile');
+            if (pnmlFile) pnmlFile.required = false;
+        } else if (importNet && importNet.checked) {
+            discoverySection.style.display = 'none';
             pnmlSection.style.display = 'block';
-            uploadBtnText.textContent = 'Upload & Import';
-            // Make PNML file required
-            document.getElementById('xesFile').required = false;
-            document.getElementById('pnmlFile').required = true;
+            uploadBtnText.textContent = 'Upload & Process';
+            // PNML file required for import
+            const pnmlFile = document.getElementById('pnmlFile');
+            if (pnmlFile) pnmlFile.required = true;
         }
     }
     
-    if (xesInput && pnmlInput) {
-        xesInput.addEventListener('change', toggleInputSections);
-        pnmlInput.addEventListener('change', toggleInputSections);
+    if (discoverNet && importNet) {
+        discoverNet.addEventListener('change', togglePetriNetSections);
+        importNet.addEventListener('change', togglePetriNetSections);
         
-        // Initialize with XES selected
-        toggleInputSections();
+        // Initialize with discovery selected
+        togglePetriNetSections();
     }
 
     // Setup form handlers

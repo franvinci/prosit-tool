@@ -22,44 +22,62 @@ def index():
 
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
-    """Handle XES file upload"""
+    """Handle XES file upload with optional PNML file"""
     try:
-        if 'file' not in request.files:
-            return jsonify({'error': 'No file provided'}), 400
+        if 'xes_file' not in request.files:
+            return jsonify({'error': 'No XES file provided'}), 400
         
-        file = request.files['file']
+        xes_file = request.files['xes_file']
+        pnml_file = request.files.get('pnml_file')
         noise_threshold = float(request.form.get('noise_threshold', 0.2))
         
-        if file.filename == '':
-            return jsonify({'error': 'No file selected'}), 400
+        if xes_file.filename == '':
+            return jsonify({'error': 'No XES file selected'}), 400
         
-        if not allowed_file(file.filename):
-            return jsonify({'error': 'Invalid file type. Only XES and PNML files are supported'}), 400
+        if not xes_file.filename.lower().endswith('.xes'):
+            return jsonify({'error': 'XES file must have .xes extension'}), 400
         
-        # Save file
-        if file.filename is None:
-            return jsonify({'error': 'Invalid filename'}), 400
+        if pnml_file and pnml_file.filename and not pnml_file.filename.lower().endswith('.pnml'):
+            return jsonify({'error': 'PNML file must have .pnml extension'}), 400
+        
+        # Save XES file
+        if xes_file.filename is None:
+            return jsonify({'error': 'Invalid XES filename'}), 400
             
-        filename = secure_filename(file.filename)
+        xes_filename = secure_filename(xes_file.filename)
         timestamp = int(datetime.now().timestamp())
-        filename = f"{timestamp}_{filename}"
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
+        xes_filename = f"{timestamp}_{xes_filename}"
+        xes_filepath = os.path.join(app.config['UPLOAD_FOLDER'], xes_filename)
+        xes_file.save(xes_filepath)
+        
+        # Save PNML file if provided
+        pnml_filename = None
+        if pnml_file and pnml_file.filename:
+            pnml_filename = secure_filename(pnml_file.filename)
+            pnml_filename = f"{timestamp}_{pnml_filename}"
+            pnml_filepath = os.path.join(app.config['UPLOAD_FOLDER'], pnml_filename)
+            pnml_file.save(pnml_filepath)
         
         # Create session
         session = SimulationSession(
-            filename=filename,
+            filename=xes_filename,
             noise_threshold=noise_threshold
         )
+        # Store PNML filename if provided (we'll need to add this field to the model)
+        if pnml_filename:
+            # For now, store in parameters as we don't have pnml_filename field
+            session.set_parameters({'pnml_filename': pnml_filename})
+        
         db.session.add(session)
         db.session.commit()
         
-        logger.info(f"File uploaded successfully: {filename}")
+        logger.info(f"Files uploaded successfully: XES={xes_filename}, PNML={pnml_filename}")
         return jsonify({
             'success': True,
             'session_id': session.id,
-            'filename': filename,
-            'message': 'File uploaded successfully'
+            'filename': xes_filename,
+            'pnml_filename': pnml_filename,
+            'message': 'Files uploaded successfully'
         })
         
     except Exception as e:
@@ -84,17 +102,24 @@ def discover_parameters(session_id):
         session.status = 'discovering'
         db.session.commit()
         
-        # Process file based on type
-        if is_pnml:
-            logger.info(f"Importing PNML model for session {session_id}")
-            parameters = prosit.import_pnml_model(filepath)
-            process_model = parameters.get('process_model', {})
+        # Always discover parameters from XES file
+        logger.info(f"Discovering parameters from XES file for session {session_id}")
+        
+        # Check if there's a separate PNML file for the Petri net model
+        pnml_filepath = None
+        session_params = session.get_parameters()
+        if session_params and 'pnml_filename' in session_params:
+            pnml_filepath = os.path.join(app.config['UPLOAD_FOLDER'], session_params['pnml_filename'])
+        
+        if pnml_filepath and os.path.exists(pnml_filepath):
+            # Use imported PNML model but discover parameters from XES
+            logger.info(f"Using PNML model and discovering parameters from XES")
+            process_model = prosit.import_petri_net_from_pnml(pnml_filepath)
+            parameters = prosit.discover_parameters(filepath, process_model)
         else:
-            logger.info(f"Discovering process model for session {session_id}")
+            # Standard workflow: discover both model and parameters from XES
+            logger.info(f"Discovering process model and parameters from XES")
             process_model = prosit.discover_process_model(filepath, session.noise_threshold)
-            
-            # Discover parameters
-            logger.info(f"Discovering parameters for session {session_id}")
             parameters = prosit.discover_parameters(filepath, process_model)
         
         # Save parameters
