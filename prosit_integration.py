@@ -228,11 +228,16 @@ class ProSiTIntegration:
             exec_time_dists = getattr(prosit_params, 'execution_time_distributions', {})
             logger.info(f"Found execution time distributions for {len(exec_time_dists)} activities")
             
+            # Debug: Check the actual structure of execution_time_distributions
+            if exec_time_dists:
+                logger.info(f"Sample execution time entry: {list(exec_time_dists.items())[0] if exec_time_dists else 'None'}")
+            
             for activity, dist_info in exec_time_dists.items():
+                logger.info(f"Processing execution time for activity: {activity}, dist_info type: {type(dist_info)}")
                 if isinstance(dist_info, dict):
                     params = dist_info.get('params', [10.0, 2.0])
                     execution_time_params[activity] = {
-                        'distribution': dist_info.get('dist_name', 'normal'),
+                        'distribution': dist_info.get('dist_name', 'norm'),
                         'parameters': {
                             'params': params,
                             'min_value': dist_info.get('min_value', 1.0),
@@ -240,7 +245,19 @@ class ProSiTIntegration:
                             'mean_value': params[0] if params and len(params) > 0 else 10.0
                         }
                     }
-                    logger.info(f"Activity {activity}: {dist_info.get('dist_name', 'normal')} with params {params}")
+                    logger.info(f"Activity {activity}: {dist_info.get('dist_name', 'norm')} with params {params}")
+                elif dist_info is not None:
+                    # Handle non-dict format - might be a different structure
+                    logger.info(f"Non-dict execution time data for {activity}: {dist_info}")
+                    execution_time_params[activity] = {
+                        'distribution': 'norm',
+                        'parameters': {
+                            'params': [10.0, 2.0],
+                            'min_value': 1.0,
+                            'max_value': 100.0,
+                            'mean_value': 10.0
+                        }
+                    }
             
             # Get resources and activity-resource assignments
             resources = getattr(prosit_params, 'resources', [])
@@ -293,10 +310,11 @@ class ProSiTIntegration:
             logger.info(f"Found waiting time distributions for {len(wait_time_dists)} resources")
             
             for resource, dist_info in wait_time_dists.items():
+                logger.info(f"Processing waiting time for resource: {resource}, dist_info type: {type(dist_info)}")
                 if isinstance(dist_info, dict):
                     params = dist_info.get('params', [0.1])
                     resource_waiting_times[resource] = {
-                        'distribution': dist_info.get('dist_name', 'exponential'),
+                        'distribution': dist_info.get('dist_name', 'expon'),
                         'parameters': {
                             'params': params,
                             'min_value': dist_info.get('min_value', 0.0),
@@ -304,7 +322,19 @@ class ProSiTIntegration:
                             'mean_value': params[0] if params and len(params) > 0 else 5.0
                         }
                     }
-                    logger.info(f"Resource {resource}: {dist_info.get('dist_name', 'exponential')} waiting time with params {params}")
+                    logger.info(f"Resource {resource}: {dist_info.get('dist_name', 'expon')} waiting time with params {params}")
+                elif dist_info is not None:
+                    # Handle non-dict format
+                    logger.info(f"Non-dict waiting time data for {resource}: {dist_info}")
+                    resource_waiting_times[resource] = {
+                        'distribution': 'expon',
+                        'parameters': {
+                            'params': [5.0],
+                            'min_value': 0.0,
+                            'max_value': 60.0,
+                            'mean_value': 5.0
+                        }
+                    }
             
             # Get arrival time parameters
             arrival_dist = getattr(prosit_params, 'arrival_time_distributions', {})

@@ -207,7 +207,7 @@
                         </div>
                         
                         <div class="d-grid gap-2">
-                            <button type="button" class="btn btn-primary btn-lg" onclick="runSimulation()">
+                            <button type="button" class="btn btn-purple btn-lg" onclick="runSimulation()">
                                 <i data-feather="play" class="me-2"></i>
                                 Generate Simulated Event Log
                             </button>
@@ -215,7 +215,7 @@
                         
                         <div id="simulationProgress" class="mt-3" style="display: none;">
                             <div class="text-center">
-                                <div class="spinner-border text-primary" role="status">
+                                <div class="spinner-border text-purple" role="status">
                                     <span class="visually-hidden">Loading...</span>
                                 </div>
                                 <p class="mt-2 text-muted">Running simulation...</p>
@@ -234,7 +234,7 @@
                                         <i data-feather="download" class="me-1"></i>
                                         Download CSV File
                                     </button>
-                                    <button class="btn btn-outline-success btn-sm" onclick="runSimulation()">
+                                    <button class="btn btn-outline-purple btn-sm" onclick="runSimulation()">
                                         <i data-feather="refresh-cw" class="me-1"></i>
                                         Run Again
                                     </button>
@@ -246,44 +246,7 @@
             </div>
         </div>
 
-        <!-- Simulation Card -->
-        <div class="card shadow-sm" id="simulationCard" style="display: none;">
-            <div class="card-header bg-info text-white">
-                <h5 class="card-title mb-0">
-                    <i data-feather="play" class="me-2"></i>
-                    Run Simulation
-                </h5>
-            </div>
-            <div class="card-body">
-                <form id="simulationForm">
-                    <div class="row align-items-end">
-                        <div class="col-md-6">
-                            <label for="numInstances" class="form-label">Number of Instances</label>
-                            <input type="number" class="form-control" id="numInstances" 
-                                   min="1" max="10000" value="100" required>
-                            <div class="form-text">Number of process instances to simulate</div>
-                        </div>
-                        <div class="col-md-6">
-                            <button type="submit" class="btn btn-info w-100">
-                                <i data-feather="play" class="me-2"></i>
-                                Generate Event Log
-                            </button>
-                        </div>
-                    </div>
-                </form>
-                
-                <div id="simulationResults" class="mt-3" style="display: none;">
-                    <div class="alert alert-success">
-                        <h6>Simulation Complete!</h6>
-                        <p class="mb-2">Your simulated event log has been generated successfully.</p>
-                        <button class="btn btn-success btn-sm" id="downloadBtn">
-                            <i data-feather="download" class="me-1"></i>
-                            Download XES File
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+
     </div>
 </div>
 
