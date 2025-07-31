@@ -446,6 +446,7 @@ class ProSiTIntegration:
                     'resource_weights': resource_weights,
                     'multitasking_resource': multitasking_resources,
                     'act_to_resources': act_to_resources,
+                    'act_resource_prob': act_resource_prob,
                     'calendars': calendars
                 },
                 'waiting_time_params': {
