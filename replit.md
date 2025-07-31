@@ -59,9 +59,20 @@ Preferred communication style: Simple, everyday language.
 1. **File Upload**: User uploads XES file through web interface
 2. **Session Creation**: New SimulationSession record created with 'uploaded' status
 3. **Process Discovery**: ProSiTIntegration analyzes file to extract process model
-4. **Parameter Storage**: Discovered parameters saved as JSON in PostgreSQL database
-5. **Status Updates**: Session status progresses through: uploaded → discovered → ready → simulating → completed
-6. **Database Persistence**: All sessions and parameters are stored in PostgreSQL for reliability and scalability
+4. **Parameter Storage**: Discovered parameters saved as JSON files using ProSiT's to_json method
+5. **JSON Loading**: Parameters loaded back from JSON to ensure correct format conversion
+6. **Status Updates**: Session status progresses through: uploaded → discovered → ready → simulating → completed
+7. **Database Persistence**: Session metadata stored in PostgreSQL, parameters in JSON files for ProSiT compatibility
+
+## Recent Changes (July 2025)
+
+### ProSiT JSON Integration Update
+- **Fixed critical data loading issues** with ProSiT library's new JSON format
+- **Resource weights**: Now correctly extracted from JSON (previously all identical)
+- **Activity assignments**: Properly loaded from act_to_resources data structure
+- **Distribution parameters**: Authentic values from ProSiT JSON (fixed, norm, expon, lognorm)
+- **Parameter conversion**: Complete rewrite to handle ProSiT's to_json/from_json methods
+- **Data persistence**: JSON files for parameters, PostgreSQL for session metadata
 
 ## External Dependencies
 

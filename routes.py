@@ -128,6 +128,10 @@ def discover_parameters(session_id):
         json_filepath = os.path.join(app.config['UPLOAD_FOLDER'], json_filename)
         prosit.save_parameters_to_json(json_filepath)
         
+        # Load parameters back from JSON to get the correct format
+        logger.info(f"Loading parameters from saved JSON file: {json_filename}")
+        parameters = prosit.load_parameters_from_json_file(json_filepath)
+        
         # Store metadata in session
         session.set_parameters({
             'json_filename': json_filename,
