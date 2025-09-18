@@ -2,9 +2,7 @@
 
 {% block content %}
 <div class="row">
-    <!-- Left Panel - Upload and Sessions -->
-    <div class="col-lg-4">
-        <!-- Upload Card -->
+    <div class="col-lg-3">
         <div class="card shadow-sm mb-4">
             <div class="card-header" style="background: linear-gradient(135deg, #6f42c1 0%, #5a32a0 100%); color: white;">
                 <h5 class="card-title mb-0">
@@ -14,14 +12,12 @@
             </div>
             <div class="card-body">
                 <form id="uploadForm" enctype="multipart/form-data">
-                    <!-- XES File (Always Required) -->
                     <div class="mb-3">
-                        <label for="xesFile" class="form-label">XES Event Log File</label>
+                        <label for="xesFile" class="form-label fw-bold">XES Event Log File</label>
                         <input type="file" class="form-control" id="xesFile" name="xes_file" accept=".xes" required>
                         <div class="form-text">Upload your XES event log file for parameter discovery</div>
                     </div>
 
-                    <!-- Petri Net Source Selection -->
                     <div class="mb-4">
                         <label class="form-label fw-bold">Choose Petri Net Source</label>
                         <div class="row g-2">
@@ -46,7 +42,6 @@
                         </div>
                     </div>
                     
-                    <!-- Discovery Options Section -->
                     <div id="discoverySection" class="upload-section">
                         <div class="mb-3">
                             <label for="noiseThreshold" class="form-label">
@@ -58,13 +53,34 @@
                         </div>
                     </div>
 
-                    <!-- PNML Import Section -->
                     <div id="pnmlSection" class="upload-section" style="display: none;">
                         <div class="mb-3">
                             <label for="pnmlFile" class="form-label">PNML Petri Net File</label>
                             <input type="file" class="form-control" id="pnmlFile" name="pnml_file" accept=".pnml">
                             <div class="form-text">Upload your PNML Petri net model file.</div>
                         </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="me-3 flex-grow-1">
+                                <label for="maxDepthTree" class="form-label fw-bold">Decision Tree Max Depth</label>
+                                <select class="form-select" id="maxDepthTree" name="max_depth_tree">
+                                    <option value="0" selected>0 (disabled)</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                            </div>
+                            <div class="ms-3">
+                                <label class="form-label fw-bold mb-1">Incremental Discovery</label>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="incrementalDiscoveryToggle">
+                                </div>
+                                <div class="form-text">Disabled when depth is 0</div>
+                            </div>
+                        </div>
+                        <div class="form-text">Choose 0 to disable rule discovery, or up to 3 for decision trees.</div>
                     </div>
                     
                     <button type="submit" class="btn w-100" id="uploadBtn" style="background: linear-gradient(135deg, #28a745 0%, #20a039 100%); border: none; color: white;">
@@ -75,7 +91,6 @@
             </div>
         </div>
 
-        <!-- Recent Sessions -->
         <div class="card shadow-sm">
             <div class="card-header bg-secondary text-white">
                 <h6 class="card-title mb-0">
@@ -104,9 +119,56 @@
         </div>
     </div>
 
-    <!-- Right Panel - Parameters and Simulation -->
-    <div class="col-lg-8">
-        <!-- Parameters Editor -->
+    <div class="col-lg-9">
+        <div id="welcomeMessage" class="card shadow-sm mb-4">
+            <div class="card-body text-center py-5">
+                <i data-feather="shuffle" class="text-primary mb-3" style="width: 64px; height: 64px;"></i>
+                <h3 class="text-gradient mb-3">Welcome to ProSiT</h3>
+                <p class="text-muted mb-4">
+                    Process Simulation Tool for discovering and simulating business processes.
+                    Upload your XES event log file to get started.
+                </p>
+                <div class="row g-3 text-start">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-start">
+                            <i data-feather="upload" class="text-primary me-3 mt-1"></i>
+                            <div>
+                                <h6 class="mb-1">Upload Process Data</h6>
+                                <small class="text-muted">Upload XES event logs and optional PNML Petri nets</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-start">
+                            <i data-feather="settings" class="text-primary me-3 mt-1"></i>
+                            <div>
+                                <h6 class="mb-1">Configure Parameters</h6>
+                                <small class="text-muted">Discover and fine-tune simulation parameters</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-start">
+                            <i data-feather="play" class="text-primary me-3 mt-1"></i>
+                            <div>
+                                <h6 class="mb-1">Run Simulation</h6>
+                                <small class="text-muted">Execute process simulations with custom parameters</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-start">
+                            <i data-feather="download" class="text-primary me-3 mt-1"></i>
+                            <div>
+                                <h6 class="mb-1">Export Results</h6>
+                                <small class="text-muted">Download parameters and simulation results</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="card shadow-sm mb-4" id="parametersCard" style="display: none;">
             <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0">
@@ -125,7 +187,6 @@
                 </div>
             </div>
             <div class="card-body">
-                <!-- Process Model Visualization -->
                 <div class="mb-4">
                     <h6 class="mb-3">
                         <i data-feather="share-2" class="me-2"></i>
@@ -138,147 +199,106 @@
                     </div>
                 </div>
 
-                <!-- Parameter Tabs -->
                 <ul class="nav nav-tabs nav-fill mb-3" id="parameterTabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" id="transition-tab" data-bs-toggle="tab" 
-                                data-bs-target="#transition-pane" type="button" role="tab">
+                                data-bs-target="#transition-pane" type="button" role="tab" onclick="revertToOriginalVisualization()">
                             <i data-feather="git-branch" class="me-2"></i>
                             Transitions
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="resource-tab" data-bs-toggle="tab" 
-                                data-bs-target="#resource-pane" type="button" role="tab">
+                                data-bs-target="#resource-pane" type="button" role="tab" onclick="revertToOriginalVisualization()">
                             <i data-feather="users" class="me-2"></i>
                             Resources
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="arrival-tab" data-bs-toggle="tab" 
-                                data-bs-target="#arrival-pane" type="button" role="tab">
+                                data-bs-target="#arrival-pane" type="button" role="tab" onclick="revertToOriginalVisualization()">
                             <i data-feather="clock" class="me-2"></i>
                             Arrival Times
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="execution-tab" data-bs-toggle="tab" 
-                                data-bs-target="#execution-pane" type="button" role="tab">
+                                data-bs-target="#execution-pane" type="button" role="tab" onclick="revertToOriginalVisualization()">
                             <i data-feather="zap" class="me-2"></i>
                             Execution Times
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="waiting-tab" data-bs-toggle="tab" 
-                                data-bs-target="#waiting-pane" type="button" role="tab">
+                                data-bs-target="#waiting-pane" type="button" role="tab" onclick="revertToOriginalVisualization()">
                             <i data-feather="refresh-ccw" class="me-2"></i>
                             Waiting Times
                         </button>
                     </li>
-
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="data-tab" data-bs-toggle="tab" 
+                                data-bs-target="#data-pane" type="button" role="tab" onclick="revertToOriginalVisualization()">
+                            <i data-feather="grid" class="me-2"></i>
+                            Trace Attributes
+                        </button>
+                    </li>
                 </ul>
 
-                <!-- Tab Content -->
                 <div class="tab-content" id="parameterTabsContent">
-                    <!-- Transition Parameters -->
                     <div class="tab-pane fade show active" id="transition-pane" role="tabpanel">
                         <div id="transitionParams"></div>
                     </div>
 
-                    <!-- Resource Parameters -->
                     <div class="tab-pane fade" id="resource-pane" role="tabpanel">
                         <div class="row">
-                            <div class="col-md-4">
-                                <h6>Resource Weights</h6>
+                            <div class="col-md-12">
+                                <h6>Resources</h6>
                                 <div id="resourceParams"></div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-12">
                                 <h6>Activity Assignments</h6>
                                 <div id="activityResourceParams"></div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-12">
                                 <h6>Resource Calendars</h6>
                                 <div id="resourceCalendars"></div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Execution Time Parameters -->
                     <div class="tab-pane fade" id="execution-pane" role="tabpanel">
                         <div id="executionParams"></div>
                     </div>
 
-                    <!-- Waiting Time Parameters -->
                     <div class="tab-pane fade" id="waiting-pane" role="tabpanel">
                         <div id="waitingParams"></div>
                     </div>
 
-                    <!-- Inter-Arrival Time Parameters -->
                     <div class="tab-pane fade" id="arrival-pane" role="tabpanel">
                         <div id="arrivalParams"></div>
                     </div>
 
-                    <!-- Simulation Parameters -->
-                    <div class="tab-pane fade" id="simulation-pane" role="tabpanel">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="numInstances" class="form-label">Number of Instances</label>
-                                    <input type="number" class="form-control" id="numInstances" 
-                                           min="1" max="10000" value="100" required>
-                                    <div class="form-text">Number of process instances to simulate (1-10,000)</div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="startTimestamp" class="form-label">Start Timestamp (Optional)</label>
-                                    <input type="datetime-local" class="form-control" id="startTimestamp">
-                                    <div class="form-text">Start timestamp for simulation (leave empty for current time)</div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="d-grid gap-2">
-                            <button type="button" class="btn btn-purple btn-lg" onclick="runSimulation()">
-                                <i data-feather="play" class="me-2"></i>
-                                Generate Simulated Event Log
-                            </button>
-                        </div>
-                        
-                        <div id="simulationProgress" class="mt-3" style="display: none;">
-                            <div class="text-center">
-                                <div class="spinner-border text-purple" role="status">
-                                    <span class="visually-hidden">Loading...</span>
-                                </div>
-                                <p class="mt-2 text-muted">Running simulation...</p>
-                            </div>
-                        </div>
-                        
-                        <div id="simulationResults" class="mt-3" style="display: none;">
-                            <div class="alert alert-success">
-                                <h6 class="mb-2">
-                                    <i data-feather="check-circle" class="me-2"></i>
-                                    Simulation Complete!
-                                </h6>
-                                <p class="mb-2" id="simulationResultText">Your simulated event log has been generated successfully.</p>
-                                <div class="d-flex gap-2">
-                                    <button class="btn btn-success btn-sm" id="downloadSimulationBtn">
-                                        <i data-feather="download" class="me-1"></i>
-                                        Download CSV File
-                                    </button>
-                                    <button class="btn btn-outline-purple btn-sm" onclick="runSimulation()">
-                                        <i data-feather="refresh-cw" class="me-1"></i>
-                                        Run Again
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="tab-pane fade" id="data-pane" role="tabpanel">
+                        <div id="dataParams"></div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Simulation Card -->
+        <!-- Accuracy Results Card -->
+        <div class="card shadow-sm mb-4" id="accuracyCard" style="display: none;">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i data-feather="bar-chart-2" class="me-2"></i>
+                    Simulator Accuracy Metrics
+                </h5>
+            </div>
+            <div class="card-body" id="accuracyResultsContainer">
+                <p class="text-muted">Accuracy metrics will appear here after simulation is completed.</p>
+            </div>
+        </div>
+
+
         <div class="card shadow-sm mt-4" id="simulationCard" style="display: none;">
             <div class="card-header" style="background: linear-gradient(135deg, #6f42c1 0%, #5a32a0 100%); color: white;">
                 <h5 class="card-title mb-0">
@@ -349,18 +369,103 @@
     </div>
 </div>
 
-<!-- Welcome Message -->
-<div id="welcomeMessage" class="text-center py-5">
-    <div class="mb-4">
-        <i data-feather="shuffle" size="64" class="text-primary"></i>
+<div class="row my-4">
+    <div class="col-lg-12">
+        <div class="card shadow-sm" id="simulationResultsCard" style="display: none;">
+            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i data-feather="pie-chart" class="me-2"></i>
+                    Simulation Results
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul class="nav nav-tabs nav-fill mb-3" id="simulationResultsTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="process-map-tab" data-bs-toggle="tab" data-bs-target="#process-map-pane" type="button" role="tab">
+                            <i data-feather="share-2" class="me-2"></i>Process Map
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="case-duration-tab" data-bs-toggle="tab" data-bs-target="#case-duration-pane" type="button" role="tab">
+                            <i data-feather="trending-up" class="me-2"></i>Case Duration
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="resource-utilization-tab" data-bs-toggle="tab" data-bs-target="#resource-utilization-pane" type="button" role="tab">
+                            <i data-feather="users" class="me-2"></i>Resource Utilization
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="activity-duration-tab" data-bs-toggle="tab" data-bs-target="#activity-duration-pane" type="button" role="tab">
+                            <i data-feather="zap" class="me-2"></i>Activity Duration
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="waiting-time-tab" data-bs-toggle="tab" data-bs-target="#waiting-time-pane" type="button" role="tab">
+                            <i data-feather="pause-circle" class="me-2"></i>Waiting Times
+                        </button>
+                    </li>
+                </ul>
+                <div class="tab-content" id="simulationResultsTabsContent">
+                    <div class="tab-pane fade show active" id="process-map-pane" role="tabpanel">
+                        <div id="processMapContainer" class="border rounded p-3" style="min-height: 300px; background-color: #f8f9fa;">
+                            <div class="d-flex justify-content-center align-items-center h-100">
+                                <span class="text-muted">Process map will be displayed here after simulation</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="case-duration-pane" role="tabpanel">
+                        <div class="row">
+                            <div id="caseDurationDist" class="border rounded p-3" style="min-height: 300px; background-color: #f8f9fa;">
+                                <div class="d-flex justify-content-center align-items-center h-100">
+                                    <span class="text-muted">Case durations distribution plot will be displayed here after simulation</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="resource-utilization-pane" role="tabpanel">
+                        <div class="row">
+                            <div id="resourceHeatmap" class="border rounded p-3" style="min-height: 300px; background-color: #f8f9fa;">
+                                <div class="d-flex justify-content-center align-items-center h-100">
+                                    <span class="text-muted">Resource Utilization plot will be displayed here after simulation</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="activity-duration-pane" role="tabpanel">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="activitySelect" class="form-label">Select Activity</label>
+                                <select class="form-select" id="activitySelect" onchange="renderActivityDurationBoxplot(this.value)"></select>
+                            </div>
+                        </div>
+                        <div id="activityDurationBoxplotContainer" class="border rounded p-3" style="min-height: 300px; background-color: #f8f9fa;">
+                            <div class="d-flex justify-content-center align-items-center h-100">
+                                <span class="text-muted">Activity Duration.</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="waiting-time-pane" role="tabpanel">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="waitingTimeSelect_res" class="form-label">Select Resource</label>
+                                <select class="form-select" id="waitingTimeSelect_res" onchange="updateWaitingTimeVisualization()"></select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="waitingTimeSelect_act" class="form-label">Select Activity</label>
+                                <select class="form-select" id="waitingTimeSelect_act" onchange="updateWaitingTimeVisualization()"></select>
+                            </div>
+                        </div>
+                        <div id="waitingTimeVisualizationContainer" class="border rounded p-3" style="min-height: 300px; background-color: #f8f9fa;">
+                            <div class="d-flex justify-content-center align-items-center h-100">
+                                <span class="text-muted">Waiting Time Distribution.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    <h2 class="text-primary mb-3">Welcome to ProSiT</h2>
-    <p class="lead text-muted mb-4">Process Simulation Tool</p>
-    <p class="text-muted">
-        Upload your XES event log to discover process parameters and generate realistic simulations.
-        <br>
-        Customize transition weights, resource assignments, execution times, and waiting times with our intuitive interface.
-    </p>
 </div>
 {% endblock %}
 
@@ -368,6 +473,8 @@
 <script>
 let currentSessionId = null;
 let currentParameters = null;
+let originalVisualization = null;
+let simulatedLogData = null;
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
@@ -416,6 +523,23 @@ document.addEventListener('DOMContentLoaded', function() {
         togglePetriNetSections();
     }
 
+    // Setup incremental discovery toggle behavior
+    const maxDepthSelect = document.getElementById('maxDepthTree');
+    const incToggle = document.getElementById('incrementalDiscoveryToggle');
+    function syncIncrementalToggle() {
+        const depth = parseInt(maxDepthSelect.value || '0');
+        if (depth === 0) {
+            incToggle.checked = false;
+            incToggle.disabled = true;
+        } else {
+            incToggle.disabled = false;
+        }
+    }
+    if (maxDepthSelect && incToggle) {
+        maxDepthSelect.addEventListener('change', syncIncrementalToggle);
+        syncIncrementalToggle();
+    }
+
     // Setup form handlers
     setupFormHandlers();
     
@@ -434,8 +558,7 @@ function setupFormHandlers() {
         uploadForm.addEventListener('submit', handleUpload);
     }
     
-    // Simulation form
-    document.getElementById('simulationForm').addEventListener('submit', handleSimulation);
+    // The simulation form logic was removed as it was unused
 }
 
 async function handleUpload(e) {
@@ -463,7 +586,9 @@ async function handleUpload(e) {
         // Discover parameters
         updateLoadingMessage('Discovering parameters...', 'Analyzing process structure and extracting simulation parameters');
         
-        const discoverResponse = await fetch(`/api/discover/${uploadResult.session_id}`, {
+        const depthVal = (document.getElementById('maxDepthTree') && document.getElementById('maxDepthTree').value) || '0';
+        const incVal = (document.getElementById('incrementalDiscoveryToggle') && document.getElementById('incrementalDiscoveryToggle').checked) ? '1' : '0';
+        const discoverResponse = await fetch(`/api/discover/${uploadResult.session_id}?max_depth_tree=${encodeURIComponent(depthVal)}&incremental_discovery=${encodeURIComponent(incVal)}`, {
             method: 'POST'
         });
         
@@ -477,7 +602,7 @@ async function handleUpload(e) {
         showAlert('Parameters discovered successfully', 'success');
         
         // Load the session
-        loadSessionData(uploadResult.session_id, discoverResult.parameters, discoverResult.process_model);
+        loadSessionData(uploadResult.session_id, discoverResult.parameters);
         
     } catch (error) {
         hideLoading();
@@ -486,7 +611,6 @@ async function handleUpload(e) {
 }
 
 async function loadSession(sessionId) {
-    showLoading('Loading session...', 'Retrieving parameters and session data');
     
     try {
         const response = await fetch(`/api/parameters/${sessionId}`);
@@ -496,18 +620,17 @@ async function loadSession(sessionId) {
             throw new Error(result.error);
         }
         
-        hideLoading();
         loadSessionData(sessionId, result.parameters);
         
     } catch (error) {
-        hideLoading();
         showAlert(`Error loading session: ${error.message}`, 'danger');
     }
 }
 
-function loadSessionData(sessionId, parameters, processModel = null) {
+function loadSessionData(sessionId, parameters) {
     currentSessionId = sessionId;
     currentParameters = parameters;
+    originalVisualization = parameters.process_model.visualization
     
     // Hide welcome message
     document.getElementById('welcomeMessage').style.display = 'none';
@@ -518,11 +641,6 @@ function loadSessionData(sessionId, parameters, processModel = null) {
     
     // Render parameters
     renderParameters(parameters);
-    
-    // Render process model if provided separately
-    if (processModel) {
-        renderPetriNet(processModel);
-    }
     
     // Re-initialize feather icons
     feather.replace();
@@ -546,100 +664,593 @@ function renderParameters(parameters) {
     
     // Render inter-arrival time parameters
     renderInterArrivalTimeParameters(parameters.inter_arrival_params || {});
+
+    // Render data attribute parameters
+    renderDataAttributeParameters(parameters.data_attribute_params || {});
+
+    // Render accuracy results
+    renderAccuracyResults(parameters.prosit_metrics || {});
 }
 
 function renderTransitionParameters(transitionParams) {
     const container = document.getElementById('transitionParams');
     const weights = transitionParams.transition_weights || {};
+    const transitions = Object.keys(weights);
+
+    let html = '<div class="mb-3">';
+    html += '<h6 class="mb-3">Transition Weights</h6>';
+    html += '<label class="form-label">Select Transition:</label>';
+    html += '<select class="form-select mb-3" id="transitionSelect" onchange="showTransitionWeights(this.value)">';
+    html += '<option value="">Choose a transition...</option>';
     
-    let html = '<h6 class="mb-3">Transition Weights</h6>';
+    transitions.forEach(transition => {
+        html += `<option value="${transition}">${transition}</option>`;
+    });
     
-    for (const [transition, weight] of Object.entries(weights)) {
-        html += `
-            <div class="mb-3">
-                <label class="form-label">${transition}</label>
-                <div class="input-group">
-                    <input type="range" class="form-range me-3" min="0" max="1" step="0.01" 
-                           value="${weight}" onchange="updateTransitionWeight('${transition}', this.value)">
-                    <input type="number" class="form-control" style="width: 100px;" min="0" max="1" step="0.01" 
-                           value="${weight}" onchange="updateTransitionWeight('${transition}', this.value)">
-                </div>
-            </div>
-        `;
+    html += '</select>';
+    html += '<div id="transitionWeightDisplay" class="border rounded p-3">';
+    
+    if (transitions.length === 0) {
+        html += '<p class="text-muted">No transitions available</p>';
+    } else {
+        html += '<p class="text-muted">Select a transition to edit its weight</p>';
     }
+    
+    html += '</div></div>';
     
     container.innerHTML = html;
 }
 
+function showTransitionWeights(transitionName) {
+
+    revertToOriginalVisualization();
+
+    if (!transitionName || !currentParameters.transition_params.transition_weights[transitionName]) {
+        document.getElementById('transitionWeightDisplay').innerHTML = '<p class="text-muted">No weight data available</p>';
+        return;
+    }
+
+    highlightTransitionVisualization(transitionName);
+
+    const weight = currentParameters.transition_params.transition_weights[transitionName];
+    
+    // If weight is a number, show slider; if it's an object (decision tree), render tree
+    if (typeof weight === 'number') {
+        let html = `<h6 class="mb-3">${transitionName} Weight</h6>`;
+        html += `
+        <div class="mb-3">
+            <label class="form-label">Weight Value: <span id="transitionWeightValue">${weight}</span></label>
+            <div class="input-group">
+                <input type="range" class="form-range me-3" min="0" max="1" step="0.01" 
+                       value="${weight}" onchange="updateTransitionWeight('${transitionName}', this.value); document.getElementById('transitionWeightValue').textContent = this.value; document.getElementById('transitionWeightNumber').value = this.value;">
+                <input type="number" class="form-control" id="transitionWeightNumber" style="width: 100px;" min="0" max="1" step="0.01" 
+                       value="${weight}" onchange="updateTransitionWeight('${transitionName}', this.value); document.getElementById('transitionWeightValue').textContent = this.value; document.querySelector('input[type=range]').value = this.value;">
+            </div>
+        </div>`;
+        document.getElementById('transitionWeightDisplay').innerHTML = html;
+    } else {
+        // Render a decision tree editor
+        const container = document.getElementById('transitionWeightDisplay');
+        container.innerHTML = `<h6 class="mb-3">${transitionName} Decision Tree</h6><div id="dtree-${transitionName.replace(/[^a-zA-Z0-9_-]/g,'_')}\" class="small"></div>`;
+        renderDecisionTreeEditor(weight, container.querySelector('div'));
+    }
+}
+
+function renderDecisionTreeEditor(treeData, mountEl, treeType = 'transition') {
+    // Editable decision tree: for each leaf node render an input to edit value
+    function createNode(id) {
+        const node = treeData[id];
+        const wrapper = document.createElement('div');
+        wrapper.style.marginLeft = '12px';
+        wrapper.style.borderLeft = '2px solid #eee';
+        wrapper.style.paddingLeft = '8px';
+        if (node && typeof node === 'object' && Object.prototype.hasOwnProperty.call(node, 'value')) {
+            const leaf = document.createElement('div');
+            const val = (typeof node.value === 'number') ? node.value : parseFloat(node.value) || 0;
+            const inputId = `leaf-${id}-${Math.random().toString(36).slice(2)}`;
+            leaf.innerHTML = `
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-secondary">Leaf</span> 
+                    <span>value:</span>
+                    <input type="number" id="${inputId}" class="form-control" style="width: 120px;" step="0.001" min="0" max="1" value="${val}">
+                    <button class="btn btn-sm btn-outline-primary" onclick="addSplitToNode('${id}', '${treeType}')" title="Add split">
+                        <i data-feather="plus" class="me-1"></i>Add Split
+                    </button>
+                </div>`;
+            setTimeout(() => {
+                const input = document.getElementById(inputId);
+                if (input) {
+                    input.addEventListener('change', () => {
+                        const newVal = parseFloat(input.value);
+                        if (!isNaN(newVal) && newVal >= 0 && newVal <= 1) {
+                            treeData[id].value = newVal;
+                        }
+                    });
+                }
+                feather.replace();
+            }, 0);
+            wrapper.appendChild(leaf);
+        } else if (node && Object.prototype.hasOwnProperty.call(node, 'feature')) {
+            const title = document.createElement('div');
+            const childrenContainer = document.createElement('div');
+            childrenContainer.className = 'tree-children';
+            childrenContainer.style.display = 'block'; // Default to expanded
+            
+            title.innerHTML = `
+                <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-sm btn-outline-secondary tree-toggle" data-node-id="${id}" title="Collapse/Expand">
+                        <i data-feather="chevron-down" class="tree-icon"></i>
+                    </button>
+                    <span class="badge bg-primary">Split</span> 
+                    <span>${escapeHtml(node.feature)} ≤ ${escapeHtml(node.threshold)}</span>
+                    <button class="btn btn-sm btn-outline-danger" onclick="removeSplitFromNode('${id}', '${treeType}')" title="Remove split">
+                        <i data-feather="trash-2" class="me-1"></i>Remove
+                    </button>
+                </div>`;
+            wrapper.appendChild(title);
+            wrapper.appendChild(childrenContainer);
+            
+            if (node.children) {
+                const trueId = node.children.true;
+                const falseId = node.children.false;
+                const trueBlock = document.createElement('div');
+                trueBlock.innerHTML = '<em>true</em>';
+                childrenContainer.appendChild(trueBlock);
+                childrenContainer.appendChild(createNode(String(trueId)));
+                const falseBlock = document.createElement('div');
+                falseBlock.innerHTML = '<em>false</em>';
+                childrenContainer.appendChild(falseBlock);
+                childrenContainer.appendChild(createNode(String(falseId)));
+            }
+        } else {
+            const unknown = document.createElement('div');
+            unknown.textContent = 'Unknown node format';
+            wrapper.appendChild(unknown);
+        }
+        return wrapper;
+    }
+
+    function escapeHtml(text) {
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/\"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    while (mountEl.firstChild) mountEl.removeChild(mountEl.firstChild);
+    
+    // Add tree control buttons
+    const controlsDiv = document.createElement('div');
+    controlsDiv.className = 'mb-3 d-flex gap-2';
+    controlsDiv.innerHTML = `
+        <button class="btn btn-sm btn-outline-secondary" onclick="collapseAllTreeNodes()" title="Collapse All">
+            <i data-feather="chevrons-up" class="me-1"></i>Collapse All
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="expandAllTreeNodes()" title="Expand All">
+            <i data-feather="chevrons-down" class="me-1"></i>Expand All
+        </button>
+    `;
+    mountEl.appendChild(controlsDiv);
+    
+    const treeRoot = createNode('0');
+    mountEl.appendChild(treeRoot);
+    
+    // Add event delegation for toggle buttons
+    mountEl.addEventListener('click', function(event) {
+        const toggleButton = event.target.closest('.tree-toggle');
+        if (toggleButton) {
+            const nodeId = toggleButton.getAttribute('data-node-id');
+            if (nodeId) {
+                toggleTreeNodeByButton(toggleButton, nodeId);
+            }
+        }
+    });
+    
+    // Initialize feather icons for the control buttons
+    setTimeout(() => feather.replace(), 0);
+}
+
+// Renders a decision tree whose leaf nodes contain a distribution with parameters
+function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType = 'distribution') {
+    function createLeafControls(node, id) {
+        const wrapper = document.createElement('div');
+        wrapper.style.marginLeft = '12px';
+        wrapper.style.borderLeft = '2px solid #eee';
+        wrapper.style.paddingLeft = '8px';
+
+        const leafHeader = document.createElement('div');
+        leafHeader.innerHTML = `
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-secondary">Leaf</span> 
+                <span>distribution</span>
+                <button class="btn btn-sm btn-outline-primary" onclick="addSplitToNode('${id}', '${treeType}')" title="Add split">
+                    <i data-feather="plus" class="me-1"></i>Add Split
+                </button>
+            </div>`;
+        wrapper.appendChild(leafHeader);
+
+        // Ensure dist structure exists
+        if (!node.dist) {
+            node.dist = { dist_name: 'expon', params: { mean: 15 }, min_value: 0, max_value: 100 };
+        }
+
+        const distContainer = document.createElement('div');
+        distContainer.className = 'mt-2';
+
+        // Build distribution selector
+        const select = document.createElement('select');
+        select.className = 'form-select form-select-sm mb-2';
+        const options = [
+            { v: 'fixed', t: 'Fixed' },
+            { v: 'norm', t: 'Normal' },
+            { v: 'expon', t: 'Exponential' },
+            { v: 'uniform', t: 'Uniform' }
+        ];
+        options.forEach(o => {
+            const opt = document.createElement('option');
+            opt.value = o.v;
+            opt.textContent = o.t;
+            if ((node.dist.dist_name || '') === o.v) opt.selected = true;
+            select.appendChild(opt);
+        });
+        distContainer.appendChild(select);
+
+        const paramsContainer = document.createElement('div');
+        distContainer.appendChild(paramsContainer);
+
+        function renderParams() {
+            // Clear
+            while (paramsContainer.firstChild) paramsContainer.removeChild(paramsContainer.firstChild);
+            const distName = select.value;
+            node.dist.dist_name = distName;
+            // Normalize params: ensure object form for editing
+            if (!node.dist.params) node.dist.params = {};
+            const rawExisting = node.dist.params;
+            function arrayToObject(dist, arr) {
+                const obj = {};
+                if (!Array.isArray(arr)) return obj;
+                if (dist === 'expon') { obj.mean = arr[1] ?? node.value ?? 15; }
+                else if (dist === 'norm') { obj.mean = arr[0] ?? node.value ?? 15; obj.std = arr[1] ?? 5; }
+                else if (dist === 'uniform') { obj.min = arr[0] ?? (node.dist.min_value ?? 0); obj.max = arr[1] ?? (node.dist.max_value ?? 100); }
+                else if (dist === 'fixed') { obj.value = arr[0] ?? node.value ?? 1; }
+                return obj;
+            }
+            if (Array.isArray(rawExisting)) {
+                node.dist.params = arrayToObject(distName, rawExisting);
+            } else if (typeof rawExisting !== 'object') {
+                node.dist.params = {};
+            }
+            const raw = node.dist.params;
+            const minDefault = node.dist.min_value ?? node.dist.min ?? 0;
+            const maxDefault = node.dist.max_value ?? node.dist.max ?? 100;
+
+            function readParam(key, fallback) {
+                if (raw && typeof raw === 'object' && !Array.isArray(raw) && raw[key] != null) return raw[key];
+                if (Array.isArray(raw)) {
+                    // Heuristic mapping for common distributions
+                    if (distName === 'expon') {
+                        // params = (loc, scale) → mean ~ scale
+                        if (key === 'mean') return raw[1] ?? fallback;
+                    } else if (distName === 'norm') {
+                        // params = (loc, scale) → mean ~ loc, std ~ scale
+                        if (key === 'mean') return raw[0] ?? fallback;
+                        if (key === 'std') return raw[1] ?? fallback;
+                    } else if (distName === 'uniform') {
+                        // params = (low, high)
+                        if (key === 'min') return raw[0] ?? fallback;
+                        if (key === 'max') return raw[1] ?? fallback;
+                    }
+                }
+                // Fallback to top-level convenience fields
+                if (key === 'min') return node.dist.min_value ?? node.dist.min ?? fallback;
+                if (key === 'max') return node.dist.max_value ?? node.dist.max ?? fallback;
+                if (key === 'value') return node.value ?? fallback;
+                return fallback;
+            }
+
+            function numberInput(label, key, opts = {}) {
+                const group = document.createElement('div');
+                group.className = 'mb-2';
+                const lab = document.createElement('label');
+                lab.className = 'form-label small';
+                lab.textContent = label;
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.className = 'form-control form-control-sm';
+                if (opts.min !== undefined) input.min = String(opts.min);
+                if (opts.max !== undefined) input.max = String(opts.max);
+                input.step = String(opts.step || 0.1);
+                input.value = readParam(key, opts.defaultValue ?? 0);
+                input.addEventListener('change', () => {
+                    const val = parseFloat(input.value);
+                    if (!isNaN(val)) {
+                        // Ensure object form
+                        if (!node.dist.params || Array.isArray(node.dist.params)) node.dist.params = {};
+                        node.dist.params[key] = val;
+                        // Keep top-level min/max in sync if edited
+                        if (key === 'min') node.dist.min_value = val;
+                        if (key === 'max') node.dist.max_value = val;
+                        if (distName === 'fixed' && key === 'value') {
+                            node.dist.min_value = val;
+                            node.dist.max_value = val;
+                        }
+                    }
+                });
+                group.appendChild(lab);
+                group.appendChild(input);
+                paramsContainer.appendChild(group);
+            }
+
+            if (distName === 'fixed') {
+                numberInput('Fixed Value', 'value', { min: 0, step: 0.1, defaultValue: node.value ?? 1 });
+            } else if (distName === 'norm') {
+                numberInput('Mean', 'mean', { min: 0, step: 0.1, defaultValue: node.value ?? 15 });
+                numberInput('Std Dev', 'std', { min: 0, step: 0.1, defaultValue: 5 });
+                numberInput('Min', 'min', { min: 0, step: 0.1, defaultValue: minDefault });
+                numberInput('Max', 'max', { min: 0, step: 0.1, defaultValue: maxDefault });
+            } else if (distName === 'expon') {
+                numberInput('Mean', 'mean', { min: 0, step: 0.1, defaultValue: node.value ?? 15 });
+                numberInput('Min', 'min', { min: 0, step: 0.1, defaultValue: minDefault });
+                numberInput('Max', 'max', { min: 0, step: 0.1, defaultValue: maxDefault });
+            } else if (distName === 'uniform') {
+                numberInput('Min Value', 'min', { min: 0, step: 0.1, defaultValue: minDefault });
+                numberInput('Max Value', 'max', { min: 0, step: 0.1, defaultValue: maxDefault });
+            }
+        }
+
+        select.addEventListener('change', () => {
+            // When distribution changes, reset/convert params to a clean object suitable for editing
+            const distName = select.value;
+            const current = node.dist.params;
+            let next = {};
+            if (Array.isArray(current)) {
+                // Convert array to object based on previous selection
+                next = arrayToObject(distName, current);
+            } else if (typeof current === 'object' && current) {
+                // Keep any overlapping keys
+                next = { ...current };
+            }
+            // Ensure required fields exist for each dist
+            if (distName === 'fixed') { if (next.value == null) next.value = node.value ?? 1; node.dist.min_value = next.value; node.dist.max_value = next.value; }
+            if (distName === 'norm') { if (next.mean == null) next.mean = node.value ?? 15; if (next.std == null) next.std = 5; }
+            if (distName === 'expon') { if (next.mean == null) next.mean = node.value ?? 15; }
+            if (distName === 'uniform') { if (next.min == null) next.min = node.dist.min_value ?? 0; if (next.max == null) next.max = node.dist.max_value ?? 100; }
+            node.dist.params = next;
+            renderParams();
+        });
+
+        renderParams();
+        wrapper.appendChild(distContainer);
+        return wrapper;
+    }
+
+    function createNode(id) {
+        const node = treeData[id];
+        const wrapper = document.createElement('div');
+        wrapper.style.marginLeft = '12px';
+        wrapper.style.borderLeft = '2px solid #eee';
+        wrapper.style.paddingLeft = '8px';
+
+        if (node && typeof node === 'object' && Object.prototype.hasOwnProperty.call(node, 'value')) {
+            // Leaf with distribution
+            wrapper.appendChild(createLeafControls(node, id));
+        } else if (node && Object.prototype.hasOwnProperty.call(node, 'feature')) {
+            const title = document.createElement('div');
+            const childrenContainer = document.createElement('div');
+            childrenContainer.className = 'tree-children';
+            childrenContainer.style.display = 'block'; // Default to expanded
+            
+            title.innerHTML = `
+                <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-sm btn-outline-secondary tree-toggle" data-node-id="${id}" title="Collapse/Expand">
+                        <i data-feather="chevron-down" class="tree-icon"></i>
+                    </button>
+                    <span class="badge bg-primary">Split</span> 
+                    <span>${escapeHtml(node.feature)} ≤ ${escapeHtml(node.threshold)}</span>
+                    <button class="btn btn-sm btn-outline-danger" onclick="removeSplitFromNode('${id}', '${treeType}')" title="Remove split">
+                        <i data-feather="trash-2" class="me-1"></i>Remove
+                    </button>
+                </div>`;
+            wrapper.appendChild(title);
+            wrapper.appendChild(childrenContainer);
+            
+            if (node.children) {
+                const trueId = node.children.true ?? node.children.True;
+                const falseId = node.children.false ?? node.children.False;
+                const trueBlock = document.createElement('div');
+                trueBlock.innerHTML = '<em>true</em>';
+                childrenContainer.appendChild(trueBlock);
+                childrenContainer.appendChild(createNode(String(trueId)));
+                const falseBlock = document.createElement('div');
+                falseBlock.innerHTML = '<em>false</em>';
+                childrenContainer.appendChild(falseBlock);
+                childrenContainer.appendChild(createNode(String(falseId)));
+            }
+        } else {
+            const unknown = document.createElement('div');
+            unknown.textContent = 'Unknown node format';
+            wrapper.appendChild(unknown);
+        }
+        return wrapper;
+    }
+
+    function escapeHtml(text) {
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/\"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    while (mountEl.firstChild) mountEl.removeChild(mountEl.firstChild);
+    
+    // Add tree control buttons
+    const controlsDiv = document.createElement('div');
+    controlsDiv.className = 'mb-3 d-flex gap-2';
+    controlsDiv.innerHTML = `
+        <button class="btn btn-sm btn-outline-secondary" onclick="collapseAllTreeNodes()" title="Collapse All">
+            <i data-feather="chevrons-up" class="me-1"></i>Collapse All
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="expandAllTreeNodes()" title="Expand All">
+            <i data-feather="chevrons-down" class="me-1"></i>Expand All
+        </button>
+    `;
+    mountEl.appendChild(controlsDiv);
+    
+    const treeRoot = createNode('0');
+    mountEl.appendChild(treeRoot);
+    
+    // Add event delegation for toggle buttons
+    mountEl.addEventListener('click', function(event) {
+        const toggleButton = event.target.closest('.tree-toggle');
+        if (toggleButton) {
+            const nodeId = toggleButton.getAttribute('data-node-id');
+            if (nodeId) {
+                toggleTreeNodeByButton(toggleButton, nodeId);
+            }
+        }
+    });
+    
+    // Initialize feather icons for the control buttons
+    setTimeout(() => feather.replace(), 0);
+}
+
+function highlightTransitionVisualization(transitionNames, newColor="#c77dff") {
+
+    // Store original visualization if not already stored
+    if (!originalVisualization && currentParameters?.process_model?.visualization) {
+        originalVisualization = currentParameters.process_model.visualization;
+    }
+
+    // Ensure transitionNames is an array
+    if (!Array.isArray(transitionNames)) {
+        transitionNames = [transitionNames];
+    }
+
+    // Loop through each transition name in the array
+    transitionNames.forEach(transitionName => {
+        const transitionId = currentParameters.process_model.map_transitionName_to_id[transitionName];
+        
+        // Use a more specific regex to avoid issues with other attributes
+        const regex = new RegExp(`(<title>${transitionId}<\\/title>\\s*<(ellipse|polygon) fill=)"([^"]*)"`, "m");
+
+        // Check if the pattern exists and then replace the color
+        if (regex.test(currentParameters.process_model.visualization)) {
+            // The `replace` method is chained to ensure each transition is updated
+            currentParameters.process_model.visualization = currentParameters.process_model.visualization.replace(regex, `$1"${newColor}"`);
+        }
+    });
+
+    // Render the Petri net only once after all changes are made
+    renderPetriNet(currentParameters.process_model);
+}
+
+// New function to revert to original visualization
+function revertToOriginalVisualization() {
+    if (originalVisualization && currentParameters?.process_model) {
+        currentParameters.process_model.visualization = originalVisualization;
+        renderPetriNet(currentParameters.process_model);
+    }
+}
+
+// --- RESOURCE PARAMETERS ---
 function renderResourceParameters(resourceParams) {
     const container = document.getElementById('resourceParams');
     const activityContainer = document.getElementById('activityResourceParams');
     const calendarContainer = document.getElementById('resourceCalendars');
-    
-    // Resource management with add functionality
-    let html = '<div class="mb-3">';
+
+    const resources = resourceParams.resources || [];
+    const multitaskingResources = resourceParams.multitasking_resource || [];
+    const actToResources = resourceParams.act_to_resources || {};
+    const activityNames = Object.keys(actToResources);
+
+    // --- Resource Weights with dropdown selector and display ---
+    let html = '<div class="mb-12">';
     html += '<div class="d-flex justify-content-between align-items-center mb-2">';
-    html += '<h6 class="mb-0">Available Resources</h6>';
     html += '<button class="btn btn-outline-success btn-sm" onclick="showAddResourceModal()">';
     html += '<i data-feather="plus" class="me-1"></i>Add Resource</button>';
     html += '</div>';
-    html += '<div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">';
-    
-    (resourceParams.resources || []).forEach(resource => {
-        const weight = resourceParams.resource_weights?.[resource] || 0.1;
-        html += `
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="small">${resource}</span>
-                <div class="d-flex align-items-center gap-2">
-                    <input type="number" class="form-control form-control-sm" style="width: 80px;" 
-                           min="0" max="1" step="0.01" value="${weight}"
-                           onchange="updateResourceWeight('${resource}', this.value)">
-                    <button class="btn btn-outline-danger btn-sm" style="padding: 2px 6px;" 
-                            onclick="removeResource('${resource}')" title="Remove resource">
-                        <i data-feather="x" style="width: 12px; height: 12px;"></i>
-                    </button>
-                </div>
-            </div>
-        `;
+
+    html += '<div class="card">';
+    html += '<div class="card-header py-2"><h6 class="mb-0">Resource Weights</h6></div>';
+    html += '<div class="card-body">';
+    html += '<label class="form-label">Select Resource:</label>';
+    html += '<select class="form-select mb-3" id="resourceWeightSelect" onchange="showResourceWeight(this.value)">';
+    html += '<option value="">Choose a resource...</option>';
+
+    resources.forEach(resource => {
+        html += `<option value="${resource}">${resource}</option>`;
     });
-    
-    html += '</div></div>';
-    
-    // Multitasking resources with dropdown for many resources
-    html += '<div class="mb-3">';
-    html += '<h6>Multitasking Resources</h6>';
-    
-    const resources = resourceParams.resources || [];
-    if (resources.length > 10) {
-        // Use dropdown for many resources
-        html += '<div class="border rounded p-2">';
-        html += '<select class="form-select form-select-sm mb-2" id="multitaskingSelect" onchange="toggleMultitaskingFromDropdown()">';
-        html += '<option value="">Select resource to toggle multitasking...</option>';
-        resources.forEach(resource => {
-            const isMultitasking = (resourceParams.multitasking_resource || []).includes(resource);
-            const status = isMultitasking ? ' (Multitasking)' : ' (Single task)';
-            html += `<option value="${resource}">${resource}${status}</option>`;
-        });
-        html += '</select>';
-        
-        // Show current multitasking resources
-        const multitaskingResources = resourceParams.multitasking_resource || [];
-        if (multitaskingResources.length > 0) {
-            html += '<div class="mt-2">';
-            html += '<small class="text-muted">Current multitasking resources:</small>';
-            html += '<div class="d-flex flex-wrap gap-1 mt-1">';
-            multitaskingResources.forEach(resource => {
-                html += `<span class="badge bg-success">${resource}</span>`;
-            });
-            html += '</div></div>';
-        }
-        html += '</div>';
+
+    html += '</select>';
+    html += '<div id="resourceWeightDisplay" class="border rounded p-3">';
+
+    if (!resources.length) {
+        html += '<p class="text-muted">No resources available</p>';
     } else {
-        // Use checkboxes for fewer resources
-        html += '<div class="border rounded p-2">';
+        html += '<p class="text-muted">Select a resource to edit its weight</p>';
+    }
+
+    html += '</div></div>';
+    html += '</div>';
+    html += '</div>';
+
+    container.innerHTML = html;
+
+    // --- Activity Assignments and Multitasking ---
+    let activityHtml = '<div class="row">';
+
+    // Activity Assignments Column
+    activityHtml += '<div class="col-md-6">';
+    activityHtml += '<div class="card">';
+    activityHtml += '<div class="card-header py-2"><h6 class="mb-0">Activity Assignments</h6></div>';
+    activityHtml += '<div class="card-body">';
+    if (activityNames.length === 0) {
+        activityHtml += '<div class="alert alert-info"><small>No activity assignments available. Activities will be assigned to all resources by default during simulation.</small></div>';
+    } else {
+        activityHtml += '<label class="form-label">Select Activity:</label>';
+        activityHtml += '<select class="form-select form-select-sm mb-3" id="activityAssignmentSelect" onchange="renderSelectedActivityAssignment(this.value)">';
+        activityHtml += '<option value="">Choose an activity...</option>';
+        activityNames.forEach(activity => {
+            activityHtml += `<option value="${activity}">${activity}</option>`;
+        });
+        activityHtml += '</select>';
+        activityHtml += '<div id="activityAssignmentDetails" class="border rounded p-3" style="max-height: 200px; overflow-y: auto;>';
+        activityHtml += '<p class="text-muted">Select an activity to view/edit its resource assignments</p>';
+        activityHtml += '</div>';
+    }
+    activityHtml += '</div></div></div>';
+
+    // Multitasking Column
+    activityHtml += '<div class="col-md-6">';
+    activityHtml += '<div class="card">';
+    activityHtml += '<div class="card-header py-2"><h6 class="mb-0">Multitasking Resources</h6></div>';
+    activityHtml += '<div class="card-body">';
+    if (resources.length > 10) {
+        activityHtml += '<select class="form-select form-select-sm mb-2" id="multitaskingSelect" onchange="toggleMultitaskingFromDropdown()">';
+        activityHtml += '<option value="">Select resource to toggle multitasking...</option>';
         resources.forEach(resource => {
-            const isMultitasking = (resourceParams.multitasking_resource || []).includes(resource);
-            html += `
+            const isMultitasking = multitaskingResources.includes(resource);
+            const status = isMultitasking ? ' (Multitasking)' : ' (Single task)';
+            activityHtml += `<option value="${resource}">${resource}${status}</option>`;
+        });
+        activityHtml += '</select>';
+        if (multitaskingResources.length > 0) {
+            activityHtml += '<div class="mt-2">';
+            activityHtml += '<small class="text-muted">Current multitasking resources:</small>';
+            activityHtml += '<div class="d-flex flex-wrap gap-1 mt-1">';
+            multitaskingResources.forEach(resource => {
+                activityHtml += `<span class="badge bg-success">${resource}</span>`;
+            });
+            activityHtml += '</div></div>';
+        }
+    } else {
+        resources.forEach(resource => {
+            const isMultitasking = multitaskingResources.includes(resource);
+            activityHtml += `
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" ${isMultitasking ? 'checked' : ''} 
                            onchange="updateMultitaskingResource('${resource}', this.checked)">
@@ -647,147 +1258,312 @@ function renderResourceParameters(resourceParams) {
                 </div>
             `;
         });
-        html += '</div>';
     }
-    html += '</div>';
-    
-    container.innerHTML = html;
-    
-    // Render resource calendars
-    renderResourceCalendars(resourceParams.calendars || {}, calendarContainer);
-    
-    // Activity-resource assignments
-    let activityHtml = '';
-    const actToResources = resourceParams.act_to_resources || {};
-    
-    console.log('Activity-resource assignments (act_to_resources):', actToResources);
-    console.log('Available resources:', resourceParams.resources);
-    
-    // Use act_to_resources for activity assignments
-    const assignmentData = actToResources;
-    
-    if (Object.keys(assignmentData).length === 0) {
-        activityHtml = '<div class="alert alert-info"><small>No activity assignments available. Activities will be assigned to all resources by default during simulation.</small></div>';
-    } else {
-        for (const [activity, resourceData] of Object.entries(assignmentData)) {
-            activityHtml += `
-                <div class="mb-3">
-                    <h6 class="small">${activity}</h6>
-                    <div class="border rounded p-2" style="max-height: 150px; overflow-y: auto;">
-            `;
-            
-            (resourceParams.resources || []).forEach(resource => {
-                let isAssigned = false;
-                
-                if (Array.isArray(resourceData)) {
-                    // act_to_resources format: array of assigned resources
-                    isAssigned = resourceData.includes(resource);
-                }
-                
-                activityHtml += `
-                    <div class="form-check form-check-sm">
-                        <input class="form-check-input" type="checkbox" ${isAssigned ? 'checked' : ''} 
-                               onchange="updateActivityResource('${activity}', '${resource}', this.checked)">
-                        <label class="form-check-label small">${resource}</label>
-                    </div>
-                `;
-            });
-            
-            activityHtml += '</div></div>';
-        }
-    }
-    
+    activityHtml += '</div></div></div>';
+
+    activityHtml += '</div>'; // end row
+
     activityContainer.innerHTML = activityHtml;
+
+    // --- Resource Calendars ---
+    calendarContainer.innerHTML = '<div class="card"><div class="card-header py-2"><h6 class="mb-0">Resource Calendars</h6></div><div class="card-body"></div></div>';
+    renderResourceCalendars(resourceParams.calendars || {}, calendarContainer.querySelector('.card-body'));
+}
+
+// Helper to render resource checkboxes for selected activity
+function renderSelectedActivityAssignment(activity) {
+
+    revertToOriginalVisualization();
+
+    const container = document.getElementById('activityAssignmentDetails');
+    const resources = currentParameters.resource_params.resources || [];
+    const assignments = currentParameters.resource_params.act_to_resources || {};
+    const assigned = assignments[activity] || [];
+
+    highlightTransitionVisualization(activity);
+
+    if (!activity) {
+        container.innerHTML = '<p class="text-muted">Select an activity to view/edit its resource assignments</p>';
+        return;
+    }
+
+    let html = '';
+    resources.forEach(resource => {
+        const isAssigned = assigned.includes(resource);
+        html += `
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" ${isAssigned ? 'checked' : ''}
+                       onchange="updateActivityResource('${activity}', '${resource}', this.checked)">
+                <label class="form-check-label small">${resource}</label>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+
+function showResourceWeight(resourceName) {
+
+    revertToOriginalVisualization();
+
+    if (!resourceName) {
+        document.getElementById('resourceWeightDisplay').innerHTML = '<p class="text-muted">Select a resource to edit its weight</p>';
+        return;
+    }
+    
+    highlightTransitionVisualization(returnActivitiesPerResource(resourceName));
+
+    const weight = currentParameters.resource_params.resource_weights?.[resourceName] || 0.1;
+    
+    if (typeof weight === 'number') {
+        let html = `<h6 class="mb-3">${resourceName} Weight</h6>`;
+        html += `
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span>Weight Value: <span id="resourceWeightValue">${weight}</span></span>
+            <button class="btn btn-outline-danger btn-sm" onclick="removeResource('${resourceName}')" title="Remove resource">
+                <i data-feather="x" class="me-1"></i>Remove Resource
+            </button>
+        </div>
+        <div class="mb-3">
+            <div class="d-flex align-items-center gap-2">
+                <input type="range" class="form-range flex-grow-1" min="0" max="1" step="0.01" 
+                       value="${weight}" onchange="updateResourceWeight('${resourceName}', this.value); document.getElementById('resourceWeightValue').textContent = this.value; document.getElementById('resourceWeightNumber').value = this.value;">
+                <input type="number" class="form-control" id="resourceWeightNumber" style="width: 100px;" 
+                       min="0" max="1" step="0.01" value="${weight}"
+                       onchange="updateResourceWeight('${resourceName}', this.value); document.getElementById('resourceWeightValue').textContent = this.value; document.querySelector('input[type=range]').value = this.value;">
+            </div>
+        </div>`;
+        document.getElementById('resourceWeightDisplay').innerHTML = html;
+        feather.replace();
+    } else {
+        const container = document.getElementById('resourceWeightDisplay');
+        container.innerHTML = `<h6 class="mb-3">${resourceName} Decision Tree</h6><div id="rtree-${resourceName.replace(/[^a-zA-Z0-9_-]/g,'_')}\" class="small"></div>`;
+        renderDecisionTreeEditor(weight, container.querySelector('div'), 'resource');
+        feather.replace();
+    }
 }
 
 function renderExecutionTimeParameters(executionParams) {
     const container = document.getElementById('executionParams');
     const durations = executionParams.activity_durations || {};
+    const activities = Object.keys(durations);
     
-    let html = '<h6 class="mb-3">Activity Duration Distributions</h6>';
+    let html = '<div class="mb-3">';
+    html += '<h6 class="mb-3">Activity Duration Distributions</h6>';
+    html += '<label class="form-label">Select Activity:</label>';
+    html += '<select class="form-select mb-3" id="activityExecutionSelect" onchange="showActivityExecution(this.value)">';
+    html += '<option value="">Choose an activity...</option>';
     
-    for (const [activity, params] of Object.entries(durations)) {
-        const distribution = params.distribution || 'norm';
+    activities.forEach(activity => {
+        html += `<option value="${activity}">${activity}</option>`;
+    });
+    
+    html += '</select>';
+    html += '<div id="activityExecutionDisplay" class="border rounded p-3">';
+    
+    if (activities.length === 0) {
+        html += '<p class="text-muted">No activities available</p>';
+    } else {
+        html += '<p class="text-muted">Select an activity to edit its execution time parameters</p>';
+    }
+    
+    html += '</div></div>';
+    
+    container.innerHTML = html;
+}
+
+function showActivityExecution(activityName) {
+
+    revertToOriginalVisualization();
+
+    if (!activityName || !currentParameters.execution_time_params.activity_durations[activityName]) {
+        document.getElementById('activityExecutionDisplay').innerHTML = '<p class="text-muted">No execution time data available</p>';
+        return;
+    }
+    
+    highlightTransitionVisualization(activityName);
+
+    const params = currentParameters.execution_time_params.activity_durations[activityName];
+    const isTree = params && typeof params === 'object' && Object.prototype.hasOwnProperty.call(params, '0');
+
+    if (isTree) {
+        const container = document.getElementById('activityExecutionDisplay');
+        container.innerHTML = `<h6 class="mb-3">${activityName} Decision Tree</h6><div id="etree-${activityName.replace(/[^a-zA-Z0-9_-]/g,'_')}" class="small"></div>`;
+        renderDecisionTreeDistributionEditor(params, container.querySelector('div'), 'execution');
+    } else {
+        const distribution = (params && params.distribution) || 'norm';
+        let html = `<h6 class="mb-3">${activityName} Execution Time</h6>`;
         html += `
-            <div class="card mb-3" data-activity="${activity}">
-                <div class="card-header py-2">
-                    <h6 class="mb-0">${activity}</h6>
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label small">Distribution</label>
+                    <select class="form-select form-select-sm" 
+                            onchange="updateExecutionParam('${activityName}', 'distribution', this.value); showActivityExecution('${activityName}');">
+                        <option value="fixed" ${distribution === 'fixed' ? 'selected' : ''}>Fixed</option>
+                        <option value="norm" ${distribution === 'norm' ? 'selected' : ''}>Normal</option>
+                        <option value="expon" ${distribution === 'expon' ? 'selected' : ''}>Exponential</option>
+                        <option value="uniform" ${distribution === 'uniform' ? 'selected' : ''}>Uniform</option>
+                    </select>
                 </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <label class="form-label small">Distribution</label>
-                            <select class="form-select form-select-sm" 
-                                    onchange="updateExecutionParam('${activity}', 'distribution', this.value); renderExecutionTimeParameters(currentParameters.execution_time_params);">
-                                <option value="fixed" ${distribution === 'fixed' ? 'selected' : ''}>Fixed</option>
-                                <option value="norm" ${distribution === 'norm' ? 'selected' : ''}>Normal</option>
-                                <option value="expon" ${distribution === 'expon' ? 'selected' : ''}>Exponential</option>
-                                
-                                <option value="uniform" ${distribution === 'uniform' ? 'selected' : ''}>Uniform</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            ${renderDistributionParameters(activity, distribution, params.parameters || params, 'execution')}
-                        </div>
-                    </div>
+                <div class="col-md-6">
+                    ${renderDistributionParameters(activityName, distribution, (params && (params.parameters || params)) || {}, 'execution')}
                 </div>
             </div>
         `;
+        document.getElementById('activityExecutionDisplay').innerHTML = html;
     }
-    
-    container.innerHTML = html;
 }
 
 function renderWaitingTimeParameters(waitingParams) {
     const container = document.getElementById('waitingParams');
     
     // Only show resource waiting times (inter-arrival moved to separate section)
-    let html = '<h6 class="mb-3">Resource Waiting Times</h6>';
+    let html = '<div class="mb-3">';
+    html += '<h6 class="mb-3">Resource Waiting Times</h6>';
     
     // Get all resources from resource_params to ensure we show all resources
     const allResources = currentParameters.resource_params?.resources || [];
     const resourceWaiting = waitingParams.waiting_time || {};
     
-    // Ensure all resources have waiting time parameters (use authentic data only)
+    html += '<label class="form-label">Select Resource:</label>';
+    html += '<select class="form-select mb-3" id="resourceWaitingSelect" onchange="showResourceWaiting(this.value)">';
+    html += '<option value="">Choose a resource...</option>';
+    
     allResources.forEach(resource => {
-        if (!resourceWaiting[resource]) {
-            // Only create structure if resource exists in authentic data
-            const resourceData = waitingParams.resource_waiting_times?.[resource];
-            if (resourceData) {
-                resourceWaiting[resource] = resourceData;
-            }
-        }
+        html += `<option value="${resource}">${resource}</option>`;
     });
     
-    for (const [resource, params] of Object.entries(resourceWaiting)) {
+    html += '</select>';
+    html += '<div id="resourceWaitingDisplay" class="border rounded p-3">';
+    
+    if (allResources.length === 0) {
+        html += '<p class="text-muted">No resources available</p>';
+    } else {
+        html += '<p class="text-muted">Select a resource to edit its waiting time parameters</p>';
+    }
+    
+    html += '</div></div>';
+    
+    container.innerHTML = html;
+}
+
+function showResourceWaiting(resourceName) {
+
+    revertToOriginalVisualization();
+
+    if (!resourceName) {
+        document.getElementById('resourceWaitingDisplay').innerHTML = '<p class="text-muted">Select a resource to edit its waiting time parameters</p>';
+        return;
+    }
+
+    highlightTransitionVisualization(returnActivitiesPerResource(resourceName));
+
+    // Get waiting time parameters for this resource
+    const resourceWaiting = currentParameters.waiting_time_params.resource_waiting_times || {};
+    let params = resourceWaiting[resourceName];
+    
+    // If no params exist, create default ones
+    if (!params) {
+        params = {
+            distribution: 'expon',
+            parameters: { mean: 15 }
+        };
+        // Initialize the structure if it doesn't exist
+        if (!currentParameters.waiting_time_params.resource_waiting_times) {
+            currentParameters.waiting_time_params.resource_waiting_times = {};
+        }
+        currentParameters.waiting_time_params.resource_waiting_times[resourceName] = params;
+    }
+    
+    const isTree = params && typeof params === 'object' && Object.prototype.hasOwnProperty.call(params, '0');
+
+    if (isTree) {
+        const container = document.getElementById('resourceWaitingDisplay');
+        container.innerHTML = `<h6 class="mb-3">${resourceName} Decision Tree</h6><div id="wtree-${resourceName.replace(/[^a-zA-Z0-9_-]/g,'_')}" class="small"></div>`;
+        renderDecisionTreeDistributionEditor(params, container.querySelector('div'), 'waiting');
+    } else {
         const distribution = params.distribution || 'norm';
+        let html = `<h6 class="mb-3">${resourceName} Waiting Time</h6>`;
         html += `
-            <div class="card mb-3">
-                <div class="card-header py-2">
-                    <h6 class="mb-0">${resource}</h6>
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label small">Distribution</label>
+                    <select class="form-select form-select-sm" 
+                            onchange="updateWaitingParam('${resourceName}', 'distribution', this.value); showResourceWaiting('${resourceName}');">
+                        <option value="fixed" ${distribution === 'fixed' ? 'selected' : ''}>Fixed</option>
+                        <option value="norm" ${distribution === 'norm' ? 'selected' : ''}>Normal</option>
+                        <option value="expon" ${distribution === 'expon' ? 'selected' : ''}>Exponential</option>
+                        <option value="uniform" ${distribution === 'uniform' ? 'selected' : ''}>Uniform</option>
+                    </select>
                 </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <label class="form-label small">Distribution</label>
-                            <select class="form-select form-select-sm" 
-                                    onchange="updateWaitingParam('${resource}', 'distribution', this.value); renderWaitingTimeParameters(currentParameters.waiting_time_params);">
-                                <option value="fixed" ${distribution === 'fixed' ? 'selected' : ''}>Fixed</option>
-                                <option value="norm" ${distribution === 'norm' ? 'selected' : ''}>Normal</option>
-                                <option value="expon" ${distribution === 'expon' ? 'selected' : ''}>Exponential</option>
-                                
-                                <option value="uniform" ${distribution === 'uniform' ? 'selected' : ''}>Uniform</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            ${renderDistributionParameters(resource, distribution, params.parameters || params, 'waiting')}
-                        </div>
-                    </div>
+                <div class="col-md-6">
+                    ${renderDistributionParameters(resourceName, distribution, params.parameters || params, 'waiting')}
                 </div>
             </div>
         `;
+        document.getElementById('resourceWaitingDisplay').innerHTML = html;
     }
-    
+}
+
+function renderDataAttributeParameters(dataParams) {
+    const container = document.getElementById('dataParams');
+    if (!dataParams || !dataParams.distribution_data_attributes) {
+        container.innerHTML = '<p class="text-muted">No trace attribute parameters available.</p>';
+        return;
+    }
+
+    const categoricalAttrs = dataParams.label_data_attributes_categorical || [];
+    const distributions = dataParams.distribution_data_attributes || {};
+    let html = '<h6 class="mb-3">Case Attribute Distributions</h6>';
+
+    for (const [attribute, params] of Object.entries(distributions)) {
+        const isCategorical = categoricalAttrs.includes(attribute);
+        html += `
+            <div class="card mb-3" data-attribute="${attribute}">
+                <div class="card-header py-2">
+                    <h6 class="mb-0">${attribute}</h6>
+                </div>
+                <div class="card-body">
+        `;
+
+        if (isCategorical) {
+            html += '<div class="row">';
+            for (const [category, probability] of Object.entries(params)) {
+                html += `
+                    <div class="col-md-6 mb-2">
+                        <label class="form-label small">${category}</label>
+                        <div class="input-group input-group-sm">
+                            <input type="number" class="form-control" min="0" max="1" step="0.001"
+                                   value="${probability}"
+                                   onchange="updateDataAttributeParam('${attribute}', true, null, parseFloat(this.value), '${category}')">
+                        </div>
+                    </div>
+                `;
+            }
+            html += '</div>';
+        } else { // Numeric/Distribution
+            const distribution = params.distribution || 'norm';
+            html += `
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label small">Distribution</label>
+                        <select class="form-select form-select-sm"
+                                onchange="updateDataAttributeParam('${attribute}', false, 'distribution', this.value); renderDataAttributeParameters(currentParameters.data_attribute_params);">
+                            <option value="fixed" ${distribution === 'fixed' ? 'selected' : ''}>Fixed</option>
+                            <option value="norm" ${distribution === 'norm' ? 'selected' : ''}>Normal</option>
+                            <option value="expon" ${distribution === 'expon' ? 'selected' : ''}>Exponential</option>
+                            <option value="uniform" ${distribution === 'uniform' ? 'selected' : ''}>Uniform</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        ${renderDistributionParameters(attribute, distribution, params.parameters || params, 'data_attribute')}
+                    </div>
+                </div>
+            `;
+        }
+        html += `</div></div>`;
+    }
     container.innerHTML = html;
 }
 
@@ -851,7 +1627,33 @@ function updateExecutionParam(activity, param, value) {
     if (!currentParameters.execution_time_params.activity_durations[activity]) {
         currentParameters.execution_time_params.activity_durations[activity] = {};
     }
-    currentParameters.execution_time_params.activity_durations[activity][param] = value;
+    if (param === 'distribution') {
+        currentParameters.execution_time_params.activity_durations[activity][param] = value;
+        // Reset parameters when distribution changes
+        if (value === 'fixed') {
+            currentParameters.execution_time_params.activity_durations[activity].parameters = { value: 120, min: 120, max: 120 };
+        } else if (value === 'norm') {
+            currentParameters.execution_time_params.activity_durations[activity].parameters = { mean: 120, std: 30 };
+        } else if (value === 'expon') {
+            currentParameters.execution_time_params.activity_durations[activity].parameters = { mean: 120 };
+        } else if (value === 'uniform') {
+            currentParameters.execution_time_params.activity_durations[activity].parameters = { min: 30, max: 240 };
+        }
+        console.log(`Updated execution distribution for ${activity}:`, currentParameters.execution_time_params.activity_durations[activity]);
+    } else {
+        if (!currentParameters.execution_time_params.activity_durations[activity].parameters) {
+            currentParameters.execution_time_params.activity_durations[activity].parameters = {};
+        }
+        currentParameters.execution_time_params.activity_durations[activity].parameters[param] = value;
+        
+        // For fixed distribution, automatically set min and max equal to the value
+        if (currentParameters.execution_time_params.activity_durations[activity].distribution === 'fixed' && param === 'value') {
+            currentParameters.execution_time_params.activity_durations[activity].parameters.min = value;
+            currentParameters.execution_time_params.activity_durations[activity].parameters.max = value;
+        }
+        
+        console.log(`Updated execution param ${param} for ${activity}:`, currentParameters.execution_time_params.activity_durations[activity].parameters);
+    }
 }
 
 function updateWaitingTimeParam(section, param, value) {
@@ -872,33 +1674,100 @@ function updateResourceWaitingParam(resource, param, value) {
 }
 
 function updateWaitingParam(resource, param, value) {
-    if (!currentParameters.waiting_time_params.waiting_time) {
-        currentParameters.waiting_time_params.waiting_time = {};
+    if (!currentParameters.waiting_time_params.resource_waiting_times) {
+        currentParameters.waiting_time_params.resource_waiting_times = {};
     }
-    if (!currentParameters.waiting_time_params.waiting_time[resource]) {
-        currentParameters.waiting_time_params.waiting_time[resource] = {};
+    if (!currentParameters.waiting_time_params.resource_waiting_times[resource]) {
+        currentParameters.waiting_time_params.resource_waiting_times[resource] = {};
     }
     if (param === 'distribution') {
-        currentParameters.waiting_time_params.waiting_time[resource][param] = value;
+        currentParameters.waiting_time_params.resource_waiting_times[resource][param] = value;
         // Reset parameters when distribution changes
         if (value === 'fixed') {
-            currentParameters.waiting_time_params.waiting_time[resource].parameters = { value: 120 };
+            currentParameters.waiting_time_params.resource_waiting_times[resource].parameters = { value: 120, min: 120, max: 120 };
         } else if (value === 'norm') {
-            currentParameters.waiting_time_params.waiting_time[resource].parameters = { mean: 120, std: 30 };
+            currentParameters.waiting_time_params.resource_waiting_times[resource].parameters = { mean: 120, std: 30 };
         } else if (value === 'expon') {
-            currentParameters.waiting_time_params.waiting_time[resource].parameters = { mean: 120 };
-        } else if (value === 'lognorm') {
-            currentParameters.waiting_time_params.waiting_time[resource].parameters = { mean: 120, std: 30 };
+            currentParameters.waiting_time_params.resource_waiting_times[resource].parameters = { mean: 120 };
         } else if (value === 'uniform') {
-            currentParameters.waiting_time_params.waiting_time[resource].parameters = { min: 30, max: 240 };
+            currentParameters.waiting_time_params.resource_waiting_times[resource].parameters = { min: 30, max: 240 };
         }
+        console.log(`Updated waiting distribution for ${resource}:`, currentParameters.waiting_time_params.resource_waiting_times[resource]);
     } else {
-        if (!currentParameters.waiting_time_params.waiting_time[resource].parameters) {
-            currentParameters.waiting_time_params.waiting_time[resource].parameters = {};
+        if (!currentParameters.waiting_time_params.resource_waiting_times[resource].parameters) {
+            currentParameters.waiting_time_params.resource_waiting_times[resource].parameters = {};
         }
-        currentParameters.waiting_time_params.waiting_time[resource].parameters[param] = value;
+        currentParameters.waiting_time_params.resource_waiting_times[resource].parameters[param] = value;
+        
+        // For fixed distribution, automatically set min and max equal to the value
+        if (currentParameters.waiting_time_params.resource_waiting_times[resource].distribution === 'fixed' && param === 'value') {
+            currentParameters.waiting_time_params.resource_waiting_times[resource].parameters.min = value;
+            currentParameters.waiting_time_params.resource_waiting_times[resource].parameters.max = value;
+        }
+        
+        console.log(`Updated waiting param ${param} for ${resource}:`, currentParameters.waiting_time_params.resource_waiting_times[resource].parameters);
     }
 }
+
+
+function updateDataAttributeParam(attribute, isCategorical, param, value, category = null) {
+    if (!currentParameters.data_attribute_params) {
+        currentParameters.data_attribute_params = {};
+    }
+    if (!currentParameters.data_attribute_params.distribution_data_attributes) {
+        currentParameters.data_attribute_params.distribution_data_attributes = {};
+    }
+
+    // If categorical: update probability of category
+    if (isCategorical) {
+        if (!currentParameters.data_attribute_params.distribution_data_attributes[attribute]) {
+            currentParameters.data_attribute_params.distribution_data_attributes[attribute] = {};
+        }
+        currentParameters.data_attribute_params.distribution_data_attributes[attribute][category] = parseFloat(value);
+        return;
+    }
+
+    // If numeric/distributional: update distribution or its parameters
+    if (!currentParameters.data_attribute_params.distribution_data_attributes[attribute]) {
+        currentParameters.data_attribute_params.distribution_data_attributes[attribute] = {};
+    }
+
+    const targetObject = currentParameters.data_attribute_params.distribution_data_attributes[attribute];
+
+    if (param === 'distribution') {
+        targetObject.distribution = value;
+
+        // Reset parameters based on selected distribution
+        if (value === 'fixed') {
+            targetObject.parameters = { value: 1.0, min: 1.0, max: 1.0 };
+        } else if (value === 'norm') {
+            targetObject.parameters = { mean: 15.0, std: 5.0, min: 0.0, max: 60.0 };
+        } else if (value === 'expon') {
+            targetObject.parameters = { mean: 15.0, min: 0.0, max: 60.0 };
+        } else if (value === 'uniform') {
+            targetObject.parameters = { min: 0.0, max: 60.0 };
+        }
+
+        console.log(`Updated data attribute distribution for ${attribute}:`, targetObject);
+    } else {
+        if (!targetObject.parameters) {
+            targetObject.parameters = {};
+        }
+        targetObject.parameters[param] = parseFloat(value);
+
+        // Auto-set min/max for 'fixed'
+        if (targetObject.distribution === 'fixed' && param === 'value') {
+            targetObject.parameters.min = value;
+            targetObject.parameters.max = value;
+        }
+
+        console.log(`Updated data attribute param ${param} for ${attribute}:`, targetObject.parameters);
+    }
+
+    renderDataAttributeParameters(currentParameters.data_attribute_params);
+}
+
+
 
 async function saveParameters() {
     if (!currentSessionId || !currentParameters) {
@@ -906,9 +1775,10 @@ async function saveParameters() {
         return;
     }
     
-    showLoading('Saving parameters...', 'Updating simulation parameters');
-    
     try {
+        // Debug: Log the parameters being sent
+        console.log('Saving parameters:', JSON.stringify(currentParameters, null, 2));
+        
         const response = await fetch(`/api/parameters/${currentSessionId}`, {
             method: 'PUT',
             headers: {
@@ -919,8 +1789,6 @@ async function saveParameters() {
         
         const result = await response.json();
         
-        hideLoading();
-        
         if (result.success) {
             showAlert('Parameters saved successfully', 'success');
         } else {
@@ -928,7 +1796,6 @@ async function saveParameters() {
         }
         
     } catch (error) {
-        hideLoading();
         showAlert(`Error saving parameters: ${error.message}`, 'danger');
     }
 }
@@ -964,61 +1831,15 @@ async function exportParameters() {
     }
 }
 
-async function handleSimulation(e) {
-    e.preventDefault();
-    
-    if (!currentSessionId) {
-        showAlert('No session available for simulation', 'warning');
-        return;
-    }
-    
-    const numInstances = parseInt(document.getElementById('numInstances').value);
-    
-    showLoading('Running simulation...', `Generating ${numInstances} process instances`);
-    
-    try {
-        const response = await fetch(`/api/simulate/${currentSessionId}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ num_instances: numInstances })
-        });
-        
-        const result = await response.json();
-        
-        hideLoading();
-        
-        if (result.success) {
-            showAlert(`Simulation completed with ${numInstances} instances`, 'success');
-            
-            // Show results
-            const resultsDiv = document.getElementById('simulationResults');
-            const downloadBtn = document.getElementById('downloadBtn');
-            
-            downloadBtn.onclick = function() {
-                const filename = result.output_path.split('/').pop();
-                window.location.href = `/api/download/${filename}`;
-            };
-            
-            resultsDiv.style.display = 'block';
-            
-        } else {
-            throw new Error(result.error);
-        }
-        
-    } catch (error) {
-        hideLoading();
-        showAlert(`Simulation error: ${error.message}`, 'danger');
-    }
-}
-
 async function runSimulation() {
     if (!currentSessionId) {
         showAlert('No session available for simulation', 'warning');
         return;
     }
     
+    // Automatically save parameters before simulation
+    await saveParameters();
+
     const numInstances = parseInt(document.getElementById('numInstances').value);
     const startTimestamp = document.getElementById('startTimestamp').value;
     
@@ -1058,11 +1879,16 @@ async function runSimulation() {
             // Setup download button
             const downloadBtn = document.getElementById('downloadSimulationBtn');
             downloadBtn.onclick = () => {
-                window.location.href = `/api/download/${result.output_path}`;
+                window.location.href = `/api/download/${result.sim_output_filename}`;
             };
             
-            // Show results
+            // Show the results
+            document.getElementById('simulationProgress').style.display = 'none';
             document.getElementById('simulationResults').style.display = 'block';
+            document.getElementById('simulationResultsCard').style.display = 'block';
+
+            // Load all visualizations
+            await loadAllVisualizations(currentSessionId);
             
             // Update feather icons
             feather.replace();
@@ -1112,6 +1938,9 @@ function renderResourceCalendars(calendars, container) {
 }
 
 function showResourceCalendar(resourceName) {
+
+    revertToOriginalVisualization();
+
     if (!resourceName || !currentParameters.resource_params.calendars || !currentParameters.resource_params.calendars[resourceName]) {
         document.getElementById('calendarDisplay').innerHTML = '<p class="text-muted">No calendar data available</p>';
         return;
@@ -1167,38 +1996,45 @@ function toggleResourceHour(resourceName, day, hour, isAvailable) {
 
 function renderInterArrivalTimeParameters(waitingParams) {
     const container = document.getElementById('arrivalParams');
-    const interArrival = waitingParams.inter_arrival_time || {};
+    // Support both shapes: params at root (tree) or under inter_arrival_time
+    const interArrivalCandidate = waitingParams && typeof waitingParams === 'object' ? waitingParams : {};
+    const looksLikeTreeAtRoot = Object.prototype.hasOwnProperty.call(interArrivalCandidate, '0');
+    const interArrival = looksLikeTreeAtRoot ? interArrivalCandidate : (waitingParams.inter_arrival_time || {});
     
     let html = '<div class="row">';
     
     // Distribution Parameters Column
-    html += '<div class="col-md-6">';
+    html += '<div class="mb-12">';
     html += '<div class="card">';
     html += '<div class="card-header py-2">';
     html += '<h6 class="mb-0">Inter-Arrival Time Distribution</h6>';
     html += '</div>';
     html += '<div class="card-body">';
-    
-    const distribution = interArrival.distribution || 'expon';
-    html += '<div class="mb-3">';
-    html += '<label class="form-label small">Distribution</label>';
-    html += '<select class="form-select form-select-sm" onchange="updateInterArrivalParam(\'distribution\', this.value); renderInterArrivalTimeParameters(currentParameters.inter_arrival_params);">';
-    html += `<option value="fixed" ${distribution === 'fixed' ? 'selected' : ''}>Fixed</option>`;
-    html += `<option value="norm" ${distribution === 'norm' ? 'selected' : ''}>Normal</option>`;
-    html += `<option value="expon" ${distribution === 'expon' ? 'selected' : ''}>Exponential</option>`;
 
-    html += `<option value="uniform" ${distribution === 'uniform' ? 'selected' : ''}>Uniform</option>`;
-    html += '</select>';
-    html += '</div>';
-    
-    html += renderDistributionParameters('inter_arrival_time', distribution, interArrival.parameters || {}, 'inter_arrival');
+    const isTree = interArrival.distribution && typeof interArrival.distribution === 'object' && Object.prototype.hasOwnProperty.call(interArrival.distribution, '0');
+    if (isTree) {
+        html += '<div id="interArrivalTreeContainer" class="small"></div>';
+    } else {
+        const distribution = interArrival.distribution || 'expon';
+        html += '<div class="mb-3">';
+        html += '<label class="form-label small">Distribution</label>';
+        html += '<select class="form-select form-select-sm" onchange="updateInterArrivalParam(\'distribution\', this.value); renderInterArrivalTimeParameters(currentParameters.inter_arrival_params);">';
+        html += `<option value="fixed" ${distribution === 'fixed' ? 'selected' : ''}>Fixed</option>`;
+        html += `<option value="norm" ${distribution === 'norm' ? 'selected' : ''}>Normal</option>`;
+        html += `<option value="expon" ${distribution === 'expon' ? 'selected' : ''}>Exponential</option>`;
+        html += `<option value="uniform" ${distribution === 'uniform' ? 'selected' : ''}>Uniform</option>`;
+        html += '</select>';
+        html += '</div>';
+        
+        html += renderDistributionParameters('inter_arrival_time', distribution, interArrival.parameters || {}, 'inter_arrival');
+    }
     
     html += '</div>';
     html += '</div>';
     html += '</div>';
     
     // Arrival Calendar Column
-    html += '<div class="col-md-6">';
+    html += '<div class="mb-12">';
     html += '<div class="card">';
     html += '<div class="card-header py-2">';
     html += '<h6 class="mb-0">Arrival Time Calendar</h6>';
@@ -1214,6 +2050,11 @@ function renderInterArrivalTimeParameters(waitingParams) {
     html += '</div>';
     
     container.innerHTML = html;
+    if (isTree) {
+        const mount = document.getElementById('interArrivalTreeContainer');
+        const tree = interArrival.distribution;
+        renderDecisionTreeDistributionEditor(tree, mount, 'arrival');
+    }
 }
 
 function updateInterArrivalParam(param, value) {
@@ -1225,24 +2066,61 @@ function updateInterArrivalParam(param, value) {
     }
     if (param === 'distribution') {
         currentParameters.inter_arrival_params.inter_arrival_time.distribution = value;
+        // Reset parameters when distribution changes
+        if (value === 'fixed') {
+            currentParameters.inter_arrival_params.inter_arrival_time.parameters = { value: 120, min: 120, max: 120 };
+        } else if (value === 'norm') {
+            currentParameters.inter_arrival_params.inter_arrival_time.parameters = { mean: 120, std: 30 };
+        } else if (value === 'expon') {
+            currentParameters.inter_arrival_params.inter_arrival_time.parameters = { mean: 120 };
+        } else if (value === 'uniform') {
+            currentParameters.inter_arrival_params.inter_arrival_time.parameters = { min: 30, max: 240 };
+        }
+        console.log(`Updated inter-arrival distribution:`, currentParameters.inter_arrival_params.inter_arrival_time);
     } else {
         if (!currentParameters.inter_arrival_params.inter_arrival_time.parameters) {
             currentParameters.inter_arrival_params.inter_arrival_time.parameters = {};
         }
         currentParameters.inter_arrival_params.inter_arrival_time.parameters[param] = value;
+        
+        // For fixed distribution, automatically set min and max equal to the value
+        if (currentParameters.inter_arrival_params.inter_arrival_time.distribution === 'fixed' && param === 'value') {
+            currentParameters.inter_arrival_params.inter_arrival_time.parameters.min = value;
+            currentParameters.inter_arrival_params.inter_arrival_time.parameters.max = value;
+        }
+        
+        console.log(`Updated inter-arrival param ${param}:`, currentParameters.inter_arrival_params.inter_arrival_time.parameters);
     }
 }
 
 function renderDistributionParameters(itemName, distribution, params, type) {
     let html = '';
     
+    // Determine correct update function name
+    let updateFunction = '';
+    if (type === 'execution') updateFunction = 'updateExecutionParam';
+    else if (type === 'waiting') updateFunction = 'updateWaitingParam';
+    else if (type === 'inter_arrival') updateFunction = 'updateInterArrivalParam';
+    else if (type === 'data_attribute') updateFunction = 'updateDataAttributeParam';
+
+    // Helper for parameter onchange
+    function input(onParam) {
+        if (type === 'data_attribute') {
+            return `onchange="${updateFunction}('${itemName}', false, '${onParam}', parseFloat(this.value))"`;
+        } else if (type === 'inter_arrival') {
+            return `onchange="${updateFunction}('${onParam}', parseFloat(this.value))"`;
+        } else {
+            return `onchange="${updateFunction}('${itemName}', '${onParam}', parseFloat(this.value))"`;
+        }
+    }
+
     switch(distribution) {
         case 'fixed':
             html = `
                 <label class="form-label small">Fixed Value</label>
                 <input type="number" class="form-control form-control-sm" 
                        min="1" step="0.1" value="${params.value || params.mean_value}"
-                       onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'value', parseFloat(this.value))">
+                       ${input('value')}>
             `;
             break;
             
@@ -1253,13 +2131,13 @@ function renderDistributionParameters(itemName, distribution, params, type) {
                         <label class="form-label small">Mean</label>
                         <input type="number" class="form-control form-control-sm" 
                                min="1" step="0.1" value="${params.mean || params.mean_value}"
-                               onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'mean', parseFloat(this.value))">
+                               ${input('mean')}>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small">Std Dev</label>
                         <input type="number" class="form-control form-control-sm" 
                                min="0" step="0.1" value="${params.std}"
-                               onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'std', parseFloat(this.value))">
+                               ${input('std')}>
                     </div>
                 </div>
                 <div class="row mt-2">
@@ -1267,13 +2145,13 @@ function renderDistributionParameters(itemName, distribution, params, type) {
                         <label class="form-label small">Min</label>
                         <input type="number" class="form-control form-control-sm" 
                                min="0" step="0.1" value="${params.min || params.min_value}"
-                               onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'min', parseFloat(this.value))">
+                               ${input('min')}>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small">Max</label>
                         <input type="number" class="form-control form-control-sm" 
                                min="1" step="0.1" value="${params.max || params.max_value}"
-                               onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'max', parseFloat(this.value))">
+                               ${input('max')}>
                     </div>
                 </div>
             `;
@@ -1286,25 +2164,23 @@ function renderDistributionParameters(itemName, distribution, params, type) {
                         <label class="form-label small">Mean</label>
                         <input type="number" class="form-control form-control-sm" 
                                min="1" step="0.1" value="${params.mean || params.scale || params.mean_value}"
-                               onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'mean', parseFloat(this.value))">
+                               ${input('mean')}>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label small">Min</label>
                         <input type="number" class="form-control form-control-sm" 
                                min="0" step="0.1" value="${params.min || params.min_value || 0}"
-                               onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'min', parseFloat(this.value))">
+                               ${input('min')}>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label small">Max</label>
                         <input type="number" class="form-control form-control-sm" 
                                min="1" step="0.1" value="${params.max || params.max_value || 100}"
-                               onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'max', parseFloat(this.value))">
+                               ${input('max')}>
                     </div>
                 </div>
             `;
             break;
-            
-
             
         case 'uniform':
             html = `
@@ -1313,21 +2189,22 @@ function renderDistributionParameters(itemName, distribution, params, type) {
                         <label class="form-label small">Min Value</label>
                         <input type="number" class="form-control form-control-sm" 
                                min="0" step="0.1" value="${params.min || params.min_value || 0}"
-                               onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'min', parseFloat(this.value))">
+                               ${input('min')}>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small">Max Value</label>
                         <input type="number" class="form-control form-control-sm" 
                                min="1" step="0.1" value="${params.max || params.max_value || 100}"
-                               onchange="update${type === 'execution' ? 'Execution' : type === 'waiting' ? 'Waiting' : 'InterArrival'}Param('${itemName}', 'max', parseFloat(this.value))">
+                               ${input('max')}>
                     </div>
                 </div>
             `;
             break;
     }
-    
+
     return html;
 }
+
 
 function renderArrivalCalendar(calendar) {
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -1390,16 +2267,28 @@ function renderPetriNet(processModel) {
                 <div class="mt-3">
                     <div class="row text-center">
                         <div class="col-md-4">
-                            <div class="small text-muted">Activities</div>
-                            <div class="fw-bold text-primary">${processModel.activities ? processModel.activities.length : 0}</div>
+                            <div class="text-muted">Activities</div>
+                            <div class="text-muted">${processModel.activities ? processModel.activities.length : 0}</div>
                         </div>
                         <div class="col-md-4">
-                            <div class="small text-muted">Transitions</div>
-                            <div class="fw-bold text-success">${processModel.transitions ? processModel.transitions.length : 0}</div>
+                            <div class="text-muted">Transitions</div>
+                            <div class="text-muted">${processModel.transitions ? processModel.transitions.length : 0}</div>
                         </div>
                         <div class="col-md-4">
-                            <div class="small text-muted">Places</div>
-                            <div class="fw-bold text-info">${processModel.places ? processModel.places.length : 0}</div>
+                            <div class="text-muted">Places</div>
+                            <div class="text-muted">${processModel.places ? processModel.places.length : 0}</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="fw-bold text-success">Fitness</div>
+                            <div class="fw-bold text-success">${processModel.fitness ? processModel.fitness.toFixed(2) : 0}</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="fw-bold text-warning">Precision</div>
+                            <div class="fw-bold text-warning">${processModel.precision ? processModel.precision.toFixed(2) : 0}</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="fw-bold text-info">F-Measure</div>
+                            <div class="fw-bold text-info">${processModel.f_measure ? processModel.f_measure.toFixed(2) : 0}</div>
                         </div>
                     </div>
                 </div>
@@ -1487,23 +2376,100 @@ function renderPetriNet(processModel) {
     container.innerHTML = activityList;
 }
 
+function renderAccuracyResults(metrics) {
+    const card = document.getElementById('accuracyCard');
+    const container = document.getElementById('accuracyResultsContainer');
+
+    if (!metrics || typeof metrics !== 'object') {
+        container.innerHTML = '<p class="text-muted">No accuracy results available.</p>';
+        card.style.display = 'none';
+        return;
+    }
+
+    card.style.display = 'block';
+
+    const categoriesOrder = ['control-flow', 'time', 'resource-flow', 'generalization'];
+    const categoriesDisplay = {
+        'control-flow': 'Control Flow',
+        'time': 'Timing',
+        'resource-flow': 'Resource Flow',
+        'generalization': 'Generalization'
+    };
+
+    let html = '<div class="row">';
+
+    for (const category of categoriesOrder) {
+        if (metrics[category]) {
+            const data = metrics[category];
+            const displayCategory = categoriesDisplay[category] || category;
+
+            html += `
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="card-title mb-0">${displayCategory}</h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-sm mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="w-50">Metric</th>
+                                            <th class="w-50">Value</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+            `;
+
+            for (const [metric, value] of Object.entries(data)) {
+                const formattedMetric = metric.toUpperCase().replace(/_/g, ' ');
+                html += `
+                                        <tr>
+                                            <td class="w-50">${formattedMetric}</td>
+                                            <td class="w-50">${parseFloat(value).toFixed(4)}</td>
+                                        </tr>
+                `;
+            }
+
+            html += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+/**
+ * [FIXED] Correctly updates the inter-arrival time calendar.
+ * The original function was modifying 'waiting_time_params' instead of 'inter_arrival_params'.
+ */
 function toggleArrivalHour(day, hour, isActive) {
-    if (!currentParameters.waiting_time_params.inter_arrival_time) {
-        currentParameters.waiting_time_params.inter_arrival_time = {};
+    if (!currentParameters.inter_arrival_params) {
+        currentParameters.inter_arrival_params = {};
     }
-    if (!currentParameters.waiting_time_params.inter_arrival_time.calendar) {
-        currentParameters.waiting_time_params.inter_arrival_time.calendar = {};
+    if (!currentParameters.inter_arrival_params.inter_arrival_time) {
+        currentParameters.inter_arrival_params.inter_arrival_time = {};
     }
-    if (!currentParameters.waiting_time_params.inter_arrival_time.calendar[day]) {
-        currentParameters.waiting_time_params.inter_arrival_time.calendar[day] = {};
+    if (!currentParameters.inter_arrival_params.inter_arrival_time.calendar) {
+        currentParameters.inter_arrival_params.inter_arrival_time.calendar = {};
+    }
+    if (!currentParameters.inter_arrival_params.inter_arrival_time.calendar[day]) {
+        currentParameters.inter_arrival_params.inter_arrival_time.calendar[day] = {};
     }
     
-    currentParameters.waiting_time_params.inter_arrival_time.calendar[day][hour] = isActive;
+    currentParameters.inter_arrival_params.inter_arrival_time.calendar[day][hour] = isActive;
     
     // Refresh the calendar display
     const calendarDisplay = document.getElementById('arrivalCalendarDisplay');
     if (calendarDisplay) {
-        calendarDisplay.innerHTML = renderArrivalCalendar(currentParameters.waiting_time_params.inter_arrival_time.calendar);
+        calendarDisplay.innerHTML = renderArrivalCalendar(currentParameters.inter_arrival_params.inter_arrival_time.calendar);
     }
 }
 
@@ -1523,10 +2489,17 @@ function showAddResourceModal() {
                             <input type="text" class="form-control" id="newResourceName" 
                                    placeholder="Enter resource name">
                         </div>
-                        <div class="mb-3">
+                        <div class="mb-3" id="newResourceWeightGroup">
                             <label for="newResourceWeight" class="form-label">Resource Weight</label>
                             <input type="number" class="form-control" id="newResourceWeight" 
                                    min="0" max="1" step="0.01" value="0.1">
+                        </div>
+                        <div class="mb-3" id="copyFromResourceGroup" style="display:none;">
+                            <label for="copyFromResourceSelect" class="form-label">Copy Decision Trees From</label>
+                            <select class="form-select" id="copyFromResourceSelect">
+                                <option value="">Select a resource</option>
+                            </select>
+                            <div class="form-text">Copy both weight and waiting-time trees if available</div>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="newResourceMultitasking">
@@ -1556,12 +2529,35 @@ function showAddResourceModal() {
     // Show modal
     const modal = new bootstrap.Modal(document.getElementById('addResourceModal'));
     modal.show();
+
+    // Configure copy-from select when in decision-tree mode
+    try {
+        const copyGroup = document.getElementById('copyFromResourceGroup');
+        const copySelect = document.getElementById('copyFromResourceSelect');
+        const weightGroup = document.getElementById('newResourceWeightGroup');
+        if (copyGroup && copySelect && (isDecisionTreeModeForResourceWeights() || isDecisionTreeModeForWaitingTimes())) {
+            copyGroup.style.display = 'block';
+            const resources = currentParameters?.resource_params?.resources || [];
+            resources.forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r;
+                opt.textContent = r;
+                copySelect.appendChild(opt);
+            });
+            // If DT mode for weights, hide numeric weight input
+            if (isDecisionTreeModeForResourceWeights() && weightGroup) {
+                weightGroup.style.display = 'none';
+            }
+        }
+    } catch (e) { console.warn('Copy-from select setup failed', e); }
 }
 
 function addNewResource() {
     const resourceName = document.getElementById('newResourceName').value.trim();
-    const resourceWeight = parseFloat(document.getElementById('newResourceWeight').value);
+    const weightInputEl = document.getElementById('newResourceWeight');
+    const resourceWeight = weightInputEl && weightInputEl.offsetParent !== null ? parseFloat(weightInputEl.value) : null;
     const isMultitasking = document.getElementById('newResourceMultitasking').checked;
+    const copyFrom = (document.getElementById('copyFromResourceSelect') && document.getElementById('copyFromResourceSelect').value) || '';
     
     if (!resourceName) {
         alert('Please enter a resource name');
@@ -1580,7 +2576,18 @@ function addNewResource() {
     if (!currentParameters.resource_params.resource_weights) {
         currentParameters.resource_params.resource_weights = {};
     }
-    currentParameters.resource_params.resource_weights[resourceName] = resourceWeight;
+    // Decision tree for resource weight if in DT mode
+    if (isDecisionTreeModeForResourceWeights()) {
+        if (copyFrom && currentParameters.resource_params.resource_weights[copyFrom]) {
+            currentParameters.resource_params.resource_weights[resourceName] = deepClone(currentParameters.resource_params.resource_weights[copyFrom]);
+        } else {
+            // In DT mode, user must choose an existing resource to copy from
+            alert('Please choose a resource to copy the decision tree from.');
+            return;
+        }
+    } else {
+        currentParameters.resource_params.resource_weights[resourceName] = (typeof resourceWeight === 'number' && !isNaN(resourceWeight)) ? resourceWeight : 0.1;
+    }
     
     // Add to multitasking if checked
     if (isMultitasking) {
@@ -1617,13 +2624,21 @@ function addNewResource() {
     if (!currentParameters.waiting_time_params) {
         currentParameters.waiting_time_params = {};
     }
-    if (!currentParameters.waiting_time_params.waiting_time) {
-        currentParameters.waiting_time_params.waiting_time = {};
+    if (!currentParameters.waiting_time_params.resource_waiting_times) {
+        currentParameters.waiting_time_params.resource_waiting_times = {};
     }
-    currentParameters.waiting_time_params.waiting_time[resourceName] = {
-        distribution: 'expon',
-        parameters: { mean: 120 }
-    };
+    if (isDecisionTreeModeForWaitingTimes()) {
+        if (copyFrom && currentParameters.waiting_time_params.resource_waiting_times[copyFrom]) {
+            currentParameters.waiting_time_params.resource_waiting_times[resourceName] = deepClone(currentParameters.waiting_time_params.resource_waiting_times[copyFrom]);
+        } else {
+            currentParameters.waiting_time_params.resource_waiting_times[resourceName] = getDefaultWaitingTree(15);
+        }
+    } else {
+        currentParameters.waiting_time_params.resource_waiting_times[resourceName] = {
+            distribution: 'expon',
+            parameters: { mean: 15 }
+        };
+    }
     
     // Refresh the UI
     renderResourceParameters(currentParameters.resource_params);
@@ -1634,6 +2649,46 @@ function addNewResource() {
     modal.hide();
     
     feather.replace();
+}
+
+// ---- Decision tree helpers ----
+function deepClone(obj) {
+    try { return JSON.parse(JSON.stringify(obj)); } catch (_) { return obj; }
+}
+
+function isDecisionTreeModeForResourceWeights() {
+    try {
+        const weights = currentParameters?.resource_params?.resource_weights || {};
+        return Object.values(weights).some(v => v && typeof v === 'object' && Object.prototype.hasOwnProperty.call(v, '0'));
+    } catch (_) { return false; }
+}
+
+function isDecisionTreeModeForWaitingTimes() {
+    try {
+        const waits = currentParameters?.waiting_time_params?.resource_waiting_times || {};
+        return Object.values(waits).some(v => v && typeof v === 'object' && Object.prototype.hasOwnProperty.call(v, '0'));
+    } catch (_) { return false; }
+}
+
+function getDefaultWeightTree(defaultValue) {
+    return {
+        '0': { 'value': (typeof defaultValue === 'number' ? defaultValue : 0.1) }
+    };
+}
+
+function getDefaultWaitingTree(defaultMean) {
+    const mean = (typeof defaultMean === 'number' ? defaultMean : 15);
+    return {
+        '0': {
+            'value': mean,
+            'dist': {
+                'dist_name': 'expon',
+                'params': { 'mean': mean },
+                'min_value': 0.0,
+                'max_value': 100.0
+            }
+        }
+    };
 }
 
 function createDefaultWorkingHours() {
@@ -1683,11 +2738,9 @@ function removeResource(resourceName) {
         });
     }
     
-
-    
     // Remove waiting time parameters
-    if (currentParameters.waiting_time_params && currentParameters.waiting_time_params.waiting_time) {
-        delete currentParameters.waiting_time_params.waiting_time[resourceName];
+    if (currentParameters.waiting_time_params && currentParameters.waiting_time_params.resource_waiting_times) {
+        delete currentParameters.waiting_time_params.resource_waiting_times[resourceName];
     }
     
     // Refresh the UI
@@ -1695,6 +2748,21 @@ function removeResource(resourceName) {
     renderWaitingTimeParameters(currentParameters.waiting_time_params);
     
     feather.replace();
+}
+
+function returnActivitiesPerResource(resource) {
+    // Iterate over each resource in the 'resources' array
+    const activitiesForResource = [];
+    
+    // Iterate over the keys (activity names) of 'act_to_resources'
+    for (const activity in currentParameters.resource_params.act_to_resources) {
+        // Check if the current resource is present in the activity's resources array
+        if (currentParameters.resource_params.act_to_resources[activity].includes(resource)) {
+            activitiesForResource.push(activity);
+        }
+    }
+    // Assign the list of activities to the current resource in the new object
+    return activitiesForResource;
 }
 
 function toggleMultitaskingFromDropdown() {
@@ -1725,8 +2793,1109 @@ function toggleMultitaskingFromDropdown() {
     renderResourceParameters(currentParameters.resource_params);
 }
 
+async function loadAllVisualizations(sessionId) {
+
+    const response_process_map = await fetch(`/api/get_visualization/${sessionId}/process_map`);
+    const result_process_map = await response_process_map.json();
+    const processMap = result_process_map.visualization;
+
+    renderProcessMap(processMap);
+
+    const response_case_duration = await fetch(`/api/get_visualization/${sessionId}/case_duration_dist`);
+    const result_case_durations = await response_case_duration.json();
+    const caseDurationDist = result_case_durations;
+
+    renderCaseDuration(caseDurationDist);
+
+    const response_res_heatmap = await fetch(`/api/get_visualization/${sessionId}/resource_heatmap`);
+    const result_res_heatmap = await response_res_heatmap.json();
+    const resourceHeatmap = result_res_heatmap;
+
+    renderResourceHeatmap(resourceHeatmap);
+
+    fetchAndPopulateDropdowns(sessionId);
+}
+
+async function fetchAndPopulateDropdowns(sessionId) {
+    try {
+        const response = await fetch(`/api/get_activities_and_resources/${sessionId}`);
+        const result = await response.json();
+        
+        if (!result.success) {
+            throw new Error(result.error);
+        }
+        
+        const activitySelect = document.getElementById('activitySelect');
+        activitySelect.innerHTML = '<option value="">Select an activity...</option>';
+        result.activities.forEach(act => {
+            activitySelect.innerHTML += `<option value="${act}">${act}</option>`;
+        });
+        
+        const waitingTimeSelect_res = document.getElementById('waitingTimeSelect_res');
+        waitingTimeSelect_res.innerHTML = '<option value="">Select a resource...</option>';
+        result.resources.forEach(res => {
+            waitingTimeSelect_res.innerHTML += `<option value="${res}">${res}</option>`;
+        });
+
+        const waitingTimeSelect_act = document.getElementById('waitingTimeSelect_act');
+        waitingTimeSelect_act.innerHTML = '<option value="">Select an activity...</option>';
+        result.activities.forEach(act => {
+            waitingTimeSelect_act.innerHTML += `<option value="${act}">${act}</option>`;
+        });
+        
+    } catch (error) {
+        console.error('Error populating dropdowns:', error);
+    }
+}
 
 
+function renderProcessMap(processMap) {
+    const container = document.getElementById('processMapContainer');
+    
+    if (!processMap) {
+        container.innerHTML = `
+            <div class="d-flex justify-content-center align-items-center h-100">
+                <span class="text-muted">No process map available</span>
+            </div>
+        `;
+        return;
+    }
+    
+    console.log('Rendering SVG visualization');
+    // Direct SVG content - embed it
+    container.innerHTML = `
+        <div class="text-center">
+            <div class="process-map-svg-container" style="border: 1px solid #dee2e6; border-radius: 8px; background: white; padding: 10px; margin-bottom: 15px;">
+                ${processMap}
+            </div>
+        </div>
+    `;
+    return;
+}
+
+function renderCaseDuration(caseDurationDist) {
+
+    const container_dist = document.getElementById('caseDurationDist');
+    console.log('Rendering SVG visualization');
+    // Direct SVG content - embed it
+    container_dist.innerHTML = `
+        <div class="text-center">
+            <div class="case-duration-svg-container" style="border: 1px solid #dee2e6; border-radius: 8px; background: white; padding: 10px; margin-bottom: 15px;">
+                ${caseDurationDist.visualization}
+            </div>
+        </div>
+        <div class="mt-3">
+            <div class="row text-center">
+                <div class="col-md-3">
+                    <div class="fw-bold text-success">Mean</div>
+                    <div class="text-muted">${caseDurationDist.metrics.average_case_duration.toFixed(2)} mins</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="fw-bold text-success">Median</div>
+                    <div class="text-muted">${caseDurationDist.metrics.median_case_duration.toFixed(2)} mins</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="fw-bold text-success">Min</div>
+                    <div class="text-muted">${caseDurationDist.metrics.min_case_duration.toFixed(2)} mins</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="fw-bold text-success">Max</div>
+                    <div class="text-muted">${caseDurationDist.metrics.max_case_duration.toFixed(2)} mins</div>
+                </div>
+            </div>
+        </div>
+    `;
+    return;
+}
+
+function renderResourceHeatmap(resourceHeatmap) {
+    const container = document.getElementById('resourceHeatmap');
+    console.log('Rendering SVG visualization');
+    // Direct SVG content - embed it
+    container.innerHTML = `
+        <div class="text-center">
+            <div class="res-heatmap-svg-container" style="border: 1px solid #dee2e6; border-radius: 8px; background: white; padding: 10px; margin-bottom: 15px;">
+                ${resourceHeatmap.visualization}
+            </div>
+        </div>
+    `;
+    return;
+}
+
+async function renderActivityDurationBoxplot(activityName) {
+    if (!activityName) return;
+
+    const sessionId = currentSessionId;
+    const response = await fetch(`/api/get_visualization/${sessionId}/activity_duration_boxplot?activity=${activityName}`);
+    const result = await response.json();
+
+    const container = document.getElementById('activityDurationBoxplotContainer');
+    console.log('Rendering SVG visualization');
+    // Direct SVG content - embed it
+    container.innerHTML = `
+        <div class="text-center">
+            <div class="act-boxplot-svg-container" style="border: 1px solid #dee2e6; border-radius: 8px; background: white; padding: 10px; margin-bottom: 15px;">
+                ${result.visualization}
+            </div>
+        </div>
+        <div class="mt-3">
+            <div class="row text-center">
+                <div class="col-md-3">
+                    <div class="fw-bold text-success">Mean</div>
+                    <div class="text-muted">${result.metrics.average_duration.toFixed(2)} mins</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="fw-bold text-success">Median</div>
+                    <div class="text-muted">${result.metrics.median_duration.toFixed(2)} mins</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="fw-bold text-success">Min</div>
+                    <div class="text-muted">${result.metrics.min_duration.toFixed(2)} mins</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="fw-bold text-success">Max</div>
+                    <div class="text-muted">${result.metrics.max_duration.toFixed(2)} mins</div>
+                </div>
+            </div>
+        </div>
+    `;
+    return;
+
+}
+
+// Feature generation functions
+function generateFeaturesForTreeType(treeType) {
+    const features = [];
+    
+    // Get available data from current parameters
+    const attributes = currentParameters?.data_attribute_params?.distribution_data_attributes || {};
+    const categoricalAttributes = currentParameters?.data_attribute_params?.label_data_attributes_categorical || [];
+    const categoricalValues = currentParameters?.data_attribute_params?.attribute_values_label_categorical || {};
+    const activities = currentParameters?.process_model?.activities || [];
+    const resources = currentParameters?.resource_params?.resources || [];
+    
+    switch (treeType) {
+        case 'transition':
+            // Transition probability: list of attributes, list of activities
+            features.push(...generateAttributeFeatures(attributes, categoricalAttributes, categoricalValues));
+            features.push(...generateActivityFeatures(activities));
+            break;
+            
+        case 'resource':
+            // Resource weights: list of resources, attributes, activities
+            features.push(...generateResourceFeatures(resources));
+            features.push(...generateAttributeFeatures(attributes, categoricalAttributes, categoricalValues));
+            features.push(...generateActivityFeatures(activities));
+            break;
+            
+        case 'arrival':
+            // Arrival time: "hour", "weekday"
+            features.push({ value: 'hour', label: 'hour' });
+            features.push({ value: 'weekday', label: 'weekday' });
+            break;
+            
+        case 'execution':
+            // Execution time: "resource = r" with r for each resources, list of activities, attributes
+            features.push(...generateResourceEqualsFeatures(resources));
+            features.push(...generateActivityFeatures(activities));
+            features.push(...generateAttributeFeatures(attributes, categoricalAttributes, categoricalValues));
+            break;
+            
+        case 'waiting':
+            // Waiting time: "workload", list of activities, attributes
+            features.push({ value: 'workload', label: 'workload' });
+            features.push(...generateActivityFeatures(activities));
+            features.push(...generateAttributeFeatures(attributes, categoricalAttributes, categoricalValues));
+            break;
+            
+        case 'distribution':
+            // For distribution trees, determine features based on active tab
+            const activeTab = document.querySelector('.nav-link.active')?.id;
+            if (treeType === 'arrival') {
+                // Arrival time: "hour", "weekday"
+                features.push({ value: 'hour', label: 'hour' });
+                features.push({ value: 'weekday', label: 'weekday' });
+            } else if (treeType === 'execution') {
+                // Execution time: "resource = r" with r for each resources, list of activities, attributes
+                features.push(...generateResourceEqualsFeatures(resources));
+                features.push(...generateActivityFeatures(activities));
+                features.push(...generateAttributeFeatures(attributes, categoricalAttributes, categoricalValues));
+            } else if (treeType === 'waiting') {
+                // Waiting time: "workload", list of activities, attributes
+                features.push({ value: 'workload', label: 'workload' });
+                features.push(...generateActivityFeatures(activities));
+                features.push(...generateAttributeFeatures(attributes, categoricalAttributes, categoricalValues));
+            } else {
+                // Default: use execution time features
+                features.push(...generateResourceEqualsFeatures(resources));
+                features.push(...generateActivityFeatures(activities));
+                features.push(...generateAttributeFeatures(attributes, categoricalAttributes, categoricalValues));
+            }
+            break;
+            
+        default:
+            // Default features for unknown tree types
+            features.push({ value: 'hour', label: 'hour' });
+            features.push({ value: 'weekday', label: 'weekday' });
+            features.push(...generateAttributeFeatures(attributes, categoricalAttributes, categoricalValues));
+    }
+    
+    return features;
+}
+
+function generateAttributeFeatures(attributes, categoricalAttributes, categoricalValues) {
+    const features = [];
+    
+    Object.keys(attributes).forEach(attr => {
+        if (categoricalAttributes.includes(attr)) {
+            // For categorical attributes, create attr=value options
+            const values = categoricalValues[attr] || Object.keys(attributes[attr]);
+            values.forEach(value => {
+                features.push({ 
+                    value: `${attr} = ${value}`, 
+                    label: `${attr} = ${value}` 
+                });
+            });
+        } else {
+            // For numeric attributes, just use the attribute name
+            features.push({ value: attr, label: attr });
+        }
+    });
+    
+    return features;
+}
+
+function generateActivityFeatures(activities) {
+    return activities.map(activity => ({
+        value: activity,
+        label: activity
+    }));
+}
+
+function generateResourceFeatures(resources) {
+    return resources.map(resource => ({
+        value: resource,
+        label: resource
+    }));
+}
+
+function generateResourceEqualsFeatures(resources) {
+    return resources.map(resource => ({
+        value: `resource = ${resource}`,
+        label: `resource = ${resource}`
+    }));
+}
+
+// Tree modification functions
+function toggleTreeNodeByButton(toggleButton, nodeId) {
+    // Find the children container - be more flexible in finding it
+    let childrenContainer = toggleButton.closest('.d-flex').parentElement.nextElementSibling;
+    
+    // If not found with the standard approach, try alternative methods
+    if (!childrenContainer || !childrenContainer.classList.contains('tree-children')) {
+        // Look for the next sibling that has the tree-children class
+        let currentElement = toggleButton.closest('.d-flex').parentElement;
+        while (currentElement && currentElement.nextElementSibling) {
+            currentElement = currentElement.nextElementSibling;
+            if (currentElement.classList.contains('tree-children')) {
+                childrenContainer = currentElement;
+                break;
+            }
+        }
+    }
+    
+    if (!childrenContainer || !childrenContainer.classList.contains('tree-children')) {
+        console.warn(`Children container not found for node ${nodeId}`);
+        return;
+    }
+    
+    // Toggle visibility using CSS classes for better animation
+    const isExpanded = !childrenContainer.classList.contains('collapsed');
+    
+    if (isExpanded) {
+        childrenContainer.classList.add('collapsed');
+    } else {
+        childrenContainer.classList.remove('collapsed');
+    }
+    
+    // Update icon
+    const icon = toggleButton.querySelector('.tree-icon');
+    if (icon) {
+        icon.setAttribute('data-feather', isExpanded ? 'chevron-right' : 'chevron-down');
+        feather.replace();
+    }
+}
+
+function toggleTreeNode(nodeId) {
+    // Find the toggle button for this node - search more broadly
+    let toggleButton = document.querySelector(`button[onclick="toggleTreeNode('${nodeId}')"]`);
+    
+    // If not found, try to find by looking for buttons with the specific onclick attribute
+    if (!toggleButton) {
+        const allButtons = document.querySelectorAll('button.tree-toggle');
+        for (let btn of allButtons) {
+            if (btn.getAttribute('onclick') === `toggleTreeNode('${nodeId}')`) {
+                toggleButton = btn;
+                break;
+            }
+        }
+    }
+    
+    if (!toggleButton) {
+        console.warn(`Toggle button not found for node ${nodeId}`);
+        return;
+    }
+    
+    // Find the children container - be more flexible in finding it
+    let childrenContainer = toggleButton.closest('.d-flex').parentElement.nextElementSibling;
+    
+    // If not found with the standard approach, try alternative methods
+    if (!childrenContainer || !childrenContainer.classList.contains('tree-children')) {
+        // Look for the next sibling that has the tree-children class
+        let currentElement = toggleButton.closest('.d-flex').parentElement;
+        while (currentElement && currentElement.nextElementSibling) {
+            currentElement = currentElement.nextElementSibling;
+            if (currentElement.classList.contains('tree-children')) {
+                childrenContainer = currentElement;
+                break;
+            }
+        }
+    }
+    
+    if (!childrenContainer || !childrenContainer.classList.contains('tree-children')) {
+        console.warn(`Children container not found for node ${nodeId}`);
+        return;
+    }
+    
+    // Toggle visibility using CSS classes for better animation
+    const isExpanded = !childrenContainer.classList.contains('collapsed');
+    
+    if (isExpanded) {
+        childrenContainer.classList.add('collapsed');
+    } else {
+        childrenContainer.classList.remove('collapsed');
+    }
+    
+    // Update icon
+    const icon = toggleButton.querySelector('.tree-icon');
+    if (icon) {
+        icon.setAttribute('data-feather', isExpanded ? 'chevron-right' : 'chevron-down');
+        feather.replace();
+    }
+}
+
+function collapseAllTreeNodes() {
+    // Find the closest tree container to the clicked button
+    const clickedButton = event?.target?.closest('button') || event?.target;
+    const treeContainer = clickedButton?.closest('.small') || document;
+    
+    // Find all tree children containers within the current tree
+    const childrenContainers = treeContainer.querySelectorAll('.tree-children');
+    const toggleButtons = treeContainer.querySelectorAll('.tree-toggle');
+    
+    childrenContainers.forEach(container => {
+        container.classList.add('collapsed');
+    });
+    
+    toggleButtons.forEach(button => {
+        const icon = button.querySelector('.tree-icon');
+        if (icon) {
+            icon.setAttribute('data-feather', 'chevron-right');
+        }
+    });
+    
+    feather.replace();
+}
+
+function expandAllTreeNodes() {
+    // Find the closest tree container to the clicked button
+    const clickedButton = event?.target?.closest('button') || event?.target;
+    const treeContainer = clickedButton?.closest('.small') || document;
+    
+    // Find all tree children containers within the current tree
+    const childrenContainers = treeContainer.querySelectorAll('.tree-children');
+    const toggleButtons = treeContainer.querySelectorAll('.tree-toggle');
+    
+    childrenContainers.forEach(container => {
+        container.classList.remove('collapsed');
+    });
+    
+    toggleButtons.forEach(button => {
+        const icon = button.querySelector('.tree-icon');
+        if (icon) {
+            icon.setAttribute('data-feather', 'chevron-down');
+        }
+    });
+    
+    feather.replace();
+}
+
+function addSplitToNode(nodeId, treeType) {
+    console.log('addSplitToNode called with:', nodeId, treeType);
+    // Generate features based on tree type
+    const features = generateFeaturesForTreeType(treeType);
+    console.log('Generated features:', features);
+    
+    const modalHtml = `
+        <div class="modal fade" id="addSplitModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Add New Split</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="splitFeature" class="form-label">Feature</label>
+                            <select class="form-select" id="splitFeature">
+                                ${features.map(feature => `<option value="${feature.value}">${feature.label}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="splitThreshold" class="form-label">Threshold</label>
+                            <input type="number" class="form-control" id="splitThreshold" step="0.1" value="0.5">
+                        </div>
+                        <div class="mb-3">
+                            <label for="trueValue" class="form-label">True Branch Value</label>
+                            ${treeType === 'transition' || treeType === 'resource' ? 
+                                '<input type="number" class="form-control" id="trueValue" min="0" max="1" step="0.001" value="0.5">' :
+                                '<div id="trueValueContainer"></div>'
+                            }
+                        </div>
+                        <div class="mb-3">
+                            <label for="falseValue" class="form-label">False Branch Value</label>
+                            ${treeType === 'transition' || treeType === 'resource' ? 
+                                '<input type="number" class="form-control" id="falseValue" min="0" max="1" step="0.001" value="0.5">' :
+                                '<div id="falseValueContainer"></div>'
+                            }
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="confirmAddSplit('${nodeId}', '${treeType}')">Add Split</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('addSplitModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Setup distribution controls for distribution trees
+    if (treeType === 'distribution' || treeType === 'execution' || treeType === 'waiting' || treeType === 'arrival') {
+        // Use setTimeout to ensure DOM is ready
+        setTimeout(() => {
+            setupDistributionControls('trueValueContainer', 'true');
+            setupDistributionControls('falseValueContainer', 'false');
+        }, 100);
+    }
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('addSplitModal'));
+    modal.show();
+}
+
+function setupDistributionControls(containerId, branch) {
+    const container = document.getElementById(containerId);
+    if (!container) {
+        console.error('Container not found:', containerId);
+        return;
+    }
+    console.log('Setting up distribution controls for:', containerId, branch);
+    container.innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <label class="form-label small">Distribution</label>
+                <select class="form-select form-select-sm" id="${branch}Distribution">
+                    <option value="fixed">Fixed</option>
+                    <option value="norm">Normal</option>
+                    <option value="expon" selected>Exponential</option>
+                    <option value="uniform">Uniform</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <div id="${branch}Params"></div>
+            </div>
+        </div>
+    `;
+    
+    const distSelect = document.getElementById(`${branch}Distribution`);
+    const paramsContainer = document.getElementById(`${branch}Params`);
+    
+    function renderParams() {
+        const dist = distSelect.value;
+        let html = '';
+        
+        if (dist === 'fixed') {
+            html = `
+                <label class="form-label small">Value</label>
+                <input type="number" class="form-control form-control-sm" id="${branch}Value" min="0" step="0.1" value="15">
+            `;
+        } else if (dist === 'norm') {
+            html = `
+                <label class="form-label small">Mean</label>
+                <input type="number" class="form-control form-control-sm mb-1" id="${branch}Mean" min="0" step="0.1" value="15">
+                <label class="form-label small">Std Dev</label>
+                <input type="number" class="form-control form-control-sm mb-1" id="${branch}Std" min="0" step="0.1" value="5">
+                <label class="form-label small">Min</label>
+                <input type="number" class="form-control form-control-sm mb-1" id="${branch}Min" min="0" step="0.1" value="0">
+                <label class="form-label small">Max</label>
+                <input type="number" class="form-control form-control-sm" id="${branch}Max" min="0" step="0.1" value="100">
+            `;
+        } else if (dist === 'expon') {
+            html = `
+                <label class="form-label small">Mean</label>
+                <input type="number" class="form-control form-control-sm mb-1" id="${branch}Mean" min="0" step="0.1" value="15">
+                <label class="form-label small">Min</label>
+                <input type="number" class="form-control form-control-sm mb-1" id="${branch}Min" min="0" step="0.1" value="0">
+                <label class="form-label small">Max</label>
+                <input type="number" class="form-control form-control-sm" id="${branch}Max" min="0" step="0.1" value="100">
+            `;
+        } else if (dist === 'uniform') {
+            html = `
+                <label class="form-label small">Min</label>
+                <input type="number" class="form-control form-control-sm mb-1" id="${branch}Min" min="0" step="0.1" value="0">
+                <label class="form-label small">Max</label>
+                <input type="number" class="form-control form-control-sm" id="${branch}Max" min="0" step="0.1" value="100">
+            `;
+        }
+        
+        paramsContainer.innerHTML = html;
+    }
+    
+    distSelect.addEventListener('change', renderParams);
+    renderParams();
+}
+
+function confirmAddSplit(nodeId, treeType) {
+    const feature = document.getElementById('splitFeature').value;
+    const threshold = parseFloat(document.getElementById('splitThreshold').value);
+    
+    if (isNaN(threshold)) {
+        alert('Please enter a valid threshold');
+        return;
+    }
+    
+    // Get the current tree data from the appropriate context
+    let treeData;
+    console.log('Getting tree data for treeType:', treeType);
+    if (treeType === 'transition') {
+        const transitionName = document.getElementById('transitionSelect').value;
+        treeData = currentParameters.transition_params.transition_weights[transitionName];
+    } else if (treeType === 'resource') {
+        const resourceName = document.getElementById('resourceWeightSelect').value;
+        treeData = currentParameters.resource_params.resource_weights[resourceName];
+    } else if (treeType === 'distribution' || treeType === 'execution' || treeType === 'waiting' || treeType === 'arrival') {
+        // Use treeType directly to determine which distribution tree we're editing
+        if (treeType === 'arrival') {
+            // Initialize structure if it doesn't exist
+            if (!currentParameters.inter_arrival_params) {
+                currentParameters.inter_arrival_params = {};
+            }
+            if (!currentParameters.inter_arrival_params.inter_arrival_time) {
+                currentParameters.inter_arrival_params.inter_arrival_time = {};
+            }
+            // Check if distribution is already a tree, if not initialize it
+            if (!currentParameters.inter_arrival_params.inter_arrival_time.distribution || 
+                typeof currentParameters.inter_arrival_params.inter_arrival_time.distribution !== 'object' ||
+                !Object.prototype.hasOwnProperty.call(currentParameters.inter_arrival_params.inter_arrival_time.distribution, '0')) {
+                // Initialize as a simple tree with one leaf
+                currentParameters.inter_arrival_params.inter_arrival_time.distribution = {
+                    '0': {
+                        value: 15,
+                        dist: {
+                            dist_name: 'expon',
+                            params: { mean: 15 },
+                            min_value: 0,
+                            max_value: 100
+                        }
+                    }
+                };
+            }
+            treeData = currentParameters.inter_arrival_params.inter_arrival_time.distribution;
+        } else if (treeType === 'execution') {
+            const activityName = document.getElementById('activityExecutionSelect').value;
+            // Initialize structure if it doesn't exist
+            if (!currentParameters.execution_time_params.activity_durations[activityName] ||
+                typeof currentParameters.execution_time_params.activity_durations[activityName] !== 'object' ||
+                !Object.prototype.hasOwnProperty.call(currentParameters.execution_time_params.activity_durations[activityName], '0')) {
+                currentParameters.execution_time_params.activity_durations[activityName] = {
+                    '0': {
+                        value: 15,
+                        dist: {
+                            dist_name: 'expon',
+                            params: { mean: 15 },
+                            min_value: 0,
+                            max_value: 100
+                        }
+                    }
+                };
+            }
+            treeData = currentParameters.execution_time_params.activity_durations[activityName];
+        } else if (treeType === 'waiting') {
+            const resourceName = document.getElementById('resourceWaitingSelect').value;
+            // Initialize structure if it doesn't exist
+            if (!currentParameters.waiting_time_params.resource_waiting_times[resourceName] ||
+                typeof currentParameters.waiting_time_params.resource_waiting_times[resourceName] !== 'object' ||
+                !Object.prototype.hasOwnProperty.call(currentParameters.waiting_time_params.resource_waiting_times[resourceName], '0')) {
+                currentParameters.waiting_time_params.resource_waiting_times[resourceName] = {
+                    '0': {
+                        value: 15,
+                        dist: {
+                            dist_name: 'expon',
+                            params: { mean: 15 },
+                            min_value: 0,
+                            max_value: 100
+                        }
+                    }
+                };
+            }
+            treeData = currentParameters.waiting_time_params.resource_waiting_times[resourceName];
+        }
+    }
+    
+    if (!treeData) {
+        console.error('Could not find tree data for treeType:', treeType);
+        console.error('Current parameters:', currentParameters);
+        alert('Could not find tree data. Please try refreshing the page and try again.');
+        return;
+    }
+    
+    // Create new node IDs
+    const maxId = Math.max(...Object.keys(treeData).map(k => parseInt(k) || 0));
+    const trueId = maxId + 1;
+    const falseId = maxId + 2;
+    
+    // Create new leaf values
+    let trueValue, falseValue;
+    
+    if (treeType === 'transition' || treeType === 'resource') {
+        trueValue = parseFloat(document.getElementById('trueValue').value);
+        falseValue = parseFloat(document.getElementById('falseValue').value);
+        
+        if (isNaN(trueValue) || isNaN(falseValue) || trueValue < 0 || trueValue > 1 || falseValue < 0 || falseValue > 1) {
+            alert('Values must be between 0 and 1');
+            return;
+        }
+    } else {
+        // Distribution trees
+        trueValue = getDistributionValue('true');
+        falseValue = getDistributionValue('false');
+    }
+    
+    // Convert the leaf to a split node
+    const oldValue = treeData[nodeId].value;
+    treeData[nodeId] = {
+        feature: feature,
+        threshold: threshold,
+        children: {
+            true: trueId,
+            false: falseId
+        }
+    };
+    
+    console.log('confirmAddSplit: Created split node with children:', {
+        true: trueId,
+        false: falseId
+    });
+    
+    // Add new leaf nodes
+    if (treeType === 'transition' || treeType === 'resource') {
+        treeData[trueId] = { value: trueValue };
+        treeData[falseId] = { value: falseValue };
+    } else {
+        treeData[trueId] = { value: trueValue.value, dist: trueValue.dist };
+        treeData[falseId] = { value: falseValue.value, dist: falseValue.dist };
+    }
+    
+    console.log('confirmAddSplit: Tree data after adding nodes:', treeData);
+    console.log('confirmAddSplit: Current parameters after update:', currentParameters);
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('addSplitModal'));
+    modal.hide();
+    
+    // Refresh the tree display
+    console.log('confirmAddSplit: About to refresh tree display with treeType:', treeType);
+    console.log('confirmAddSplit: Updated tree data:', treeData);
+    refreshTreeDisplay(treeType);
+}
+
+function getDistributionValue(branch) {
+    const dist = document.getElementById(`${branch}Distribution`).value;
+    const value = parseFloat(document.getElementById(`${branch}Value`)?.value || 
+                            document.getElementById(`${branch}Mean`)?.value || 15);
+    
+    let params = {};
+    let minValue = 0, maxValue = 100;
+    
+    if (dist === 'fixed') {
+        params = { value: value };
+        minValue = maxValue = value;
+    } else if (dist === 'norm') {
+        params = {
+            mean: value,
+            std: parseFloat(document.getElementById(`${branch}Std`).value)
+        };
+        minValue = parseFloat(document.getElementById(`${branch}Min`).value);
+        maxValue = parseFloat(document.getElementById(`${branch}Max`).value);
+    } else if (dist === 'expon') {
+        params = { mean: value };
+        minValue = parseFloat(document.getElementById(`${branch}Min`).value);
+        maxValue = parseFloat(document.getElementById(`${branch}Max`).value);
+    } else if (dist === 'uniform') {
+        minValue = parseFloat(document.getElementById(`${branch}Min`).value);
+        maxValue = parseFloat(document.getElementById(`${branch}Max`).value);
+        params = { min: minValue, max: maxValue };
+    }
+    
+    return {
+        value: value,
+        dist: {
+            dist_name: dist,
+            params: params,
+            min_value: minValue,
+            max_value: maxValue
+        }
+    };
+}
+
+function removeSplitFromNode(nodeId, treeType) {
+    if (!confirm('Are you sure you want to remove this split? This will delete the entire subtree.')) {
+        return;
+    }
+    
+    // Get the current tree data
+    let treeData;
+    if (treeType === 'transition') {
+        const transitionName = document.getElementById('transitionSelect').value;
+        treeData = currentParameters.transition_params.transition_weights[transitionName];
+    } else if (treeType === 'resource') {
+        const resourceName = document.getElementById('resourceWeightSelect').value;
+        treeData = currentParameters.resource_params.resource_weights[resourceName];
+    } else if (treeType === 'distribution' || treeType === 'execution' || treeType === 'waiting' || treeType === 'arrival') {
+        const activeTab = document.querySelector('.nav-link.active').id;
+        if (treeType === 'arrival') {
+            // Initialize structure if it doesn't exist
+            if (!currentParameters.inter_arrival_params) {
+                currentParameters.inter_arrival_params = {};
+            }
+            if (!currentParameters.inter_arrival_params.inter_arrival_time) {
+                currentParameters.inter_arrival_params.inter_arrival_time = {};
+            }
+            // Check if distribution is already a tree, if not initialize it
+            if (!currentParameters.inter_arrival_params.inter_arrival_time.distribution || 
+                typeof currentParameters.inter_arrival_params.inter_arrival_time.distribution !== 'object' ||
+                !Object.prototype.hasOwnProperty.call(currentParameters.inter_arrival_params.inter_arrival_time.distribution, '0')) {
+                // Initialize as a simple tree with one leaf
+                currentParameters.inter_arrival_params.inter_arrival_time.distribution = {
+                    '0': {
+                        value: 15,
+                        dist: {
+                            dist_name: 'expon',
+                            params: { mean: 15 },
+                            min_value: 0,
+                            max_value: 100
+                        }
+                    }
+                };
+            }
+            treeData = currentParameters.inter_arrival_params.inter_arrival_time.distribution;
+        } else if (treeType === 'execution') {
+            const activityName = document.getElementById('activityExecutionSelect').value;
+            // Initialize structure if it doesn't exist
+            if (!currentParameters.execution_time_params.activity_durations[activityName] ||
+                typeof currentParameters.execution_time_params.activity_durations[activityName] !== 'object' ||
+                !Object.prototype.hasOwnProperty.call(currentParameters.execution_time_params.activity_durations[activityName], '0')) {
+                currentParameters.execution_time_params.activity_durations[activityName] = {
+                    '0': {
+                        value: 15,
+                        dist: {
+                            dist_name: 'expon',
+                            params: { mean: 15 },
+                            min_value: 0,
+                            max_value: 100
+                        }
+                    }
+                };
+            }
+            treeData = currentParameters.execution_time_params.activity_durations[activityName];
+        } else if (treeType === 'waiting') {
+            const resourceName = document.getElementById('resourceWaitingSelect').value;
+            // Initialize structure if it doesn't exist
+            if (!currentParameters.waiting_time_params.resource_waiting_times[resourceName] ||
+                typeof currentParameters.waiting_time_params.resource_waiting_times[resourceName] !== 'object' ||
+                !Object.prototype.hasOwnProperty.call(currentParameters.waiting_time_params.resource_waiting_times[resourceName], '0')) {
+                currentParameters.waiting_time_params.resource_waiting_times[resourceName] = {
+                    '0': {
+                        value: 15,
+                        dist: {
+                            dist_name: 'expon',
+                            params: { mean: 15 },
+                            min_value: 0,
+                            max_value: 100
+                        }
+                    }
+                };
+            }
+            treeData = currentParameters.waiting_time_params.resource_waiting_times[resourceName];
+        }
+    }
+    
+    if (!treeData) {
+        alert('Could not find tree data');
+        return;
+    }
+    
+    // Show modal to get new leaf value
+    const modalHtml = `
+        <div class="modal fade" id="removeSplitModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Set New Leaf Value</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="newLeafValue" class="form-label">New Value</label>
+                            ${treeType === 'transition' || treeType === 'resource' ? 
+                                '<input type="number" class="form-control" id="newLeafValue" min="0" max="1" step="0.001" value="0.5">' :
+                                '<div id="newLeafValueContainer"></div>'
+                            }
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="confirmRemoveSplit('${nodeId}', '${treeType}')">Remove Split</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('removeSplitModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Setup distribution controls for distribution trees
+    if (treeType === 'distribution' || treeType === 'execution' || treeType === 'waiting' || treeType === 'arrival') {
+        // Use setTimeout to ensure DOM is ready
+        setTimeout(() => {
+            setupDistributionControls('newLeafValueContainer', 'newLeaf');
+        }, 100);
+    }
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('removeSplitModal'));
+    modal.show();
+}
+
+function confirmRemoveSplit(nodeId, treeType) {
+    // Get the current tree data
+    let treeData;
+    if (treeType === 'transition') {
+        const transitionName = document.getElementById('transitionSelect').value;
+        treeData = currentParameters.transition_params.transition_weights[transitionName];
+    } else if (treeType === 'resource') {
+        const resourceName = document.getElementById('resourceWeightSelect').value;
+        treeData = currentParameters.resource_params.resource_weights[resourceName];
+    } else if (treeType === 'distribution' || treeType === 'execution' || treeType === 'waiting' || treeType === 'arrival') {
+        const activeTab = document.querySelector('.nav-link.active').id;
+        if (treeType === 'arrival') {
+            // Initialize structure if it doesn't exist
+            if (!currentParameters.inter_arrival_params) {
+                currentParameters.inter_arrival_params = {};
+            }
+            if (!currentParameters.inter_arrival_params.inter_arrival_time) {
+                currentParameters.inter_arrival_params.inter_arrival_time = {};
+            }
+            // Check if distribution is already a tree, if not initialize it
+            if (!currentParameters.inter_arrival_params.inter_arrival_time.distribution || 
+                typeof currentParameters.inter_arrival_params.inter_arrival_time.distribution !== 'object' ||
+                !Object.prototype.hasOwnProperty.call(currentParameters.inter_arrival_params.inter_arrival_time.distribution, '0')) {
+                // Initialize as a simple tree with one leaf
+                currentParameters.inter_arrival_params.inter_arrival_time.distribution = {
+                    '0': {
+                        value: 15,
+                        dist: {
+                            dist_name: 'expon',
+                            params: { mean: 15 },
+                            min_value: 0,
+                            max_value: 100
+                        }
+                    }
+                };
+            }
+            treeData = currentParameters.inter_arrival_params.inter_arrival_time.distribution;
+        } else if (treeType === 'execution') {
+            const activityName = document.getElementById('activityExecutionSelect').value;
+            // Initialize structure if it doesn't exist
+            if (!currentParameters.execution_time_params.activity_durations[activityName] ||
+                typeof currentParameters.execution_time_params.activity_durations[activityName] !== 'object' ||
+                !Object.prototype.hasOwnProperty.call(currentParameters.execution_time_params.activity_durations[activityName], '0')) {
+                currentParameters.execution_time_params.activity_durations[activityName] = {
+                    '0': {
+                        value: 15,
+                        dist: {
+                            dist_name: 'expon',
+                            params: { mean: 15 },
+                            min_value: 0,
+                            max_value: 100
+                        }
+                    }
+                };
+            }
+            treeData = currentParameters.execution_time_params.activity_durations[activityName];
+        } else if (treeType === 'waiting') {
+            const resourceName = document.getElementById('resourceWaitingSelect').value;
+            // Initialize structure if it doesn't exist
+            if (!currentParameters.waiting_time_params.resource_waiting_times[resourceName] ||
+                typeof currentParameters.waiting_time_params.resource_waiting_times[resourceName] !== 'object' ||
+                !Object.prototype.hasOwnProperty.call(currentParameters.waiting_time_params.resource_waiting_times[resourceName], '0')) {
+                currentParameters.waiting_time_params.resource_waiting_times[resourceName] = {
+                    '0': {
+                        value: 15,
+                        dist: {
+                            dist_name: 'expon',
+                            params: { mean: 15 },
+                            min_value: 0,
+                            max_value: 100
+                        }
+                    }
+                };
+            }
+            treeData = currentParameters.waiting_time_params.resource_waiting_times[resourceName];
+        }
+    }
+    
+    if (!treeData) {
+        alert('Could not find tree data');
+        return;
+    }
+    
+    // Get new leaf value
+    let newValue;
+    if (treeType === 'transition' || treeType === 'resource') {
+        newValue = parseFloat(document.getElementById('newLeafValue').value);
+        if (isNaN(newValue) || newValue < 0 || newValue > 1) {
+            alert('Value must be between 0 and 1');
+            return;
+        }
+    } else {
+        newValue = getDistributionValue('newLeaf');
+    }
+    
+    // Remove all child nodes recursively
+    function removeSubtree(nodeId) {
+        const node = treeData[nodeId];
+        if (node && node.children) {
+            removeSubtree(node.children.true);
+            removeSubtree(node.children.false);
+        }
+        delete treeData[nodeId];
+    }
+    
+    const node = treeData[nodeId];
+    if (node && node.children) {
+        removeSubtree(node.children.true);
+        removeSubtree(node.children.false);
+    }
+    
+    // Convert split node to leaf
+    if (treeType === 'transition' || treeType === 'resource') {
+        treeData[nodeId] = { value: newValue };
+    } else {
+        treeData[nodeId] = { value: newValue.value, dist: newValue.dist };
+    }
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('removeSplitModal'));
+    modal.hide();
+    
+    // Refresh the tree display
+    console.log('confirmRemoveSplit: About to refresh tree display with treeType:', treeType);
+    console.log('confirmRemoveSplit: Updated tree data:', treeData);
+    refreshTreeDisplay(treeType);
+}
+
+function refreshTreeDisplay(treeType) {
+    console.log('refreshTreeDisplay called with treeType:', treeType);
+    if (treeType === 'transition') {
+        const transitionName = document.getElementById('transitionSelect').value;
+        showTransitionWeights(transitionName);
+    } else if (treeType === 'resource') {
+        const resourceName = document.getElementById('resourceWeightSelect').value;
+        showResourceWeight(resourceName);
+    } else if (treeType === 'distribution' || treeType === 'execution' || treeType === 'waiting' || treeType === 'arrival') {
+        if (treeType === 'arrival') {
+            renderInterArrivalTimeParameters(currentParameters.inter_arrival_params || {});
+        } else if (treeType === 'execution') {
+            const activityName = document.getElementById('activityExecutionSelect').value;
+            showActivityExecution(activityName);
+        } else if (treeType === 'waiting') {
+            const resourceName = document.getElementById('resourceWaitingSelect').value;
+            showResourceWaiting(resourceName);
+        }
+    }
+    feather.replace();
+}
+
+function updateWaitingTimeVisualization() {
+    const resource = document.getElementById('waitingTimeSelect_res').value;
+    const activity = document.getElementById('waitingTimeSelect_act').value;
+    renderWaitingTimeVisualization(activity, resource);
+}
+
+async function renderWaitingTimeVisualization(activity='', resource='') {
+    const sessionId = currentSessionId;
+    const response = await fetch(`/api/get_visualization/${sessionId}/waiting_time_dist?activity=${activity}&resource=${resource}`);
+    const result = await response.json();
+
+    const container = document.getElementById('waitingTimeVisualizationContainer');
+    console.log('Rendering SVG visualization');
+    // Direct SVG content - embed it
+    container.innerHTML = `
+        <div class="text-center">
+            <div class="waiting-time-svg-container" style="border: 1px solid #dee2e6; border-radius: 8px; background: white; padding: 10px; margin-bottom: 15px;">
+                ${result.visualization}
+            </div>
+        </div>
+        <div class="mt-3">
+            <div class="row text-center">
+                <div class="col-md-3">
+                    <div class="fw-bold text-success">Mean</div>
+                    <div class="text-muted">${result.metrics.average_duration.toFixed(2)} mins</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="fw-bold text-success">Median</div>
+                    <div class="text-muted">${result.metrics.median_duration.toFixed(2)} mins</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="fw-bold text-success">Min</div>
+                    <div class="text-muted">${result.metrics.min_duration.toFixed(2)} mins</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="fw-bold text-success">Max</div>
+                    <div class="text-muted">${result.metrics.max_duration.toFixed(2)} mins</div>
+                </div>
+            </div>
+        </div>
+    `;
+    return;
+}
 
 </script>
 {% endblock %}

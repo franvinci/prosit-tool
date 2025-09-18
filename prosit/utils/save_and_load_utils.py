@@ -36,7 +36,7 @@ def decision_rules_to_dict(d: DecisionRules) -> dict:
             return new_obj
         elif isinstance(obj, tuple):
             return {"dist_name": convert(obj[0]), "params": obj[1], "min_value": obj[2], "max_value": obj[3]}
-         
+
         elif hasattr(obj, '__module__') and obj.__module__.startswith("scipy.stats"):
             return obj.name  # Convert scipy distribution to string
         else:
@@ -101,7 +101,7 @@ def dict_to_decrules(d: dict) -> DecisionRules:
                         pass
                 if k == "dist":
                     new_obj[k] = fromstr_to_scipy(obj[k]["dist_name"]), tuple(obj[k]["params"]), obj[k]["min_value"], obj[k]["max_value"]
-                    new_obj["sampled"] = sampling_from_dist(new_obj[k][0], new_obj[k][1], new_obj[k][2], new_obj[k][3], new_obj["value"])
+                    new_obj["sampled"] = sampling_from_dist(new_obj[k][0], new_obj[k][1], new_obj[k][2], new_obj[k][3], obj["value"])
                 else:
                     new_obj[new_k] = convert(v)
             return new_obj

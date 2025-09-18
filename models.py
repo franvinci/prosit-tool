@@ -3,12 +3,15 @@ from datetime import datetime
 import json
 
 class SimulationSession(db.Model):
+    """Database model for simulation sessions."""
+    
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(255), nullable=False)
     noise_threshold = db.Column(db.Float, default=0.2)
     parameters = db.Column(db.Text)  # JSON string of discovered parameters
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    status = db.Column(db.String(50), default='uploaded')  # uploaded, discovered, ready, simulating, completed
+    status = db.Column(db.String(50), default='uploaded')  # Status: uploaded, discovered, ready, simulating, completed
+    simulation_df_filename = db.Column(db.String(255), default='')
     
     def __init__(self, filename, noise_threshold=0.2, **kwargs):
         super().__init__(**kwargs)
@@ -17,11 +20,19 @@ class SimulationSession(db.Model):
         self.status = 'uploaded'
     
     def get_parameters(self):
-        """Get parameters as Python dict"""
+        """Get parameters as Python dictionary.
+        
+        Returns:
+            dict or None: Parsed JSON parameters or None if empty
+        """
         if self.parameters:
             return json.loads(self.parameters)
         return None
     
     def set_parameters(self, params_dict):
-        """Set parameters from Python dict"""
+        """Set parameters from Python dictionary.
+        
+        Args:
+            params_dict: Dictionary to store as JSON string
+        """
         self.parameters = json.dumps(params_dict, indent=2)

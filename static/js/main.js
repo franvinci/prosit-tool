@@ -54,10 +54,26 @@ function setupGlobalHandlers() {
 function handleFileInputChange(input) {
     const file = input.files[0];
     if (!file) return;
-    
-    // Validate file type
-    if (!file.name.toLowerCase().endsWith('.xes')) {
-        showAlert('Please select a valid XES file', 'warning');
+
+    const discoverNet = document.getElementById('discoverNet');
+    const importNet = document.getElementById('importNet');
+
+    let valid = false;
+    let requiredExtension = '';
+
+    if (discoverNet.checked && file.name.toLowerCase().endsWith('.xes')) {
+        valid = true;
+        requiredExtension = 'XES';
+    } else if (importNet.checked && file.name.toLowerCase().endsWith('.pnml')) {
+        valid = true;
+        requiredExtension = 'PNML';
+    } else {
+        if (discoverNet.checked) {
+            requiredExtension = 'XES';
+        } else if (importNet.checked) {
+            requiredExtension = 'PNML';
+        }
+        showAlert(`Please select a valid ${requiredExtension} file`, 'warning');
         input.value = '';
         return;
     }

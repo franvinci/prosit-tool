@@ -108,7 +108,7 @@ def build_model_arrival(
 
     if len(X) == 0:
         clf = DecisionRules()
-        clf.rules = {0: {'value': 0.0, 'sampled':[0], 'dist': ('fixed', (0,))}}
+        clf.rules = {0: {'value': 0.0, 'sampled':[0], 'dist': ('fixed', (0,), 0, 0, 0)}}
         return clf
 
     if max_depths:
@@ -182,7 +182,7 @@ def build_models_ex(
 
         if len(X) == 0:
             clf = DecisionRules()
-            clf.rules = {0: {'value': 0.0, 'sampled':[0], 'dist': ('fixed', (0,))}}
+            clf.rules = {0: {'value': 0.0, 'sampled':[0], 'dist': ('fixed', (0,), 0, 0, 0)}}
             models_act[act] = clf
             continue
 
@@ -255,7 +255,7 @@ def build_models_wt(
 
         if len(X) == 0:
             clf = DecisionRules()
-            clf.rules = {0: {'value': 0.0, 'sampled':[0], 'dist': ('fixed', (0,))}}
+            clf.rules = {0: {'value': 0.0, 'sampled':[0], 'dist': ('fixed', (0,), 0, 0, 0)}}
             models_res[res] = clf
             continue
 

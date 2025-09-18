@@ -7,7 +7,7 @@
     --light-green: #5fb3a3;
     --dark-purple: #5a189a;
     --dark-green: #048a81;
-    --background-light: #f8f9fa;
+    --background-light: #f3e9f7;
     --text-dark: #2d3436;
     --border-color: #e9ecef;
 }
@@ -459,4 +459,89 @@ h1 [data-feather], h2 [data-feather], h3 [data-feather] {
 
 ::-webkit-scrollbar-thumb:hover {
     background: var(--dark-purple);
+}
+
+/* Decision Tree Collapse/Expand Styles */
+.tree-toggle {
+    min-width: 32px;
+    height: 32px;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.tree-toggle:hover {
+    background-color: rgba(123, 44, 191, 0.1);
+    border-color: var(--primary-purple);
+}
+
+.tree-toggle .tree-icon {
+    width: 16px;
+    height: 16px;
+    transition: transform 0.2s ease;
+}
+
+.tree-children {
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.tree-children.collapsed {
+    display: none !important;
+}
+
+/* Smooth animation for tree expansion/collapse */
+.tree-children {
+    animation: expandTree 0.3s ease-out;
+}
+
+@keyframes expandTree {
+    from {
+        opacity: 0;
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        max-height: 1000px;
+    }
+}
+
+/* Tree node styling improvements */
+.tree-node {
+    position: relative;
+}
+
+.tree-node::before {
+    content: '';
+    position: absolute;
+    left: -2px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: var(--border-color);
+    transition: background-color 0.2s ease;
+}
+
+.tree-node:hover::before {
+    background-color: var(--primary-purple);
+}
+
+/* Leaf node styling */
+.tree-leaf {
+    background-color: rgba(6, 214, 160, 0.05);
+    border-radius: 6px;
+    padding: 0.5rem;
+    margin: 0.25rem 0;
+    border-left: 3px solid var(--primary-green);
+}
+
+/* Split node styling */
+.tree-split {
+    background-color: rgba(123, 44, 191, 0.05);
+    border-radius: 6px;
+    padding: 0.5rem;
+    margin: 0.25rem 0;
+    border-left: 3px solid var(--primary-purple);
 }

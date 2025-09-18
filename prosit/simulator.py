@@ -109,21 +109,21 @@ class SimulatorParameters:
                 pm4py.get_event_attribute_values(log, a).keys())
 
         if verbose:
-            print("Resources discovery...")
+            print("Discovering resources...")
         self.resources = discover_resources_list(log)
         self.act_to_resources = discover_resources_per_act(
             log, self.net_transition_labels, self.resources)
 
         if self.label_data_attributes:
             if verbose:
-                print("Data attributes discovery...")
+                print("Discovering data attributes...")
             self.distribution_data_attributes = discover_attributes_distribution(
-                log, self.label_data_attributes)
+                log, self.label_data_attributes, self.label_data_attributes_categorical)
         else:
-            self.distribution_data_attributes = None
+            self.distribution_data_attributes = {}
 
         if verbose:
-            print("Feature discovery...")
+            print("Building feature dataset...")
         df_features = build_df_features(log, self.net, self.initial_marking,
                                         self.final_marking,
                                         self.act_to_resources,
@@ -139,9 +139,9 @@ class SimulatorParameters:
 
         if verbose:
             if incremental_discovery:
-                print("Incremental Transition Probabilities discovery...")
+                print("Learning transition probabilities incrementally...")
             else:
-                print("Transition Probabilities discovery...")
+                print("Discovering transition probabilities...")
 
         if incremental_discovery:
             self.transition_weights = incremental_transition_weights_learning(
@@ -168,9 +168,9 @@ class SimulatorParameters:
 
         if verbose:
             if incremental_discovery:
-                print("Incremental Resource Weights discovery...")
+                print("Learning resource weights incrementally...")
             else:
-                print("Resource Weights discovery...")
+                print("Discovering resource weights...")
 
         if incremental_discovery:
             self.resource_weights = incremental_resource_weights_learning(
@@ -186,15 +186,15 @@ class SimulatorParameters:
                 self.attribute_values_label_categorical)
 
         if verbose:
-            print("Calendars discovery...")
+            print("Discovering resource calendars...")
         self.calendars = discover_res_calendars(log, self.resources)
         self.arrival_calendar = discover_arrival_calendar(log)
 
         if verbose:
             if incremental_discovery:
-                print("Incremental Execution Time discovery...")
+                print("Learning execution times incrementally...")
             else:
-                print("Execution Time discovery...")
+                print("Discovering execution times...")
 
         if incremental_discovery:
             self.execution_time_distributions = incremental_execution_time_learning(
@@ -221,9 +221,9 @@ class SimulatorParameters:
                 values_categorical=self.attribute_values_label_categorical)
         if verbose:
             if incremental_discovery:
-                print("Incremental Waiting Time discovery...")
+                print("Learning waiting times incrementally...")
             else:
-                print("Waiting Time discovery...")
+                print("Discovering waiting times...")
 
         if incremental_discovery:
             self.waiting_time_distributions = incremental_waiting_time_learning(
@@ -249,9 +249,9 @@ class SimulatorParameters:
 
         if verbose:
             if incremental_discovery:
-                print("Incremental Arrival Time discovery...")
+                print("Learning arrival times incrementally...")
             else:
-                print("Arrival Time discovery...")
+                print("Discovering arrival times...")
 
         if incremental_discovery:
             self.arrival_time_distribution = incremental_model_arrival_learning(
@@ -309,8 +309,7 @@ class SimulatorParameters:
                 self.label_data_attributes_categorical,
                 "attribute_values_label_categorical":
                 self.attribute_values_label_categorical,
-                "distribution_data_attributes":
-                self.distribution_data_attributes
+                "distribution_data_attributes": {l: decision_rules_to_dict(v) for l, v in self.distribution_data_attributes.items()}
             }
         }
 
@@ -331,17 +330,15 @@ class SimulatorParameters:
                 "data_attribute_params"]["label_data_attributes_categorical"]
         self.attribute_values_label_categorical = dict_params[
             "data_attribute_params"]["attribute_values_label_categorical"]
-        self.distribution_data_attributes = dict_params[
-            "data_attribute_params"]["distribution_data_attributes"]
+        self.distribution_data_attributes = {l: dict_params["data_attribute_params"]["distribution_data_attributes"][l] 
+                                                for l in self.label_data_attributes_categorical} | {
+                                             l: (fromstr_to_scipy(value["dist_name"]), tuple(value["params"]), value["min_value"], value["max_value"], value["mean_value"]) 
+                                                for l, value in dict_params["data_attribute_params"]["distribution_data_attributes"].items() if l not in self.label_data_attributes_categorical}
+        
 
         self.resources = dict_params["resource_params"]["resources"]
         self.act_to_resources = dict_params["resource_params"][
             "act_to_resources"]
-        self.resource_weights = {
-            res: dict_to_decrules(value)
-            for res, value in dict_params["resource_params"]
-            ["resource_weights"].items()
-        }
         self.multitasking_resources = dict_params["resource_params"][
             "multitasking_resource"]
 
@@ -357,6 +354,11 @@ class SimulatorParameters:
                 name_to_transition(t_name, self.net): dict_to_decrules(value)
                 for t_name, value in dict_params["transition_params"]
                 ["transition_weights"].items()
+            }
+            self.resource_weights = {
+                res: dict_to_decrules(value)
+                for res, value in dict_params["resource_params"]
+                ["resource_weights"].items()
             }
             self.execution_time_distributions = {
                 act: dict_to_decrules(value)
@@ -375,6 +377,11 @@ class SimulatorParameters:
                 name_to_transition(t_name, self.net): value
                 for t_name, value in dict_params["transition_params"]
                 ["transition_weights"].items()
+            }
+            self.resource_weights = {
+                res: value
+                for res, value in dict_params["resource_params"]
+                ["resource_weights"].items()
             }
             self.execution_time_distributions = {
                 act:
@@ -466,13 +473,14 @@ class SimulatorEngine:
                 }
 
         if self.simulation_parameters.label_data_attributes:
-            x_attr_list = random.choices(
-                list(self.simulation_parameters.distribution_data_attributes.
-                     keys()),
-                weights=list(self.simulation_parameters.
-                             distribution_data_attributes.values()),
-                k=n_traces)
-            x_attr_list = [list(attr) for attr in x_attr_list]
+            x_attr_list = []
+            for l in self.simulation_parameters.label_data_attributes:
+                if l in self.simulation_parameters.label_data_attributes_categorical:
+                    attr_list = random.choices(list(self.simulation_parameters.distribution_data_attributes[l].keys()), weights=list(self.simulation_parameters.distribution_data_attributes[l].values()), k=n_traces)
+                else:
+                    attr_list = sampling_from_dist(*self.simulation_parameters.distribution_data_attributes[l], n_sample=n_traces)
+                x_attr_list.append(attr_list)
+            x_attr_list = [list(x) for x in zip(*x_attr_list)]
         else:
             x_attr_list = [[]] * n_traces
 

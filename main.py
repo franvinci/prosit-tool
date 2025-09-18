@@ -1,3 +1,5 @@
+"""Main entry point for the ProSiT application."""
+
 from app import app
 
 if __name__ == '__main__':
