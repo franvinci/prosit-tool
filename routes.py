@@ -13,6 +13,7 @@ from models import SimulationSession
 from prosit_integration import ProSiTIntegration
 from pm4py.objects.log.importer.xes import importer as xes_importer
 
+import numpy as np
 import pandas as pd
 import matplotlib
 matplotlib.use('Agg')
@@ -129,6 +130,14 @@ def discover_parameters(session_id):
         # Get incremental discovery setting
         incremental_discovery = request.args.get('incremental_discovery', '0') in ['1', 'true', 'True']
         
+        # Get grace period setting
+        try:
+            grace_period = int(request.args.get('grace_period', '1000'))
+            if grace_period < 1:
+                grace_period = 1000
+        except (ValueError, TypeError):
+            grace_period = 1000
+        
         # Check if there's a separate PNML file for the Petri net model
         pnml_filepath = None
         session_params = session.get_parameters()
@@ -144,13 +153,13 @@ def discover_parameters(session_id):
             logger.info(f"Using PNML model and discovering parameters from XES")
             prosit.import_petri_net_from_pnml(pnml_filepath)
             process_model = prosit.process_model
-            parameters = prosit.discover_parameters(max_depth_tree=max_depth_tree, incremental_discovery=incremental_discovery)
+            parameters = prosit.discover_parameters(max_depth_tree=max_depth_tree, incremental_discovery=incremental_discovery, grace_period=grace_period)
         else:
             # Standard workflow: discover both model and parameters from XES
             logger.info(f"Discovering process model and parameters from XES")
             prosit.discover_process_model(noise_threshold=session.noise_threshold)
             process_model = prosit.process_model
-            parameters = prosit.discover_parameters(max_depth_tree=max_depth_tree, incremental_discovery=incremental_discovery)
+            parameters = prosit.discover_parameters(max_depth_tree=max_depth_tree, incremental_discovery=incremental_discovery, grace_period=grace_period)
             prosit_metrics = prosit.prosit_metrics
             for metric_cat in prosit_metrics:
                 for m in prosit_metrics[metric_cat]:
@@ -1045,12 +1054,15 @@ def get_visualization(session_id, visualization_type):
             return jsonify({'success': True, 'visualization': svg_content, 'metrics': metrics})
 
         elif visualization_type == 'resource_heatmap':
+            resource_name = request.args.get('resource')
+
+            # Filter resource only if a specific resource is selected
+            if resource_name:
+                df = df[df['org:resource'] == resource_name]
+
             # Parse timestamps
             df['time:timestamp'] = pd.to_datetime(df['time:timestamp'], utc=True)
             df['start:timestamp'] = pd.to_datetime(df['start:timestamp'], utc=True)
-
-            # Compute duration in minutes
-            df['duration'] = (df['time:timestamp'] - df['start:timestamp']).dt.total_seconds() // 60
 
             # Extract hour and weekday
             df['hour'] = df['start:timestamp'].dt.hour
@@ -1058,59 +1070,23 @@ def get_visualization(session_id, visualization_type):
             weekday_map = {0: 'Mon', 1: 'Tue', 2: 'Wed', 3: 'Thu', 4: 'Fri', 5: 'Sat', 6: 'Sun'}
             df['weekday'] = df['weekday_num'].map(weekday_map)
 
-            # Combine weekday and hour label (used as index)
-            df['weekday_hour'] = df.apply(lambda row: f"{row['weekday']} {row['hour']:02d}:00", axis=1)
+            # Count number of events per weekday-hour
+            utilization = df.groupby(['weekday_num', 'hour']).size().unstack(fill_value=0)
 
-            # Group by and pivot
-            grouped = df.groupby(['weekday_num', 'hour', 'weekday', 'weekday_hour', 'org:resource'])['duration'].sum().reset_index()
-            pivot = grouped.pivot(index='weekday_hour', columns='org:resource', values='duration').fillna(0)
+            # Ensure full 7x24 grid
+            utilization = utilization.reindex(index=np.arange(7), columns=np.arange(24), fill_value=0)
 
-            # Sorting
-            grouped_unique = grouped.drop_duplicates(subset='weekday_hour')
-            pivot['sort_index'] = grouped_unique.set_index('weekday_hour')['weekday_num'] * 24 + grouped_unique['hour']
-            pivot = pivot.sort_values('sort_index').drop(columns='sort_index')
+            # Create heatmap
+            plt.figure(figsize=(14, 6))
+            sns.heatmap(utilization, cmap="YlGnBu", annot=True, fmt="d", cbar_kws={'label': 'Number of events'})
 
-            # Insert white rows between weekdays
-            heatmap_data = pd.DataFrame()
-            weekday_labels = []
-            weekday_positions = []
-            current_index = 0
+            # Formatting
+            title = f"Resource Event Count Heatmap: {resource_name}" if resource_name else "Resource Event Count Heatmap: All Resources"
+            plt.title(title, fontsize=16)
+            plt.xlabel("Hour of Day", fontsize=12)
+            plt.ylabel("Weekday", fontsize=12)
+            plt.yticks(ticks=np.arange(7)+0.5, labels=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], rotation=0)
 
-            for i, weekday in enumerate(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']):
-                day_rows = pivot[pivot.index.str.startswith(weekday)]
-                heatmap_data = pd.concat([heatmap_data, day_rows])
-
-                # Posizione centrata per il nome del giorno
-                center_pos = current_index + len(day_rows) // 2
-                weekday_positions.append(center_pos)
-                weekday_labels.append(weekday)
-
-                current_index += len(day_rows)
-
-                # Riga vuota bianca tra i giorni
-                if i < 6:
-                    empty_row = pd.DataFrame([[None]*pivot.shape[1]], columns=pivot.columns, index=[''])
-                    heatmap_data = pd.concat([heatmap_data, empty_row])
-                    current_index += 1
-
-            # Plot
-            plt.figure(figsize=(13, 10))
-            ax = sns.heatmap(
-                heatmap_data,
-                cmap="viridis",
-                cbar_kws={'label': 'Duration (minutes)'},
-                xticklabels=True,
-                yticklabels=False,
-                linewidths=1.0,
-                linecolor='white'  # Linee bianche di separazione
-            )
-
-            # Scrive i giorni centrati
-            for pos, label in zip(weekday_positions, weekday_labels):
-                plt.text(-0.5, pos, label, va='center', ha='right', fontsize=12, color='black')
-
-            plt.title('Resource Utilization Heatmap (Duration by Weekday-Hour)', fontsize=14)
-            plt.xlabel('Resource')
             plt.tight_layout()
 
             # Save to SVG string
@@ -1127,12 +1103,15 @@ def get_visualization(session_id, visualization_type):
 
             return jsonify({'success': True, 'visualization': svg_content})
 
+
         elif visualization_type == 'activity_duration_boxplot':
             activity_name = request.args.get('activity')
-            if not activity_name:
-                return jsonify({'error': 'Activity name not provided.'}), 400
-
-            activity_df = df[df['concept:name'] == activity_name]
+            
+            # Filter activity only if a specific activity is selected
+            if activity_name:
+                activity_df = df[df['concept:name'] == activity_name]
+            else:
+                activity_df = df
             activity_df['time:timestamp'] = pd.to_datetime(activity_df['time:timestamp'], utc=True)
             activity_df['start:timestamp'] = pd.to_datetime(activity_df['start:timestamp'], utc=True)
             activity_df['duration'] = (activity_df['time:timestamp'] - activity_df['start:timestamp']).dt.total_seconds() // 60
@@ -1146,7 +1125,8 @@ def get_visualization(session_id, visualization_type):
             
             plt.figure(figsize=(10, 6))
             sns.boxplot(y=activity_df['duration'], showfliers=False)
-            plt.title(f'Activity Duration for "{activity_name}"')
+            title = f'Activity Duration for "{activity_name}"' if activity_name else 'Activity Duration for All Activities'
+            plt.title(title)
             plt.ylabel('Duration (minutes)')
 
             # Save to SVG string
@@ -1170,16 +1150,16 @@ def get_visualization(session_id, visualization_type):
             activities = list(df['concept:name'].unique())
             resources = list(df['org:resource'].unique())
 
-            if activity_name in activities:
-                if resource_name in resources:
+            # Apply filters only if specific values are provided
+            if activity_name and activity_name in activities:
+                if resource_name and resource_name in resources:
                     df = df[(df["org:resource"] == resource_name) & (df["concept:name"] == activity_name)]
                 else:
                     df = df[(df["concept:name"] == activity_name)]
             else:
-                if resource_name in resources:
+                if resource_name and resource_name in resources:
                     df = df[(df["org:resource"] == resource_name)]
-                else:
-                    return jsonify({'error': 'Activity and Resource names not provided.'}), 400
+                # If neither activity nor resource is specified, use all data
 
             df['enabled:timestamp'] = pd.to_datetime(df['enabled:timestamp'], utc=True)
             df['start:timestamp'] = pd.to_datetime(df['start:timestamp'], utc=True)
@@ -1195,14 +1175,20 @@ def get_visualization(session_id, visualization_type):
             # Plot density
             plt.figure(figsize=(10, 6))
             sns.histplot(df['waiting_time'], kde=True)
-            if activity_name in activities:
-                if resource_name in resources:
-                    plt.title(f'Resource: {resource_name} -- Activity: {activity_name}')
-                else:
-                    plt.title(f'Activity: {activity_name}')
-            else:
-                if resource_name in resources:
-                    plt.title(f'Resource: {resource_name}')
+            
+            # Create title based on selected filters
+            title_parts = []
+            if resource_name and resource_name in resources:
+                title_parts.append(f'Resource: {resource_name}')
+            elif not resource_name:
+                title_parts.append('Resource: Any')
+                
+            if activity_name and activity_name in activities:
+                title_parts.append(f'Activity: {activity_name}')
+            elif not activity_name:
+                title_parts.append('Activity: Any')
+                
+            plt.title(' -- '.join(title_parts) if title_parts else 'Waiting Time Distribution')
             plt.xlabel('Duration (minutes)')
             plt.ylabel('Frequency')
 

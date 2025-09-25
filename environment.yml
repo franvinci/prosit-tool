@@ -1,0 +1,24 @@
+name: prosit
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10.11
+  - pip:
+    - graphviz==0.21
+    - log-distance-measures==2.0.0
+    - lxml==5.3.0
+    - matplotlib==3.10.6
+    - numpy==1.26.4
+    - pandas==2.2.3
+    - pm4py==2.7.17
+    - scikit-learn==1.6.1
+    - scipy==1.14.1
+    - tqdm==4.67.1
+    - river==0.22.0
+    - flask==3.1.1
+    - flask-sqlalchemy==3.1.1
+    - gunicorn==23.0.0
+    - pillow==11.3.0
+    - sqlalchemy==2.0.43
+    - seaborn==0.13.2

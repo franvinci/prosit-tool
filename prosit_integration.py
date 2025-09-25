@@ -161,13 +161,14 @@ class ProSiTIntegration:
             logger.error(f"Failed to import Petri net from PNML: {str(e)}")
             raise e
 
-    def discover_parameters(self, max_depth_tree=0, incremental_discovery=False):
+    def discover_parameters(self, max_depth_tree=0, incremental_discovery=False, grace_period=1000):
         """
         Discover simulation parameters using ProSiT library.
         
         Args:
             max_depth_tree: Maximum depth for decision trees (0 disables rules mode)
             incremental_discovery: Whether to use incremental learning algorithms
+            grace_period: Number of events to wait before starting incremental learning
             
         Returns:
             Dictionary containing discovered parameters in application format
@@ -189,7 +190,7 @@ class ProSiTIntegration:
             # Discover parameters from event log (max_depth_tree=0 disables rules mode)
             logger.info("Starting ProSiT parameter discovery...")
             try:
-                self.prosit_params.discover_from_eventlog(self.event_log, max_depth_tree=max_depth_tree, incremental_discovery=incremental_discovery, verbose=True)
+                self.prosit_params.discover_from_eventlog(self.event_log, max_depth_tree=max_depth_tree, incremental_discovery=incremental_discovery, grace_period=grace_period, verbose=True)
                 logger.info("ProSiT parameter discovery completed successfully")
             except Exception as discovery_error:
                 logger.error(f"ProSiT discovery_from_eventlog failed: {str(discovery_error)}")

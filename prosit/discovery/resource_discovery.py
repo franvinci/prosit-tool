@@ -26,7 +26,7 @@ def discover_resources_list(log: EventLog, thr: float = 1.0) -> list:
 def discover_resources_per_act(log: EventLog,
                                activities: list,
                                resources: list,
-                               thr: float = 1.0) -> dict:
+                               thr: float = 0.90) -> dict:
 
     df_log = pm4py.convert_to_dataframe(log)
     df_log = df_log[df_log["concept:name"].isin(activities)]
@@ -46,7 +46,7 @@ def discover_resources_per_act(log: EventLog,
     return R_act
 
 
-def return_multitasking_resources(df_features: pd.DataFrame, thr=0.05) -> list:
+def return_multitasking_resources(df_features: pd.DataFrame, thr=0.1) -> list:
 
     def condition(group):
         total = len(group)

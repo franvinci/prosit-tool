@@ -43,7 +43,7 @@ def decision_rules_to_dict(d: DecisionRules) -> dict:
             return obj
 
     if isinstance(d, tuple):
-        return {"dist_name": convert(d[0]), "params": d[1], "min_value": d[2], "max_value": d[3], "mean_value": d[4]}
+        return {"dist_name": convert(d[0]), "params": d[1], "min_value": float(d[2]), "max_value": float(d[3]), "mean_value": float(d[4])}
 
     if not isinstance(d, DecisionRules):
         if d is None:

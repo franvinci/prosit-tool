@@ -13,7 +13,14 @@
             <div class="card-body">
                 <form id="uploadForm" enctype="multipart/form-data">
                     <div class="mb-3">
-                        <label for="xesFile" class="form-label fw-bold">XES Event Log File</label>
+                        <label for="xesFile" class="form-label fw-bold">
+                            XES Event Log File
+                            <i data-feather="info" class="ms-1" 
+                               data-bs-toggle="tooltip" 
+                               data-bs-placement="top" 
+                               title="The XES event log must contain the following required attributes: 'case:concept:name', 'concept:name', 'start:timestamp', 'time:timestamp', 'org:resource'. All other attributes are treated as trace attributes."
+                               style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
+                        </label>
                         <input type="file" class="form-control" id="xesFile" name="xes_file" accept=".xes" required>
                         <div class="form-text">Upload your XES event log file for parameter discovery</div>
                     </div>
@@ -55,7 +62,14 @@
 
                     <div id="pnmlSection" class="upload-section" style="display: none;">
                         <div class="mb-3">
-                            <label for="pnmlFile" class="form-label">PNML Petri Net File</label>
+                            <label for="pnmlFile" class="form-label">
+                                PNML Petri Net File
+                                <i data-feather="info" class="ms-1" 
+                                   data-bs-toggle="tooltip" 
+                                   data-bs-placement="top" 
+                                   title="The Petri net must be a valid sound Petri net model."
+                                   style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
+                            </label>
                             <input type="file" class="form-control" id="pnmlFile" name="pnml_file" accept=".pnml">
                             <div class="form-text">Upload your PNML Petri net model file.</div>
                         </div>
@@ -78,6 +92,18 @@
                                     <input class="form-check-input" type="checkbox" id="incrementalDiscoveryToggle">
                                 </div>
                                 <div class="form-text">Disabled when depth is 0</div>
+                            </div>
+                            <div class="ms-3" id="gracePeriodSection" style="display: none;">
+                                <label class="form-label fw-bold mb-1">
+                                    Grace Period
+                                    <i data-feather="info" class="ms-1" 
+                                       data-bs-toggle="tooltip" 
+                                       data-bs-placement="top" 
+                                       title="The grace period is the number of events to wait before starting incremental learning. Higher values provide more stable initial models but delay adaptation to new patterns."
+                                       style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
+                                </label>
+                                <input type="number" class="form-control" id="gracePeriod" name="grace_period" min="1" value="1000" style="width: 120px;">
+                                <div class="form-text">Minimum: 1, Default: 1000</div>
                             </div>
                         </div>
                         <div class="form-text">Choose 0 to disable rule discovery, or up to 3 for decision trees.</div>
@@ -424,6 +450,12 @@
                         </div>
                     </div>
                     <div class="tab-pane fade" id="resource-utilization-pane" role="tabpanel">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="resourceHeatmapSelect" class="form-label">Select Resource</label>
+                                <select class="form-select" id="resourceHeatmapSelect" onchange="renderResourceHeatmap(this.value)"></select>
+                            </div>
+                        </div>
                         <div class="row">
                             <div id="resourceHeatmap" class="border rounded p-3" style="min-height: 300px; background-color: #f8f9fa;">
                                 <div class="d-flex justify-content-center align-items-center h-100">
@@ -526,17 +558,35 @@ document.addEventListener('DOMContentLoaded', function() {
     // Setup incremental discovery toggle behavior
     const maxDepthSelect = document.getElementById('maxDepthTree');
     const incToggle = document.getElementById('incrementalDiscoveryToggle');
+    const gracePeriodSection = document.getElementById('gracePeriodSection');
     function syncIncrementalToggle() {
         const depth = parseInt(maxDepthSelect.value || '0');
         if (depth === 0) {
             incToggle.checked = false;
             incToggle.disabled = true;
+            gracePeriodSection.style.display = 'none';
         } else {
             incToggle.disabled = false;
+            // Show grace period section only if incremental discovery is enabled
+            if (incToggle.checked) {
+                gracePeriodSection.style.display = 'block';
+            } else {
+                gracePeriodSection.style.display = 'none';
+            }
+        }
+    }
+    
+    // Handle incremental discovery toggle change
+    function handleIncrementalToggle() {
+        if (incToggle.checked && parseInt(maxDepthSelect.value || '0') > 0) {
+            gracePeriodSection.style.display = 'block';
+        } else {
+            gracePeriodSection.style.display = 'none';
         }
     }
     if (maxDepthSelect && incToggle) {
         maxDepthSelect.addEventListener('change', syncIncrementalToggle);
+        incToggle.addEventListener('change', handleIncrementalToggle);
         syncIncrementalToggle();
     }
 
@@ -545,6 +595,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize feather icons
     feather.replace();
+    
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
     
     // Force cache refresh by adding timestamp to any AJAX requests
     const timestamp = Date.now();
@@ -588,7 +644,8 @@ async function handleUpload(e) {
         
         const depthVal = (document.getElementById('maxDepthTree') && document.getElementById('maxDepthTree').value) || '0';
         const incVal = (document.getElementById('incrementalDiscoveryToggle') && document.getElementById('incrementalDiscoveryToggle').checked) ? '1' : '0';
-        const discoverResponse = await fetch(`/api/discover/${uploadResult.session_id}?max_depth_tree=${encodeURIComponent(depthVal)}&incremental_discovery=${encodeURIComponent(incVal)}`, {
+        const gracePeriodVal = (document.getElementById('gracePeriod') && document.getElementById('gracePeriod').value) || '1000';
+        const discoverResponse = await fetch(`/api/discover/${uploadResult.session_id}?max_depth_tree=${encodeURIComponent(depthVal)}&incremental_discovery=${encodeURIComponent(incVal)}&grace_period=${encodeURIComponent(gracePeriodVal)}`, {
             method: 'POST'
         });
         
@@ -776,13 +833,19 @@ function renderDecisionTreeEditor(treeData, mountEl, treeType = 'transition') {
             childrenContainer.className = 'tree-children';
             childrenContainer.style.display = 'block'; // Default to expanded
             
+            // Check if feature is categorical (contains " = ")
+            const isCategorical = node.feature.includes(' = ');
+            const splitDisplay = isCategorical ? 
+                `${escapeHtml(node.feature)}` : 
+                `${escapeHtml(node.feature)} ≤ ${escapeHtml(node.threshold)}`;
+            
             title.innerHTML = `
                 <div class="d-flex align-items-center gap-2">
                     <button class="btn btn-sm btn-outline-secondary tree-toggle" data-node-id="${id}" title="Collapse/Expand">
                         <i data-feather="chevron-down" class="tree-icon"></i>
                     </button>
                     <span class="badge bg-primary">Split</span> 
-                    <span>${escapeHtml(node.feature)} ≤ ${escapeHtml(node.threshold)}</span>
+                    <span>${splitDisplay}</span>
                     <button class="btn btn-sm btn-outline-danger" onclick="removeSplitFromNode('${id}', '${treeType}')" title="Remove split">
                         <i data-feather="trash-2" class="me-1"></i>Remove
                     </button>
@@ -1042,13 +1105,19 @@ function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType = 'dis
             childrenContainer.className = 'tree-children';
             childrenContainer.style.display = 'block'; // Default to expanded
             
+            // Check if feature is categorical (contains " = ")
+            const isCategorical = node.feature.includes(' = ');
+            const splitDisplay = isCategorical ? 
+                `${escapeHtml(node.feature)}` : 
+                `${escapeHtml(node.feature)} ≤ ${escapeHtml(node.threshold)}`;
+            
             title.innerHTML = `
                 <div class="d-flex align-items-center gap-2">
                     <button class="btn btn-sm btn-outline-secondary tree-toggle" data-node-id="${id}" title="Collapse/Expand">
                         <i data-feather="chevron-down" class="tree-icon"></i>
                     </button>
                     <span class="badge bg-primary">Split</span> 
-                    <span>${escapeHtml(node.feature)} ≤ ${escapeHtml(node.threshold)}</span>
+                    <span>${splitDisplay}</span>
                     <button class="btn btn-sm btn-outline-danger" onclick="removeSplitFromNode('${id}', '${treeType}')" title="Remove split">
                         <i data-feather="trash-2" class="me-1"></i>Remove
                     </button>
@@ -2396,6 +2465,25 @@ function renderAccuracyResults(metrics) {
         'generalization': 'Generalization'
     };
 
+    // Metric descriptions for tooltips
+    const metricDescriptions = {
+            // Control Flow Metrics
+            '2gd': '2-Gram Distribution Distance: Quantifies the similarity between the 2-gram activity sequence distributions in the original and simulated logs. Values close to 0 indicate high similarity.',
+            '3gd': '3-Gram Distribution Distance: Quantifies the similarity between the 3-gram activity sequence distributions in the original and simulated logs. Values close to 0 indicate high similarity.',
+
+            // Time Metrics
+            'ctd': 'Cycle Time Distribution Distance: Measures how closely the cycle time distributions of the original and simulated logs align. Lower values indicate higher similarity.',
+            'car': 'Case Arrival Distribution Distance: Measures how closely the case arrival distributions of the original and simulated logs align. Lower values indicate higher similarity.',
+
+            // Resource Flow Metrics
+            'r2gd': '2-Gram Resource Distribution Distance: Quantifies the similarity between the 2-gram resource sequence distributions in the original and simulated logs. Values close to 0 indicate high similarity.',
+            'r3gd': '3-Gram Resource Distribution Distance: Quantifies the similarity between the 3-gram resource sequence distributions in the original and simulated logs. Values close to 0 indicate high similarity.',
+
+            // Generalization Metrics
+            'ctd_entropy': 'Cycle Time Distribution Entropy: Entropy of the cycle time distribution in the simulated logs, indicating variability and unpredictability. Greater values indicate higher generalization.',
+            'etd_entropy': 'Execution Time Distribution Entropy: Entropy of the event execution time distribution in the simulated logs, indicating variability and unpredictability. Greater values indicate higher generalization.',
+    };
+
     let html = '<div class="row">';
 
     for (const category of categoriesOrder) {
@@ -2423,9 +2511,18 @@ function renderAccuracyResults(metrics) {
 
             for (const [metric, value] of Object.entries(data)) {
                 const formattedMetric = metric.toUpperCase().replace(/_/g, ' ');
+                const description = metricDescriptions[metric] || `Metric: ${formattedMetric}`;
+                
                 html += `
                                         <tr>
-                                            <td class="w-50">${formattedMetric}</td>
+                                            <td class="w-50">
+                                                ${formattedMetric}
+                                                <i data-feather="info" class="ms-1" 
+                                                   data-bs-toggle="tooltip" 
+                                                   data-bs-placement="top" 
+                                                   title="${description}"
+                                                   style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
+                                            </td>
                                             <td class="w-50">${parseFloat(value).toFixed(4)}</td>
                                         </tr>
                 `;
@@ -2444,6 +2541,15 @@ function renderAccuracyResults(metrics) {
 
     html += '</div>';
     container.innerHTML = html;
+    
+    // Initialize Feather icons for the new content
+    feather.replace();
+    
+    // Initialize tooltips after adding the HTML
+    const tooltipTriggerList = [].slice.call(container.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
 }
 
 /**
@@ -2807,11 +2913,7 @@ async function loadAllVisualizations(sessionId) {
 
     renderCaseDuration(caseDurationDist);
 
-    const response_res_heatmap = await fetch(`/api/get_visualization/${sessionId}/resource_heatmap`);
-    const result_res_heatmap = await response_res_heatmap.json();
-    const resourceHeatmap = result_res_heatmap;
-
-    renderResourceHeatmap(resourceHeatmap);
+    // Resource heatmap will be loaded when a resource is selected from the dropdown
 
     fetchAndPopulateDropdowns(sessionId);
 }
@@ -2826,21 +2928,27 @@ async function fetchAndPopulateDropdowns(sessionId) {
         }
         
         const activitySelect = document.getElementById('activitySelect');
-        activitySelect.innerHTML = '<option value="">Select an activity...</option>';
+        activitySelect.innerHTML = '<option value="">Any activity</option>';
         result.activities.forEach(act => {
             activitySelect.innerHTML += `<option value="${act}">${act}</option>`;
         });
         
         const waitingTimeSelect_res = document.getElementById('waitingTimeSelect_res');
-        waitingTimeSelect_res.innerHTML = '<option value="">Select a resource...</option>';
+        waitingTimeSelect_res.innerHTML = '<option value="">Any resource</option>';
         result.resources.forEach(res => {
             waitingTimeSelect_res.innerHTML += `<option value="${res}">${res}</option>`;
         });
 
         const waitingTimeSelect_act = document.getElementById('waitingTimeSelect_act');
-        waitingTimeSelect_act.innerHTML = '<option value="">Select an activity...</option>';
+        waitingTimeSelect_act.innerHTML = '<option value="">Any activity</option>';
         result.activities.forEach(act => {
             waitingTimeSelect_act.innerHTML += `<option value="${act}">${act}</option>`;
+        });
+
+        const resourceHeatmapSelect = document.getElementById('resourceHeatmapSelect');
+        resourceHeatmapSelect.innerHTML = '<option value="">Any resource</option>';
+        result.resources.forEach(res => {
+            resourceHeatmapSelect.innerHTML += `<option value="${res}">${res}</option>`;
         });
         
     } catch (error) {
@@ -2908,14 +3016,22 @@ function renderCaseDuration(caseDurationDist) {
     return;
 }
 
-function renderResourceHeatmap(resourceHeatmap) {
+async function renderResourceHeatmap(resourceName) {
+    const sessionId = currentSessionId;
+    const url = resourceName ? 
+        `/api/get_visualization/${sessionId}/resource_heatmap?resource=${resourceName}` :
+        `/api/get_visualization/${sessionId}/resource_heatmap`;
+    
+    const response = await fetch(url);
+    const result = await response.json();
+
     const container = document.getElementById('resourceHeatmap');
     console.log('Rendering SVG visualization');
     // Direct SVG content - embed it
     container.innerHTML = `
         <div class="text-center">
             <div class="res-heatmap-svg-container" style="border: 1px solid #dee2e6; border-radius: 8px; background: white; padding: 10px; margin-bottom: 15px;">
-                ${resourceHeatmap.visualization}
+                ${result.visualization}
             </div>
         </div>
     `;
@@ -2923,10 +3039,12 @@ function renderResourceHeatmap(resourceHeatmap) {
 }
 
 async function renderActivityDurationBoxplot(activityName) {
-    if (!activityName) return;
-
     const sessionId = currentSessionId;
-    const response = await fetch(`/api/get_visualization/${sessionId}/activity_duration_boxplot?activity=${activityName}`);
+    const url = activityName ? 
+        `/api/get_visualization/${sessionId}/activity_duration_boxplot?activity=${activityName}` :
+        `/api/get_visualization/${sessionId}/activity_duration_boxplot`;
+    
+    const response = await fetch(url);
     const result = await response.json();
 
     const container = document.getElementById('activityDurationBoxplotContainer');
@@ -3251,7 +3369,7 @@ function addSplitToNode(nodeId, treeType) {
                                 ${features.map(feature => `<option value="${feature.value}">${feature.label}</option>`).join('')}
                             </select>
                         </div>
-                        <div class="mb-3">
+                        <div class="mb-3" id="thresholdGroup">
                             <label for="splitThreshold" class="form-label">Threshold</label>
                             <input type="number" class="form-control" id="splitThreshold" step="0.1" value="0.5">
                         </div>
@@ -3287,6 +3405,27 @@ function addSplitToNode(nodeId, treeType) {
     
     // Add modal to body
     document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Setup feature change handler to show/hide threshold for categorical features
+    const featureSelect = document.getElementById('splitFeature');
+    const thresholdGroup = document.getElementById('thresholdGroup');
+    
+    function toggleThresholdVisibility() {
+        const selectedFeature = featureSelect.value;
+        const isCategorical = selectedFeature.includes(' = ');
+        
+        if (isCategorical) {
+            thresholdGroup.style.display = 'none';
+        } else {
+            thresholdGroup.style.display = 'block';
+        }
+    }
+    
+    // Set initial state
+    toggleThresholdVisibility();
+    
+    // Add event listener for feature changes
+    featureSelect.addEventListener('change', toggleThresholdVisibility);
     
     // Setup distribution controls for distribution trees
     if (treeType === 'distribution' || treeType === 'execution' || treeType === 'waiting' || treeType === 'arrival') {
@@ -3376,11 +3515,22 @@ function setupDistributionControls(containerId, branch) {
 
 function confirmAddSplit(nodeId, treeType) {
     const feature = document.getElementById('splitFeature').value;
-    const threshold = parseFloat(document.getElementById('splitThreshold').value);
     
-    if (isNaN(threshold)) {
-        alert('Please enter a valid threshold');
-        return;
+    // Check if feature is categorical (contains " = ")
+    const isCategorical = feature.includes(' = ');
+    let threshold;
+    
+    if (isCategorical) {
+        // For categorical features, use 0.5 as default threshold
+        threshold = 0.5;
+    } else {
+        // For numeric features, get threshold from input
+        threshold = parseFloat(document.getElementById('splitThreshold').value);
+        
+        if (isNaN(threshold)) {
+            alert('Please enter a valid threshold');
+            return;
+        }
     }
     
     // Get the current tree data from the appropriate context
@@ -3861,7 +4011,12 @@ function updateWaitingTimeVisualization() {
 
 async function renderWaitingTimeVisualization(activity='', resource='') {
     const sessionId = currentSessionId;
-    const response = await fetch(`/api/get_visualization/${sessionId}/waiting_time_dist?activity=${activity}&resource=${resource}`);
+    const params = new URLSearchParams();
+    if (activity) params.append('activity', activity);
+    if (resource) params.append('resource', resource);
+    
+    const url = `/api/get_visualization/${sessionId}/waiting_time_dist${params.toString() ? '?' + params.toString() : ''}`;
+    const response = await fetch(url);
     const result = await response.json();
 
     const container = document.getElementById('waitingTimeVisualizationContainer');

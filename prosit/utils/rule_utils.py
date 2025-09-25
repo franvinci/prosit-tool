@@ -219,6 +219,10 @@ def transform_river_decision_tree_data(decision_tree, distribution=True, min_val
                     'dist': (getattr(stats, "norm"), (value, std_dev), min_value, max_value)
                 }
             else:
+                if 1 not in row['stats']:
+                    row['stats'][1] = 0
+                if 0 not in row['stats']:
+                    row['stats'][0] = 0
                 value = row['stats'][1]/(row['stats'][0]+row['stats'][1])
                 transformed_data[node_id] = {'value': value}
 
