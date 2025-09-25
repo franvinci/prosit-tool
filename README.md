@@ -59,6 +59,20 @@ ProSiT provides a controlled environment for "what-if" analyses and process opti
    ```
 4. Open your browser and go to `http://localhost:5000`
 
+#### macOS
+1. Run the setup script:
+   ```bash
+   chmod +x installer/macos/setup-macos.sh
+   ./installer/macos/setup-macos.sh
+   ```
+2. Follow the instructions to install Docker Desktop
+3. Start Docker Desktop from Applications folder or Spotlight
+4. Start the application:
+   ```bash
+   ./installer/macos/run-docker.sh
+   ```
+5. Open your browser and go to `http://localhost:5000`
+
 #### Manual Docker Setup
 1. Clone the repository:
    ```bash
@@ -166,7 +180,8 @@ prosit/
 ├── 🎭 static/              # CSS, JavaScript, and static assets
 ├── 🔧 installer/           # Platform-specific setup scripts
 │   ├── ubuntu/             # Linux installation scripts
-│   └── windows/            # Windows installation scripts
+│   ├── windows/            # Windows installation scripts
+│   └── macos/              # macOS installation scripts
 ├── 📋 example_data/        # Sample XES files for testing
 ├── 🐳 docker-compose.yml   # Docker Compose configuration
 ├── 🐳 Dockerfile          # Docker image definition
@@ -206,7 +221,8 @@ The application uses SQLite by default, but can be configured to use other datab
 1. **Docker not starting**
    - Ensure Docker Desktop is running
    - Check system requirements
-   - Verify virtualization is enabled in BIOS
+   - Verify virtualization is enabled in BIOS (Windows/Linux)
+   - For macOS: Ensure Docker Desktop is fully started (whale icon in menu bar)
 
 2. **Port 5000 already in use**
    - Stop other services using port 5000
