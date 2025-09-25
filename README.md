@@ -232,7 +232,12 @@ The application uses SQLite by default, but can be configured to use other datab
    - Increase Docker memory allocation
    - Reduce simulation parameters (fewer cases, shorter duration)
 
-4. **File upload errors**
+4. **Architecture compatibility issues (macOS)**
+   - The Dockerfile now automatically detects your Mac's architecture (Intel/Apple Silicon)
+   - If you encounter build errors, ensure Docker Desktop is up to date
+   - For Apple Silicon Macs, the build will use ARM64 architecture
+
+5. **File upload errors**
    - Check file size (max 100MB)
    - Ensure XES file format is correct
    - Verify required attributes are present

@@ -89,9 +89,15 @@ docker-compose down &> /dev/null || true
 
 # Build and start the application
 print_status "Building and starting the application..."
+print_status "This may take a few minutes on first run as Docker builds the container..."
 if ! docker-compose up -d --build; then
     print_error "Failed to start the application."
     echo "Check the error messages above."
+    echo
+    echo "Common solutions:"
+    echo "1. Ensure Docker Desktop has sufficient memory allocated (4GB+)"
+    echo "2. Try restarting Docker Desktop"
+    echo "3. Check if you have enough disk space"
     exit 1
 fi
 
