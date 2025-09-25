@@ -125,8 +125,8 @@ def discover_parameters(session_id):
             max_depth_tree = 0
         if max_depth_tree < 0:
             max_depth_tree = 0
-        if max_depth_tree > 3:
-            max_depth_tree = 3
+        if max_depth_tree > 5:
+            max_depth_tree = 5
         # Get incremental discovery setting
         incremental_discovery = request.args.get('incremental_discovery', '0') in ['1', 'true', 'True']
         

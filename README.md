@@ -1,23 +1,25 @@
-# ProSiT - Process Simulation Tool
+# 🚀 ProSiT - Process Simulation Tool
 
-ProSiT is a comprehensive process simulation tool that enables users to discover process models from event logs and simulate business processes with realistic parameters. The application provides a web-based interface for uploading XES event logs, discovering process models, and running simulations with configurable parameters.
+ProSiT (Process Simulation Tool) is a comprehensive, user-friendly environment for data-driven business process simulation that addresses the limitations of existing solutions in accessibility, configurability, and interpretability. Unlike traditional black-box deep learning approaches, ProSiT integrates state-of-the-art machine learning methods in an explainable, white-box form, empowering service architects and process analysts to experiment with alternative designs and evaluate service-level impacts.
+
+ProSiT provides a controlled environment for "what-if" analyses and process optimization by supporting (i) ingestion of event logs and process models, (ii) automated discovery of control-flow, timing, resource, and trace attribute parameters, (iii) interactive configuration of alternative service scenarios, (iv) visualization of accuracy metrics, and (v) generation and statistical analysis of simulated event logs. By combining simulation accuracy with transparency, ProSiT enables organizations to explore optimization opportunities through an intuitive graphical interface.
 
 
-## Features
+## ✨ Features
 
 - **Event Log Processing**: Upload and process XES event logs with support for various attributes
 - **Process Discovery**: Automatic discovery of Petri nets from event logs using PM4Py
 - **Parameter Discovery**: Intelligent discovery of simulation parameters including:
   - Control flow probabilities
-  - Execution time distributions
   - Resource assignments and calendars
-  - Arrival patterns and waiting times
+  - Arrival, execution and waiting time distributions
+  - Trace attributes distribution
 - **Process Simulation**: Run discrete-event simulations with realistic parameters
 - **Visualization**: Generate process models, performance metrics, and simulation results
 - **Web Interface**: User-friendly web interface for all operations
 - **Docker Support**: Easy deployment using Docker containers
 
-## System Requirements
+## 💻 System Requirements
 
 ### Minimum Requirements
 - **RAM**: 4GB (8GB recommended)
@@ -28,7 +30,7 @@ ProSiT is a comprehensive process simulation tool that enables users to discover
 - Docker Desktop (Windows/macOS) or Docker Engine (Linux)
 - Docker Compose
 
-## Quick Start
+## 🚀 Quick Start
 
 ### Option 1: Docker Installation (Recommended)
 
@@ -102,63 +104,82 @@ ProSiT is a comprehensive process simulation tool that enables users to discover
 
 5. Access the application at `http://localhost:5000`
 
-## Usage
+## 📖 Usage
 
-### 1. Upload Event Log
-- Navigate to the web interface
-- Click "Choose File" and select your XES event log
-- The XES file must contain the following required attributes:
+ProSiT supports an end-to-end workflow for data-driven process simulation, guiding users through five key phases:
+
+### 1. 📂 Data Ingestion
+- **Event Log Upload**: Upload event logs in XES format through the intuitive web interface
+- **Process Model Import**: Optionally provide your own process models in PNML format
+- **Data Validation**: Ensure your XES file contains the required attributes:
   - `case:concept:name` (case identifier)
   - `concept:name` (activity name)
   - `start:timestamp` (activity start time)
   - `time:timestamp` (activity end time)
   - `org:resource` (resource identifier)
 
-### 2. Choose Process Model Source
-- **Discover from Log**: Automatically discover a Petri net from the event log
-- **Upload Model**: Upload your own Petri net model
+### 2. 🔍 Parameter Discovery
+This core functionality uses explainable machine learning models to automatically extract simulation parameters from event logs:
+- **Algorithm Configuration**: Tailor the discovery process by configuring:
+  - Inductive Miner algorithm with specific noise threshold
+  - Probabilistic decision trees with controllable depth
+  - Incremental discovery with customizable grace periods
+- **Comprehensive Discovery Coverage**:
+  - **Control Flow**: Transition weights for decision points
+  - **Resources**: Assignment probabilities, multitasking capabilities, and availability calendars
+  - **Timing**: Arrival, execution, and waiting time distributions per activity
+  - **Trace Attributes**: Distribution patterns for process variables
 
-### 3. Configure Simulation Parameters
-- Set simulation duration
-- Configure number of cases to simulate
-- Adjust discovery parameters for:
-  - Control flow discovery
-  - Time discovery
-  - Resource discovery
-  - Calendar discovery
+### 3. 🎯 Interactive Scenario Configuration
+- **Intuitive Interface**: Modify discovered parameters through an intuitive graphical interface
+- **Alternative Scenarios**: Create and compare multiple simulation scenarios
+- **What-If Analysis**: Facilitate comprehensive scenario comparison for decision-making
 
-### 4. Run Simulation
-- Click "Start Simulation" to begin the process
-- Monitor progress in real-time
-- View results and download simulation outputs
+### 4. 📊 Accuracy Assessment
+The tool evaluates simulation quality by comparing generated logs with original event data:
+- **Control-Flow Similarity**: N-gram distance measures for process structure accuracy
+- **Temporal Accuracy**: Distributional metrics for timing realism
+- **Resource Behavior**: Realism of resource handover patterns
+- **Generalization Capability**: Entropy analysis for model robustness
 
-## Project Structure
+### 5. 🚀 Simulation Execution
+- **Configuration**: Define desired number of traces and starting timestamp
+- **Execution**: Launch the simulation with real-time progress monitoring
+- **Visual Analytics**: Access comprehensive results including:
+  - Process maps annotated with performance data
+  - Cycle time distributions and bottleneck analysis
+  - Resource utilization heatmaps
+  - Detailed activity execution and waiting time analyses
+- **Export**: Download simulated event logs and analytics in multiple formats
+
+## 🏗️ Project Structure
 
 ```
 prosit/
-├── app.py                 # Flask application configuration
-├── main.py               # Application entry point
-├── models.py             # Database models
-├── routes.py             # Web routes and API endpoints
-├── prosit_integration.py  # Core ProSiT integration
-├── prosit/               # Core ProSiT library
-│   ├── discovery/        # Parameter discovery modules
-│   ├── simulator.py      # Simulation engine
-│   └── utils/           # Utility functions
-├── templates/           # HTML templates
-├── static/              # CSS and JavaScript files
-├── installer/           # Platform-specific setup scripts
-├── example_data/        # Sample XES files
-├── docker-compose.yml   # Docker Compose configuration
-├── Dockerfile          # Docker image definition
-└── environment.yml     # Conda environment specification
+├── 📱 app.py                 # Flask application configuration
+├── 🚀 main.py               # Application entry point
+├── 🗃️ models.py             # Database models and schemas
+├── 🛣️ routes.py             # Web routes and API endpoints
+├── 🔧 prosit_integration.py  # Core ProSiT integration layer
+├── 📚 prosit/               # Core ProSiT library
+├── 🎨 templates/           # HTML templates and UI components
+├── 🎭 static/              # CSS, JavaScript, and static assets
+├── 🔧 installer/           # Platform-specific setup scripts
+│   ├── ubuntu/             # Linux installation scripts
+│   └── windows/            # Windows installation scripts
+├── 📋 example_data/        # Sample XES files for testing
+├── 🐳 docker-compose.yml   # Docker Compose configuration
+├── 🐳 Dockerfile          # Docker image definition
+├── 📦 environment.yml     # Conda environment specification
+├── 📄 LICENSE             # MIT License
+└── 📖 README.md           # This documentation
 ```
 
-## System Architecture Diagram
+## 🏛️ System Architecture Diagram
 
-![System Architecture](diagram.png)
+![System Architecture](doc/diagram.png)
 
-## API Endpoints
+## 🔌 API Endpoints
 
 - `GET /` - Main application interface
 - `POST /upload` - Upload XES event log
@@ -167,7 +188,7 @@ prosit/
 - `GET /results/<session_id>` - Get simulation results
 - `GET /download/<session_id>/<file_type>` - Download result files
 
-## Configuration
+## ⚙️ Configuration
 
 ### Environment Variables
 - `FLASK_ENV`: Set to `production` for production deployment
@@ -178,7 +199,7 @@ prosit/
 ### Database
 The application uses SQLite by default, but can be configured to use other databases by setting the `DATABASE_URL` environment variable.
 
-## Troubleshooting
+## 🔧 Troubleshooting
 
 ### Common Issues
 
@@ -206,7 +227,7 @@ The application uses SQLite by default, but can be configured to use other datab
 - Check container status: `docker-compose ps`
 - Restart application: `docker-compose restart`
 
-## Development
+## 👨‍💻 Development
 
 ### Setting up Development Environment
 1. Clone the repository
@@ -222,21 +243,14 @@ The application uses SQLite by default, but can be configured to use other datab
 4. Add tests if applicable
 5. Submit a pull request
 
-## License
+## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Support
+## 🆘 Support
 
 For issues and questions:
 1. Check the troubleshooting section above
 2. Review the application logs
 3. Create an issue in the repository
 4. Contact the development team
-
-## Acknowledgments
-
-- Built with [PM4Py](https://pm4py.fit.fraunhofer.de/) for process mining
-- Uses [Flask](https://flask.palletsprojects.com/) for the web framework
-- Containerized with [Docker](https://www.docker.com/)
-- Process visualization powered by [Graphviz](https://graphviz.org/)

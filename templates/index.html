@@ -84,6 +84,8 @@
                                     <option value="1">1</option>
                                     <option value="2">2</option>
                                     <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
                                 </select>
                             </div>
                             <div class="ms-3">
@@ -99,7 +101,7 @@
                                     <i data-feather="info" class="ms-1" 
                                        data-bs-toggle="tooltip" 
                                        data-bs-placement="top" 
-                                       title="The grace period is the number of events to wait before starting incremental learning. Higher values provide more stable initial models but delay adaptation to new patterns."
+                                       title="The grace period is the number of events a leaf should observe between split attempts. Lower grace periods facilitate rapid adaption to sudden concept drifts, while higher grace periods reduce the risk of overfitting and promote more stable decisions."
                                        style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
                                 </label>
                                 <input type="number" class="form-control" id="gracePeriod" name="grace_period" min="1" value="1000" style="width: 120px;">
@@ -735,7 +737,7 @@ function renderTransitionParameters(transitionParams) {
     const transitions = Object.keys(weights);
 
     let html = '<div class="mb-3">';
-    html += '<h6 class="mb-3">Transition Weights</h6>';
+    html += '<h6 class="mb-3">Transition Weights <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-info ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Represents the probability of firing a transition when it is enabled." style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></h6>';
     html += '<label class="form-label">Select Transition:</label>';
     html += '<select class="form-select mb-3" id="transitionSelect" onchange="showTransitionWeights(this.value)">';
     html += '<option value="">Choose a transition...</option>';
@@ -756,6 +758,14 @@ function renderTransitionParameters(transitionParams) {
     html += '</div></div>';
     
     container.innerHTML = html;
+    
+    // Initialize tooltips for the new content
+    const tooltipTriggerList = [].slice.call(container.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    console.log('Found tooltip elements:', tooltipTriggerList.length);
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        console.log('Initializing tooltip for:', tooltipTriggerEl);
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
 }
 
 function showTransitionWeights(transitionName) {
@@ -1244,7 +1254,7 @@ function renderResourceParameters(resourceParams) {
     html += '</div>';
 
     html += '<div class="card">';
-    html += '<div class="card-header py-2"><h6 class="mb-0">Resource Weights</h6></div>';
+    html += '<div class="card-header py-2"><h6 class="mb-0">Resource Weights <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-info ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Represents the probability of choosing a resource whenever it is available, either free or multitasking." style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></h6></div>';
     html += '<div class="card-body">';
     html += '<label class="form-label">Select Resource:</label>';
     html += '<select class="form-select mb-3" id="resourceWeightSelect" onchange="showResourceWeight(this.value)">';
@@ -1337,6 +1347,14 @@ function renderResourceParameters(resourceParams) {
     // --- Resource Calendars ---
     calendarContainer.innerHTML = '<div class="card"><div class="card-header py-2"><h6 class="mb-0">Resource Calendars</h6></div><div class="card-body"></div></div>';
     renderResourceCalendars(resourceParams.calendars || {}, calendarContainer.querySelector('.card-body'));
+    
+    // Initialize tooltips for the new content
+    const tooltipTriggerList = [].slice.call(container.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    console.log('Found tooltip elements in resource params:', tooltipTriggerList.length);
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        console.log('Initializing tooltip for resource param:', tooltipTriggerEl);
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
 }
 
 // Helper to render resource checkboxes for selected activity
@@ -3370,7 +3388,7 @@ function addSplitToNode(nodeId, treeType) {
                             </select>
                         </div>
                         <div class="mb-3" id="thresholdGroup">
-                            <label for="splitThreshold" class="form-label">Threshold</label>
+                            <label for="splitThreshold" class="form-label">Threshold (≤)</label>
                             <input type="number" class="form-control" id="splitThreshold" step="0.1" value="0.5">
                         </div>
                         <div class="mb-3">
