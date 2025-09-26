@@ -69,6 +69,7 @@ ProSiT provides a controlled environment for "what-if" analyses and process opti
 3. Start Docker Desktop from Applications folder or Spotlight
 4. Start the application:
    ```bash
+   chmod +x installer/macos/run-docker.sh
    ./installer/macos/run-docker.sh
    ```
 5. Open your browser and go to `http://localhost:5000`
@@ -224,9 +225,9 @@ The application uses SQLite by default, but can be configured to use other datab
    - Verify virtualization is enabled in BIOS (Windows/Linux)
    - For macOS: Ensure Docker Desktop is fully started (whale icon in menu bar)
 
-2. **Port 5000 already in use**
-   - Stop other services using port 5000
+2. **Port 5000 already in use (common in macOS)**
    - Modify `docker-compose.yml` to use a different port
+   - Stop other services using port 5000
 
 3. **Memory issues during simulation**
    - Increase Docker memory allocation
