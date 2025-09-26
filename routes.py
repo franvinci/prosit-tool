@@ -1006,7 +1006,7 @@ def get_visualization(session_id, visualization_type):
             parameters = {}
             parameters[dfg_parameters.START_ACTIVITIES] = start_activities
             parameters[dfg_parameters.END_ACTIVITIES] = end_activities
-            parameters[dfg_parameters.AGGREGATION_MEASURE] = "mean"
+            parameters[dfg_parameters.AGGREGATION_MEASURE] = "median"
             parameters["bgcolor"] = "white"
             gviz = dfg_perf_visualizer.apply(performance_dfg, parameters=parameters)
             # The pm4py view returns bytes, so we can directly encode it
