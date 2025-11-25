@@ -62,7 +62,7 @@ echo.
 echo ========================================
 echo Access Information
 echo ========================================
-echo Application URL: http://localhost:5000
+echo Application URL: http://localhost:5050
 echo.
 echo To view logs: docker-compose logs -f
 echo To stop: docker-compose down
@@ -75,16 +75,16 @@ timeout /t 10 /nobreak >nul
 
 REM Check if application is responding
 echo Checking application health...
-curl -s -o nul -w "%%{http_code}" http://localhost:5000 > temp_status.txt
+curl -s -o nul -w "%%{http_code}" http://localhost:5050 > temp_status.txt
 set /p status=<temp_status.txt
 del temp_status.txt
 
 if "%status%"=="200" (
     echo ✓ Application is running successfully!
-    echo ✓ You can now access it at: http://localhost:5000
+    echo ✓ You can now access it at: http://localhost:5050
 ) else (
     echo ⚠ Application may still be starting up.
-    echo Please wait a moment and try accessing: http://localhost:5000
+    echo Please wait a moment and try accessing: http://localhost:5050
 )
 
 echo.
@@ -92,7 +92,7 @@ echo Press any key to open the application in your browser...
 pause >nul
 
 REM Try to open the application in the default browser
-start http://localhost:5000
+start http://localhost:5050
 
 echo.
 echo Application opened in browser. You can close this window.

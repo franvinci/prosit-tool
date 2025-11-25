@@ -73,7 +73,7 @@ echo.
 echo 1. Run: run-docker.bat
 echo    This will start the ProSiT application
 echo.
-echo 2. Open your browser and go to: http://localhost:5000
+echo 2. Open your browser and go to: http://localhost:5050
 echo.
 echo 3. To stop the application, run: stop-docker.bat
 echo.

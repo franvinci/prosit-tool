@@ -44,7 +44,7 @@ ProSiT provides a controlled environment for "what-if" analyses and process opti
    ```cmd
    installer\windows\run-docker.bat
    ```
-4. Open your browser and go to `http://localhost:5000`
+4. Open your browser and go to `http://localhost:5050`
 
 #### Ubuntu/Linux
 1. Run the setup script:
@@ -57,7 +57,7 @@ ProSiT provides a controlled environment for "what-if" analyses and process opti
    ```bash
    ./installer/ubuntu/run-docker.sh
    ```
-4. Open your browser and go to `http://localhost:5000`
+4. Open your browser and go to `http://localhost:5050`
 
 #### macOS
 1. Run the setup script:
@@ -72,7 +72,7 @@ ProSiT provides a controlled environment for "what-if" analyses and process opti
    chmod +x installer/macos/run-docker.sh
    ./installer/macos/run-docker.sh
    ```
-5. Open your browser and go to `http://localhost:5000`
+5. Open your browser and go to `http://localhost:5050`
 
 #### Manual Docker Setup
 1. Clone the repository:
@@ -86,7 +86,7 @@ ProSiT provides a controlled environment for "what-if" analyses and process opti
    docker-compose up -d --build
    ```
 
-3. Access the application at `http://localhost:5000`
+3. Access the application at `http://localhost:5050`
 
 ### Option 2: Local Installation
 
@@ -117,7 +117,7 @@ ProSiT provides a controlled environment for "what-if" analyses and process opti
    python main.py
    ```
 
-5. Access the application at `http://localhost:5000`
+5. Access the application at `http://localhost:5050`
 
 ## 📖 Usage
 
@@ -225,9 +225,9 @@ The application uses SQLite by default, but can be configured to use other datab
    - Verify virtualization is enabled in BIOS (Windows/Linux)
    - For macOS: Ensure Docker Desktop is fully started (whale icon in menu bar)
 
-2. **Port 5000 already in use (common in macOS)**
+2. **Port 5050 already in use (common in macOS)**
    - Modify `docker-compose.yml` to use a different port
-   - Stop other services using port 5000
+   - Stop other services using port 5050
 
 3. **Memory issues during simulation**
    - Increase Docker memory allocation

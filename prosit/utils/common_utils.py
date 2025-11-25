@@ -269,6 +269,7 @@ def build_df_features(log,
         current_t = trace[0]["start:timestamp"]
         for step in trace_aligned:
             if step[0][1] == ">>":  # log move
+                j += 1
                 continue
 
             transition = get_transition_from_name(step[0][1], net)

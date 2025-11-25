@@ -2,7 +2,7 @@ services:
   prosit-app:
     build: .
     ports:
-      - "5000:5000"
+      - "5050:5050"
     environment:
       - FLASK_ENV=production
       - DATABASE_URL=sqlite:///prosit.db
@@ -12,7 +12,7 @@ services:
       - ./instance:/app/instance
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      test: ["CMD", "curl", "-f", "http://localhost:5050/"]
       interval: 30s
       timeout: 10s
       retries: 3

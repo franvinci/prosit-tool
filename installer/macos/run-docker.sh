@@ -111,7 +111,7 @@ echo
 echo "========================================"
 echo "Access Information"
 echo "========================================"
-echo "Application URL: http://localhost:5000"
+echo "Application URL: http://localhost:5050"
 echo
 echo "Useful commands:"
 echo "  View logs:    docker-compose logs -f"
@@ -126,18 +126,18 @@ sleep 10
 # Check if application is responding
 print_status "Checking application health..."
 if command -v curl &> /dev/null; then
-    status_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5000 || echo "000")
+    status_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5050 || echo "000")
     
     if [ "$status_code" = "200" ]; then
         print_success "Application is running successfully!"
-        print_success "You can now access it at: http://localhost:5000"
+        print_success "You can now access it at: http://localhost:5050"
     else
         print_warning "Application may still be starting up."
-        print_warning "Please wait a moment and try accessing: http://localhost:5000"
+        print_warning "Please wait a moment and try accessing: http://localhost:5050"
     fi
 else
     print_warning "curl not available. Cannot check application health."
-    print_warning "Please manually check: http://localhost:5000"
+    print_warning "Please manually check: http://localhost:5050"
 fi
 
 echo
@@ -145,7 +145,7 @@ echo "========================================"
 echo "Next Steps"
 echo "========================================"
 echo "1. Open your web browser"
-echo "2. Navigate to: http://localhost:5000"
+echo "2. Navigate to: http://localhost:5050"
 echo "3. Start using the ProSiT application!"
 echo
 echo "To stop the application later, run: $(dirname "$0")/stop-docker.sh"
@@ -154,9 +154,9 @@ echo
 # Try to open the application in the default browser
 if command -v open &> /dev/null; then
     print_status "Opening application in default browser..."
-    open http://localhost:5000 &> /dev/null || true
+    open http://localhost:5050 &> /dev/null || true
 else
-    print_warning "Could not automatically open browser. Please manually navigate to http://localhost:5000"
+    print_warning "Could not automatically open browser. Please manually navigate to http://localhost:5050"
 fi
 
-print_success "Setup complete! The application should be running at http://localhost:5000"
+print_success "Setup complete! The application should be running at http://localhost:5050"

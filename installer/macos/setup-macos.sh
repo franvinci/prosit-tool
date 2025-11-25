@@ -142,7 +142,7 @@ echo
 echo "1. Run: $(dirname "$0")/run-docker.sh"
 echo "   This will start the ProSiT application"
 echo
-echo "2. Open your browser and go to: http://localhost:5000"
+echo "2. Open your browser and go to: http://localhost:5050"
 echo
 echo "3. To stop the application, run: $(dirname "$0")/stop-docker.sh"
 echo
