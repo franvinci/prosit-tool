@@ -98,9 +98,9 @@
                             <div class="ms-3" id="gracePeriodSection" style="display: none;">
                                 <label class="form-label fw-bold mb-1">
                                     Grace Period
-                                    <i data-feather="info" class="ms-1" 
-                                       data-bs-toggle="tooltip" 
-                                       data-bs-placement="top" 
+                                    <i data-feather="info" class="ms-1"
+                                       data-bs-toggle="tooltip"
+                                       data-bs-placement="top"
                                        title="The grace period is the number of events a leaf should observe between split attempts. Lower grace periods facilitate rapid adaption to sudden concept drifts, while higher grace periods reduce the risk of overfitting and promote more stable decisions."
                                        style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
                                 </label>
@@ -110,7 +110,63 @@
                         </div>
                         <div class="form-text">Choose 0 to disable rule discovery, or up to 5 for decision trees.</div>
                     </div>
-                    
+
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="me-3 flex-grow-1">
+                                <label class="form-label fw-bold mb-1">
+                                    Discover Multitasking
+                                    <i data-feather="info" class="ms-1"
+                                       data-bs-toggle="tooltip"
+                                       data-bs-placement="top"
+                                       title="If enabled, the discovery infers per-resource max concurrent cases from observed event overlaps."
+                                       style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
+                                </label>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="enableMultitaskingToggle">
+                                </div>
+                            </div>
+                            <div class="ms-3" id="multitaskingThrSection" style="display: none;">
+                                <label for="multitaskingThr" class="form-label fw-bold mb-1">
+                                    Multitasking Threshold: <span id="multitaskingThrValue">0.05</span>
+                                </label>
+                                <input type="range" class="form-range" id="multitaskingThr" name="multitasking_thr"
+                                       min="0" max="1" step="0.01" value="0.05" style="width: 180px;">
+                                <div class="form-text">Min overlap fraction to flag a resource as multitasking.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <details class="mb-4">
+                        <summary class="form-label fw-bold" style="cursor: pointer;">Advanced</summary>
+                        <div class="d-flex align-items-center justify-content-between mt-3">
+                            <div class="me-3">
+                                <label for="randomState" class="form-label fw-bold mb-1">
+                                    Random State
+                                    <i data-feather="info" class="ms-1"
+                                       data-bs-toggle="tooltip"
+                                       data-bs-placement="top"
+                                       title="Seed used for reproducible discovery. Same seed + same input produce identical parameters."
+                                       style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
+                                </label>
+                                <input type="number" class="form-control" id="randomState" name="random_state" value="72" style="width: 120px;">
+                            </div>
+                            <div class="ms-3">
+                                <label class="form-label fw-bold mb-1">Workload Features</label>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="useWorkloadFeaturesToggle">
+                                </div>
+                                <div class="form-text">Add workload signals to the feature set.</div>
+                            </div>
+                            <div class="ms-3 flex-grow-1">
+                                <label for="attributeMode" class="form-label fw-bold mb-1">Attribute Mode</label>
+                                <select class="form-select" id="attributeMode" name="attribute_mode">
+                                    <option value="distribution" selected>distribution</option>
+                                </select>
+                            </div>
+                        </div>
+                    </details>
+
                     <button type="submit" class="btn w-100" id="uploadBtn" style="background: linear-gradient(135deg, #28a745 0%, #20a039 100%); border: none; color: white;">
                         <i data-feather="upload" class="me-2"></i>
                         <span id="uploadBtnText">Upload & Discover</span>
@@ -592,6 +648,22 @@ document.addEventListener('DOMContentLoaded', function() {
         syncIncrementalToggle();
     }
 
+    // Multitasking discovery toggle: show threshold slider only when enabled
+    const multitaskingToggle = document.getElementById('enableMultitaskingToggle');
+    const multitaskingThrSection = document.getElementById('multitaskingThrSection');
+    const multitaskingThr = document.getElementById('multitaskingThr');
+    const multitaskingThrValue = document.getElementById('multitaskingThrValue');
+    if (multitaskingToggle && multitaskingThrSection) {
+        multitaskingToggle.addEventListener('change', () => {
+            multitaskingThrSection.style.display = multitaskingToggle.checked ? 'block' : 'none';
+        });
+    }
+    if (multitaskingThr && multitaskingThrValue) {
+        multitaskingThr.addEventListener('input', () => {
+            multitaskingThrValue.textContent = multitaskingThr.value;
+        });
+    }
+
     // Setup form handlers
     setupFormHandlers();
     
@@ -647,7 +719,23 @@ async function handleUpload(e) {
         const depthVal = (document.getElementById('maxDepthTree') && document.getElementById('maxDepthTree').value) || '0';
         const incVal = (document.getElementById('incrementalDiscoveryToggle') && document.getElementById('incrementalDiscoveryToggle').checked) ? '1' : '0';
         const gracePeriodVal = (document.getElementById('gracePeriod') && document.getElementById('gracePeriod').value) || '1000';
-        const discoverResponse = await fetch(`/api/discover/${uploadResult.session_id}?max_depth_tree=${encodeURIComponent(depthVal)}&incremental_discovery=${encodeURIComponent(incVal)}&grace_period=${encodeURIComponent(gracePeriodVal)}`, {
+        const enableMtVal = (document.getElementById('enableMultitaskingToggle') && document.getElementById('enableMultitaskingToggle').checked) ? '1' : '0';
+        const mtThrVal = (document.getElementById('multitaskingThr') && document.getElementById('multitaskingThr').value) || '0.05';
+        const randomStateVal = (document.getElementById('randomState') && document.getElementById('randomState').value) || '72';
+        const useWorkloadVal = (document.getElementById('useWorkloadFeaturesToggle') && document.getElementById('useWorkloadFeaturesToggle').checked) ? '1' : '0';
+        const attrModeVal = (document.getElementById('attributeMode') && document.getElementById('attributeMode').value) || 'distribution';
+
+        const discoverParams = new URLSearchParams({
+            max_depth_tree: depthVal,
+            incremental_discovery: incVal,
+            grace_period: gracePeriodVal,
+            enable_multitasking: enableMtVal,
+            multitasking_thr: mtThrVal,
+            random_state: randomStateVal,
+            use_workload_features: useWorkloadVal,
+            attribute_mode: attrModeVal,
+        });
+        const discoverResponse = await fetch(`/api/discover/${uploadResult.session_id}?${discoverParams.toString()}`, {
             method: 'POST'
         });
         
@@ -1242,7 +1330,7 @@ function renderResourceParameters(resourceParams) {
     const calendarContainer = document.getElementById('resourceCalendars');
 
     const resources = resourceParams.resources || [];
-    const multitaskingResources = resourceParams.multitasking_resource || [];
+    const maxConcurrency = resourceParams.max_concurrency || {};
     const actToResources = resourceParams.act_to_resources || {};
     const activityNames = Object.keys(actToResources);
 
@@ -1303,37 +1391,23 @@ function renderResourceParameters(resourceParams) {
     }
     activityHtml += '</div></div></div>';
 
-    // Multitasking Column
+    // Max Concurrency Column (per-resource max concurrent cases; 1 = single task)
     activityHtml += '<div class="col-md-6">';
     activityHtml += '<div class="card">';
-    activityHtml += '<div class="card-header py-2"><h6 class="mb-0">Multitasking Resources</h6></div>';
-    activityHtml += '<div class="card-body">';
-    if (resources.length > 10) {
-        activityHtml += '<select class="form-select form-select-sm mb-2" id="multitaskingSelect" onchange="toggleMultitaskingFromDropdown()">';
-        activityHtml += '<option value="">Select resource to toggle multitasking...</option>';
-        resources.forEach(resource => {
-            const isMultitasking = multitaskingResources.includes(resource);
-            const status = isMultitasking ? ' (Multitasking)' : ' (Single task)';
-            activityHtml += `<option value="${resource}">${resource}${status}</option>`;
-        });
-        activityHtml += '</select>';
-        if (multitaskingResources.length > 0) {
-            activityHtml += '<div class="mt-2">';
-            activityHtml += '<small class="text-muted">Current multitasking resources:</small>';
-            activityHtml += '<div class="d-flex flex-wrap gap-1 mt-1">';
-            multitaskingResources.forEach(resource => {
-                activityHtml += `<span class="badge bg-success">${resource}</span>`;
-            });
-            activityHtml += '</div></div>';
-        }
+    activityHtml += '<div class="card-header py-2"><h6 class="mb-0">Max Concurrent Cases <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-info ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Maximum number of cases a resource can handle simultaneously. 1 = single task, ≥2 = multitasking." style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></h6></div>';
+    activityHtml += '<div class="card-body" style="max-height: 240px; overflow-y: auto;">';
+    if (resources.length === 0) {
+        activityHtml += '<p class="text-muted small mb-0">No resources available</p>';
     } else {
         resources.forEach(resource => {
-            const isMultitasking = multitaskingResources.includes(resource);
+            const value = maxConcurrency[resource] != null ? maxConcurrency[resource] : 1;
+            const escaped = resource.replace(/'/g, "\\'");
             activityHtml += `
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" ${isMultitasking ? 'checked' : ''} 
-                           onchange="updateMultitaskingResource('${resource}', this.checked)">
-                    <label class="form-check-label small">${resource}</label>
+                <div class="d-flex align-items-center mb-2">
+                    <label class="small me-2 flex-grow-1 text-truncate" title="${resource}">${resource}</label>
+                    <input type="number" class="form-control form-control-sm" min="1" step="1"
+                           style="width: 80px;" value="${value}"
+                           onchange="updateMaxConcurrency('${escaped}', this.value)">
                 </div>
             `;
         });
@@ -1677,18 +1751,15 @@ function updateResourceWeight(resource, value) {
     currentParameters.resource_params.resource_weights[resource] = parseFloat(value);
 }
 
-function updateMultitaskingResource(resource, isChecked) {
-    if (!currentParameters.resource_params.multitasking_resource) {
-        currentParameters.resource_params.multitasking_resource = [];
+function updateMaxConcurrency(resource, value) {
+    if (!currentParameters.resource_params.max_concurrency) {
+        currentParameters.resource_params.max_concurrency = {};
     }
-    
-    const index = currentParameters.resource_params.multitasking_resource.indexOf(resource);
-    
-    if (isChecked && index === -1) {
-        currentParameters.resource_params.multitasking_resource.push(resource);
-    } else if (!isChecked && index !== -1) {
-        currentParameters.resource_params.multitasking_resource.splice(index, 1);
+    let n = parseInt(value, 10);
+    if (!Number.isFinite(n) || n < 1) {
+        n = 1;
     }
+    currentParameters.resource_params.max_concurrency[resource] = n;
 }
 
 function updateActivityResource(activity, resource, isAssigned) {
@@ -2625,11 +2696,10 @@ function showAddResourceModal() {
                             </select>
                             <div class="form-text">Copy both weight and waiting-time trees if available</div>
                         </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="newResourceMultitasking">
-                            <label class="form-check-label" for="newResourceMultitasking">
-                                Can handle multiple tasks simultaneously
-                            </label>
+                        <div class="mb-3">
+                            <label for="newResourceMaxConcurrency" class="form-label">Max Concurrent Cases</label>
+                            <input type="number" class="form-control" id="newResourceMaxConcurrency" min="1" step="1" value="1">
+                            <div class="form-text">1 = single task, ≥2 = can handle multiple cases simultaneously.</div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -2680,7 +2750,11 @@ function addNewResource() {
     const resourceName = document.getElementById('newResourceName').value.trim();
     const weightInputEl = document.getElementById('newResourceWeight');
     const resourceWeight = weightInputEl && weightInputEl.offsetParent !== null ? parseFloat(weightInputEl.value) : null;
-    const isMultitasking = document.getElementById('newResourceMultitasking').checked;
+    const maxConcurrencyInput = document.getElementById('newResourceMaxConcurrency');
+    let maxConcurrencyValue = parseInt((maxConcurrencyInput && maxConcurrencyInput.value) || '1', 10);
+    if (!Number.isFinite(maxConcurrencyValue) || maxConcurrencyValue < 1) {
+        maxConcurrencyValue = 1;
+    }
     const copyFrom = (document.getElementById('copyFromResourceSelect') && document.getElementById('copyFromResourceSelect').value) || '';
     
     if (!resourceName) {
@@ -2713,13 +2787,11 @@ function addNewResource() {
         currentParameters.resource_params.resource_weights[resourceName] = (typeof resourceWeight === 'number' && !isNaN(resourceWeight)) ? resourceWeight : 0.1;
     }
     
-    // Add to multitasking if checked
-    if (isMultitasking) {
-        if (!currentParameters.resource_params.multitasking_resource) {
-            currentParameters.resource_params.multitasking_resource = [];
-        }
-        currentParameters.resource_params.multitasking_resource.push(resourceName);
+    // Set max concurrency for the new resource (default 1)
+    if (!currentParameters.resource_params.max_concurrency) {
+        currentParameters.resource_params.max_concurrency = {};
     }
+    currentParameters.resource_params.max_concurrency[resourceName] = maxConcurrencyValue;
     
     // Add default calendar (9-17 weekdays)
     if (!currentParameters.resource_params.calendars) {
@@ -2839,12 +2911,9 @@ function removeResource(resourceName) {
         delete currentParameters.resource_params.resource_weights[resourceName];
     }
     
-    // Remove from multitasking
-    if (currentParameters.resource_params.multitasking_resource) {
-        const mtIndex = currentParameters.resource_params.multitasking_resource.indexOf(resourceName);
-        if (mtIndex > -1) {
-            currentParameters.resource_params.multitasking_resource.splice(mtIndex, 1);
-        }
+    // Remove max concurrency entry
+    if (currentParameters.resource_params.max_concurrency) {
+        delete currentParameters.resource_params.max_concurrency[resourceName];
     }
     
     // Remove calendar
@@ -2887,34 +2956,6 @@ function returnActivitiesPerResource(resource) {
     }
     // Assign the list of activities to the current resource in the new object
     return activitiesForResource;
-}
-
-function toggleMultitaskingFromDropdown() {
-    const select = document.getElementById('multitaskingSelect');
-    const resourceName = select.value;
-    
-    if (!resourceName) return;
-    
-    if (!currentParameters.resource_params.multitasking_resource) {
-        currentParameters.resource_params.multitasking_resource = [];
-    }
-    
-    const isCurrentlyMultitasking = currentParameters.resource_params.multitasking_resource.includes(resourceName);
-    
-    if (isCurrentlyMultitasking) {
-        // Remove from multitasking
-        const index = currentParameters.resource_params.multitasking_resource.indexOf(resourceName);
-        currentParameters.resource_params.multitasking_resource.splice(index, 1);
-    } else {
-        // Add to multitasking
-        currentParameters.resource_params.multitasking_resource.push(resourceName);
-    }
-    
-    // Reset dropdown
-    select.value = '';
-    
-    // Refresh UI
-    renderResourceParameters(currentParameters.resource_params);
 }
 
 async function loadAllVisualizations(sessionId) {

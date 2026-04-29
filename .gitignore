@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Test/coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.cache
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Application data (do not commit user-uploaded data and generated outputs)
+uploads/
+simulations/
+instance/
+*.db
+*.sqlite
+*.sqlite3
+
+# Migration notes (temporary, removed at end of cleanup)
+MIGRATION_NOTES.md

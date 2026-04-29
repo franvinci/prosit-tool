@@ -6,6 +6,9 @@ services:
     environment:
       - FLASK_ENV=production
       - DATABASE_URL=sqlite:///prosit.db
+      # SESSION_SECRET is required in production. Provide via the host shell or
+      # an .env file (uncomment below). Generate with: python -c "import secrets; print(secrets.token_hex(32))"
+      - SESSION_SECRET=${SESSION_SECRET:?SESSION_SECRET must be set in the environment}
     volumes:
       - ./uploads:/app/uploads
       - ./simulations:/app/simulations

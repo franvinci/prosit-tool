@@ -2,20 +2,23 @@ from app import db
 from datetime import datetime
 import json
 
+from config import Config
+
+
 class SimulationSession(db.Model):
     """Database model for simulation sessions."""
-    
+
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(255), nullable=False)
-    noise_threshold = db.Column(db.Float, default=0.2)
+    noise_threshold = db.Column(db.Float, default=Config.DEFAULT_NOISE_THRESHOLD)
     parameters = db.Column(db.Text)  # JSON string of discovered parameters
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    status = db.Column(db.String(50), default='uploaded')  # Status: uploaded, discovered, ready, simulating, completed
+    status = db.Column(db.String(50), default='uploaded')  # uploaded, discovering, ready, simulating, completed, error
     simulation_df_filename = db.Column(db.String(255), default='')
-    
-    def __init__(self, filename, noise_threshold=0.2, **kwargs):
+
+    def __init__(self, filename, noise_threshold=Config.DEFAULT_NOISE_THRESHOLD, **kwargs):
         super().__init__(**kwargs)
-        self.filename = filename 
+        self.filename = filename
         self.noise_threshold = noise_threshold
         self.status = 'uploaded'
     

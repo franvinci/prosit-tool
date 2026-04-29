@@ -9,6 +9,7 @@ from pm4py.algo.evaluation.precision import algorithm as precision_evaluator
 
 from prosit.simulator import SimulatorParameters, SimulatorEngine
 from evaluation import evaluate
+from format_converters import distribution_from_prosit
 
 logger = logging.getLogger(__name__)
 
@@ -91,56 +92,45 @@ class ProSiTIntegration:
             logger.error(f"Error discovering process model: {str(e)}")
             raise
     
-    def import_petri_net_from_pnml(self, pnml_file_path):
-        """
-        Import Petri net structure from PNML file.
-        
-        Used when you have a separate Petri net model and want to discover
-        parameters from an XES event log.
-        
+    def import_petri_net_from_pnml(self, pnml_file_path, compute_metrics=True):
+        """Import Petri net structure from PNML file.
+
         Args:
-            pnml_file_path: Path to the PNML file containing the Petri net
-            
+            pnml_file_path: Path to the PNML file containing the Petri net.
+            compute_metrics: If True, compute fitness/precision against
+                ``self.event_log``. If False (or no event log set), populate
+                metrics with zeros — useful when the only goal is to reload the
+                net for a later simulation.
+
         Updates:
-            self.process_model: Dictionary containing the imported process model
+            self.process_model: Dictionary containing the imported process model.
         """
         try:
             logger.info(f"Importing Petri net structure from {pnml_file_path}")
-            
-            # Import PNML file using PM4Py
             net, initial_marking, final_marking = pm4py.read_pnml(pnml_file_path)
-            
-            
-            # Extract activities, transitions, and places from the net
+
             activities = []
             transitions = []
-            places = []
-            
-            for transition in net.transitions:
-                transitions.append(transition.name)
-                if transition.label:  # Skip silent transitions
-                    activities.append(transition.label)
-            
-            for place in net.places:
-                places.append(place.name)
-            
-            map_transitionName_to_id = dict()
+            places = [p.name for p in net.places]
+
+            map_transitionName_to_id = {}
             for t in net.transitions:
+                transitions.append(t.name)
                 if t.label:
+                    activities.append(t.label)
                     map_transitionName_to_id[t.label] = str(id(t))
                 else:
                     map_transitionName_to_id[t.name] = str(id(t))
 
-            
-            # Generate visualization
             visualization_svg = self._generate_petri_net_visualization(net, initial_marking, final_marking)
-            
-            fitness = fitness_evaluator.apply(self.event_log, net, initial_marking, final_marking)
-            fitness = fitness['averageFitness']
-            precision = precision_evaluator.apply(self.event_log, net, initial_marking, final_marking)
-            f_measure = 2*fitness*precision/(fitness+precision)
 
-            # Create process model structure (without parameters)
+            if compute_metrics and self.event_log is not None:
+                fitness = fitness_evaluator.apply(self.event_log, net, initial_marking, final_marking)['averageFitness']
+                precision = precision_evaluator.apply(self.event_log, net, initial_marking, final_marking)
+                f_measure = 2 * fitness * precision / (fitness + precision) if (fitness + precision) else 0.0
+            else:
+                fitness = precision = f_measure = 0.0
+
             self.process_model = {
                 'activities': activities,
                 'transitions': transitions,
@@ -154,71 +144,95 @@ class ProSiTIntegration:
                 'initial_marking': initial_marking,
                 'final_marking': final_marking
             }
-            
+
             logger.info(f"PNML Petri net imported successfully: {len(activities)} activities, {len(places)} places")
-            
+
         except Exception as e:
             logger.error(f"Failed to import Petri net from PNML: {str(e)}")
-            raise e
+            raise
 
-    def discover_parameters(self, max_depth_tree=0, incremental_discovery=False, grace_period=1000):
+    def discover_parameters(
+        self,
+        max_depth_tree=0,
+        incremental_discovery=False,
+        grace_period=1000,
+        enable_multitasking=False,
+        multitasking_thr=0.05,
+        random_state=72,
+        use_workload_features=False,
+        attribute_mode='distribution',
+    ):
         """
         Discover simulation parameters using ProSiT library.
-        
+
         Args:
             max_depth_tree: Maximum depth for decision trees (0 disables rules mode)
             incremental_discovery: Whether to use incremental learning algorithms
             grace_period: Number of events to wait before starting incremental learning
-            
+            enable_multitasking: Whether to discover per-resource multitasking
+            multitasking_thr: Threshold for detecting multitasking resources
+            random_state: Seed for reproducibility
+            use_workload_features: Whether to engineer workload features
+            attribute_mode: Modeling mode for data attributes (e.g. 'distribution')
+
         Returns:
             Dictionary containing discovered parameters in application format
         """
         try:
             logger.info(f"Discovering parameters from Event Log")
-            
+
             if not self.process_model:
                 self.discover_process_model()
-            
+
             # Get the process model components
             net = self.process_model['net']
             initial_marking = self.process_model['initial_marking']
             final_marking = self.process_model['final_marking']
-            
+
             # Create ProSiT parameters instance
             self.prosit_params = SimulatorParameters(net, initial_marking, final_marking)
-            
+
             # Discover parameters from event log (max_depth_tree=0 disables rules mode)
             logger.info("Starting ProSiT parameter discovery...")
             try:
-                self.prosit_params.discover_from_eventlog(self.event_log, max_depth_tree=max_depth_tree, incremental_discovery=incremental_discovery, grace_period=grace_period, verbose=True)
+                self.prosit_params.discover_from_eventlog(
+                    self.event_log,
+                    max_depth_tree=max_depth_tree,
+                    incremental_discovery=incremental_discovery,
+                    grace_period=grace_period,
+                    enable_multitasking=enable_multitasking,
+                    multitasking_thr=multitasking_thr,
+                    random_state=random_state,
+                    use_workload_features=use_workload_features,
+                    attribute_mode=attribute_mode,
+                    verbose=True,
+                )
                 logger.info("ProSiT parameter discovery completed successfully")
+                self.prosit_params = self.prosit_params.to_dict()
+                logger.info(f"ProSiT parameters converted to dictionary")
+
+                df_event_log = pm4py.convert_to_dataframe(self.event_log)
+                df_event_log['case:concept:name'] = df_event_log['case:concept:name'].astype(str)
+                df_event_log['time:timestamp'] = pd.to_datetime(df_event_log['time:timestamp'])
+                df_event_log['start:timestamp'] = pd.to_datetime(df_event_log['start:timestamp'])
+
+                df_event_log.sort_values(by=['start:timestamp', 'time:timestamp'], inplace=True)
+                df_event_log.reset_index(drop=True, inplace=True)
+                start_t = df_event_log.iloc[0]['start:timestamp']
+                simulated_event_log = self.run_simulation(n_traces=len(self.event_log), start_timestamp=start_t)
+                logger.info("Simulation completed")
+                metrics = evaluate(df_event_log, simulated_event_log, metrics_labels=['2gd', '3gd', 'ctd', 'car', 'r2gd', 'r3gd', 'ctd_entropy', 'etd_entropy'])
+                self.prosit_metrics = {
+                    'control-flow': {'2gd': metrics['2gd'], '3gd': metrics['3gd']},
+                    'time': {'ctd': metrics['ctd'], 'car': metrics['car']},
+                    'resource-flow': {'r2gd': metrics['r2gd'], 'r3gd': metrics['r3gd']},
+                    'generalization': {'ctd_entropy': metrics['ctd_entropy'], 'etd_entropy': metrics['etd_entropy']}
+                }
             except Exception as discovery_error:
-                logger.error(f"ProSiT discovery_from_eventlog failed: {str(discovery_error)}")
-                logger.info("Creating fallback parameters due to ProSiT discovery failure")
-                return self._create_fallback_parameters()
-            
-            # Convert ProSiT parameters to our application format
-            self.prosit_params = self.prosit_params.to_dict()
-            logger.info(f"ProSiT parameters converted to dictionary")
-            
-            df_event_log = pm4py.convert_to_dataframe(self.event_log)
+                logger.warning(f"ProSiT discovery_from_eventlog failed: {discovery_error}. Falling back to default parameters.")
+                self._create_fallback_parameters()
+                self.prosit_metrics = {}
 
-            df_event_log['case:concept:name'] = df_event_log['case:concept:name'].astype(str)
-            df_event_log['time:timestamp'] = pd.to_datetime(df_event_log['time:timestamp'])
-            df_event_log['start:timestamp'] = pd.to_datetime(df_event_log['start:timestamp'])
-
-            df_event_log.sort_values(by=['start:timestamp', 'time:timestamp'], inplace=True)
-            df_event_log.reset_index(drop=True, inplace=True)
-            start_t = df_event_log.iloc[0]['start:timestamp']
-            simulated_event_log = self.run_simulation(n_traces = len(self.event_log), start_timestamp=start_t)
-            logger.info("Simulation completed")
-            metrics = evaluate(df_event_log, simulated_event_log, metrics_labels=['2gd', '3gd', 'ctd', 'car', 'r2gd', 'r3gd', 'ctd_entropy', 'etd_entropy'])
-            self.prosit_metrics = {
-                'control-flow': {'2gd': metrics['2gd'], '3gd': metrics['3gd']},
-                'time': {'ctd': metrics['ctd'], 'car': metrics['car']},
-                'resource-flow': {'r2gd': metrics['r2gd'], 'r3gd': metrics['r3gd']},
-                'generalization': {'ctd_entropy': metrics['ctd_entropy'], 'etd_entropy': metrics['etd_entropy']}
-            }
             return self._convert_prosit_to_app_format()
             
         except Exception as e:
@@ -407,7 +421,9 @@ class ProSiTIntegration:
             resources = self.prosit_params['resource_params']['resources']
             resource_weights = self.prosit_params['resource_params']['resource_weights']
             act_to_resources = self.prosit_params['resource_params']['act_to_resources']
-            multitasking_resources = self.prosit_params['resource_params']['multitasking_resource']
+            max_concurrency = self.prosit_params['resource_params'].get(
+                'max_concurrency', {r: 1 for r in resources}
+            )
             
             # Get calendars and convert numeric day keys to day names
             calendars = self.prosit_params['resource_params']['calendars']
@@ -465,7 +481,10 @@ class ProSiTIntegration:
                     }
                     logger.info(f"Arrival time: {arrival_dist.get('dist_name', 'fixed')} with params {arr_params}")
 
-            # Data Attributes
+            # Data Attributes — prosit-pm 1.0.2 wraps the dict in
+            # {"mode": ..., "data": {...}} and renames keys (dist_name→dist,
+            # min_value→min, max_value→max, mean_value→mean). Older logs may
+            # still have the legacy flat shape; handle both.
             data_attribute_params = self.prosit_params.get('data_attribute_params', {})
             app_data_attributes = {
                 "label_data_attributes": data_attribute_params.get("label_data_attributes", []),
@@ -474,22 +493,29 @@ class ProSiTIntegration:
                 "distribution_data_attributes": {}
             }
 
-            prosit_dist_attrs = data_attribute_params.get("distribution_data_attributes", {})
+            raw_dist_attrs = data_attribute_params.get("distribution_data_attributes") or {}
+            if 'mode' in raw_dist_attrs and 'data' in raw_dist_attrs:
+                prosit_dist_attrs = raw_dist_attrs.get('data') or {}
+            else:
+                prosit_dist_attrs = raw_dist_attrs
+
             categorical_attrs = data_attribute_params.get("label_data_attributes_categorical", [])
 
             for attr, params_dict in prosit_dist_attrs.items():
                 if attr in categorical_attrs:
                     app_data_attributes["distribution_data_attributes"][attr] = params_dict
-                else:
-                    dist_name = params_dict.get('dist_name', 'fixed')
-                    params = params_dict.get('params', [1.0])
-                    min_val = params_dict.get('min_value', 1.0)
-                    max_val = params_dict.get('max_value', 1.0)
-                    mean_val = params_dict.get('mean_value', params[0] if params else 1.0)
-                    app_data_attributes["distribution_data_attributes"][attr] = {
-                        'distribution': dist_name,
-                        'parameters': self._convert_prosit_params_to_app(dist_name, params, min_val, max_val, mean_val)
-                    }
+                    continue
+                if not isinstance(params_dict, dict):
+                    continue
+                dist_name = params_dict.get('dist') or params_dict.get('dist_name', 'fixed')
+                params = params_dict.get('params', [1.0])
+                min_val = params_dict.get('min', params_dict.get('min_value', 1.0))
+                max_val = params_dict.get('max', params_dict.get('max_value', 1.0))
+                mean_val = params_dict.get('mean', params_dict.get('mean_value', params[0] if params else 1.0))
+                app_data_attributes["distribution_data_attributes"][attr] = {
+                    'distribution': dist_name,
+                    'parameters': self._convert_prosit_params_to_app(dist_name, params, min_val, max_val, mean_val)
+                }
 
             # Build the final parameters structure
             parameters = {
@@ -513,7 +539,7 @@ class ProSiTIntegration:
                 'resource_params': {
                     'resources': resources,
                     'resource_weights': resource_weights,
-                    'multitasking_resource': multitasking_resources,
+                    'max_concurrency': max_concurrency,
                     'act_to_resources': act_to_resources,
                     'calendars': calendars
                 },
@@ -526,7 +552,8 @@ class ProSiTIntegration:
                 'data_attribute_params': app_data_attributes
             }
             
-            logger.info(f"Converted parameters: {len(resources)} resources, {len(execution_time_params)} activities with execution times, {len(multitasking_resources)} multitasking resources")
+            multitasking_count = sum(1 for v in max_concurrency.values() if v > 1)
+            logger.info(f"Converted parameters: {len(resources)} resources, {len(execution_time_params)} activities with execution times, {multitasking_count} multitasking resources")
             logger.info(f"Activities with execution times: {list(execution_time_params.keys())}")
             logger.info(f"Resources with waiting times: {list(resource_waiting_times.keys())}")
             
@@ -538,115 +565,75 @@ class ProSiTIntegration:
             raise
 
     def _convert_prosit_params_to_app(self, dist_name, params, min_val, max_val, mean_val):
-        """Convert ProSiT parameter format to application format"""
+        """Convert ProSiT scalar parameters to the UI parameters payload."""
         try:
-            app_params = {
-                'min_value': float(min_val),
-                'max_value': float(max_val),
-                'mean_value': float(mean_val)
-            }
-            
-            if dist_name == 'fixed':
-                app_params['value'] = float(params[0]) if params else 1.0
-                
-            elif dist_name == 'norm':
-                app_params['mean'] = float(params[0]) if len(params) > 0 else 15.0
-                app_params['std'] = float(params[1]) if len(params) > 1 else 5.0
-                
-            elif dist_name == 'expon':
-                # ProSiT expon params: [loc, scale] - use scale as mean
-                scale_val = float(params[1]) if len(params) > 1 else mean_val
-                app_params['scale'] = scale_val
-                # Add mean for interface display (same as scale for exponential)
-                app_params['mean'] = scale_val
-                
-            elif dist_name == 'uniform':
-                # ProSiT uniform params: [min, max] 
-                if len(params) >= 2:
-                    app_params['min'] = float(params[0])
-                    app_params['max'] = float(params[1])
-                else:
-                    app_params['min'] = float(min_val)
-                    app_params['max'] = float(max_val)
-            
-            return app_params
-            
+            return distribution_from_prosit(dist_name, params, min_val, max_val, mean_val)
         except Exception as e:
-            logger.error(f"Error converting parameters for {dist_name}: {str(e)}")
+            logger.error(f"Error converting parameters for {dist_name}: {e}")
             return {'mean': 15.0, 'std': 2.0, 'min_value': 0.0, 'max_value': 60.0, 'mean_value': 15.0}
 
     def _create_fallback_parameters(self):
-        """Create simplified parameters when ProSiT discovery fails"""
+        """Populate self.prosit_params with sensible defaults when discovery fails.
+
+        Returns nothing; the caller continues with _convert_prosit_to_app_format().
+        """
+        logger.info("Creating fallback parameters...")
+
+        resources = []
         try:
-            logger.info("Creating fallback parameters...")
-            
-            # Initialize ProSiT parameters with basic structure
-            self.prosit_params = dict()
+            if self.event_log and len(self.event_log) > 0:
+                for trace in self.event_log:
+                    for event in trace:
+                        if hasattr(event, 'get') and event.get('org:resource'):
+                            resource = event['org:resource']
+                            if resource not in resources:
+                                resources.append(resource)
+        except Exception:
+            pass
 
-            # Set basic resources from event log if available
-            resources = []
-            try:
-                if self.event_log and len(self.event_log) > 0:
-                    for trace in self.event_log:
-                        for event in trace:
-                            if hasattr(event, 'get') and event.get('org:resource'):
-                                resource = event['org:resource']
-                                if resource not in resources:
-                                    resources.append(resource)
-            except Exception:
-                pass
-            
-            # If no resources found, create default ones
-            if not resources:
-                resources = ['Resource_1', 'Resource_2', 'Resource_3']
+        if not resources:
+            resources = ['Resource_1', 'Resource_2', 'Resource_3']
 
-            standard_calendar = {}
-            days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-            for day in days:
-                standard_calendar[day] = {str(hour): True for hour in range(24)}
+        standard_calendar = {
+            day: {str(hour): True for hour in range(24)}
+            for day in ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')
+        }
 
-            standard_distribution = {
-                    'dist_name': 'normal',
-                    'params': [15.0, 5.0],
-                    'min_value': 1.0,
-                    'max_value': 60.0
-                }
+        standard_distribution = {
+            'dist_name': 'norm',
+            'params': [15.0, 5.0],
+            'min_value': 1.0,
+            'max_value': 60.0,
+            'mean_value': 15.0,
+        }
 
-            self.prosit_params = {
-                "transition_params": {
-                    "transition_weights": {
-                        t: 0.5 for t in self.process_model['transitions']
-                    }
-                },
-                "resource_params": {
-                    "resources": resources,
-                    "multitasking_resource": [],
-                    "act_to_resources": {a: resources for a in self.process_model['activities']},
-                    "resource_weights": {r: 1.0 / len(resources) for r in resources},
-                    "calendars": {r: standard_calendar for r in resources}
-                },
-                "arrival_params": {
-                    "arrival_calendar": standard_calendar,
-                    "arrival_time_distributions": standard_distribution
-                },
-                "execution_time_params": {
-                    "execution_time_distributions": {a: standard_distribution for a in self.process_model['activities']}
-                },
-                "waiting_time_params": {
-                    "waiting_time_distributions": {r: standard_distribution for r in resources}
-                },
-                "data_attribute_params": {
-                    "label_data_attributes": [],
-                    "label_data_attributes_categorical": [],
-                    "attribute_values_label_categorical": [],
-                    "distribution_data_attributes": {}
-                }
+        self.prosit_params = {
+            "transition_params": {
+                "transition_weights": {t: 0.5 for t in self.process_model['transitions']}
+            },
+            "resource_params": {
+                "resources": resources,
+                "max_concurrency": {r: 1 for r in resources},
+                "act_to_resources": {a: resources for a in self.process_model['activities']},
+                "resource_weights": {r: 1.0 / len(resources) for r in resources},
+                "calendars": {r: standard_calendar for r in resources}
+            },
+            "arrival_params": {
+                "arrival_calendar": standard_calendar,
+                "arrival_time_distributions": standard_distribution
+            },
+            "execution_time_params": {
+                "execution_time_distributions": {a: standard_distribution for a in self.process_model['activities']}
+            },
+            "waiting_time_params": {
+                "waiting_time_distributions": {r: standard_distribution for r in resources}
+            },
+            "data_attribute_params": {
+                "label_data_attributes": [],
+                "label_data_attributes_categorical": [],
+                "attribute_values_label_categorical": {},
+                "distribution_data_attributes": {}
             }
-            
-            logger.info(f"Created fallback parameters with {len(resources)} resources and {len(self.process_model['activities'])} activities")
-        
-            return self.prosit_params
-            
-        except Exception as e:
-            logger.error(f"Error creating fallback parameters: {str(e)}")
-            raise
+        }
+
+        logger.info(f"Created fallback parameters with {len(resources)} resources and {len(self.process_model['activities'])} activities")
