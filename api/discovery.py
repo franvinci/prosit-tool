@@ -13,25 +13,44 @@ from models import SimulationSession
 from prosit_integration import ProSiTIntegration
 from validators import (
     parse_bool,
+    validate_attribute_mode,
     validate_grace_period,
     validate_max_depth_tree,
     validate_multitasking_thr,
     validate_random_state,
 )
 
-from ._shared import save_petri_net_pnml
+from ._decorators import handle_api_errors
+from ._shared import load_session_prosit, save_petri_net_pnml
 
 logger = logging.getLogger(__name__)
 bp = Blueprint('discovery', __name__)
 
 
+# Tracks the human-readable phase of an in-flight discovery request so the UI
+# can poll and surface progress under the loading spinner. Single-process
+# only — that's fine for this dev tool.
+_discovery_progress: dict[int, str] = {}
+
+
+def _set_progress(session_id: int, message: str) -> None:
+    _discovery_progress[session_id] = message
+
+
+def _clear_progress(session_id: int) -> None:
+    _discovery_progress.pop(session_id, None)
+
+
 @bp.route('/api/discover/<int:session_id>', methods=['POST'])
+@handle_api_errors('Parameter discovery failed')
 def discover_parameters(session_id):
     """Discover parameters from uploaded file (XES or PNML)."""
     session = SimulationSession.query.get_or_404(session_id)
     try:
+        _set_progress(session_id, 'Preparing discovery...')
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], session.filename)
         if not os.path.exists(filepath):
+            _clear_progress(session_id)
             return jsonify({'error': 'File not found'}), 404
 
         session.status = 'discovering'
@@ -46,13 +65,14 @@ def discover_parameters(session_id):
         incremental_discovery = parse_bool(request.args.get('incremental_discovery'))
         enable_multitasking = parse_bool(request.args.get('enable_multitasking'))
         use_workload_features = parse_bool(request.args.get('use_workload_features'))
-        attribute_mode = request.args.get('attribute_mode', Config.DEFAULT_ATTRIBUTE_MODE)
+        attribute_mode, _ = validate_attribute_mode(request.args.get('attribute_mode'))
 
         existing_metadata = session.get_parameters() or {}
         pnml_filepath = None
         if 'pnml_filename' in existing_metadata:
             pnml_filepath = os.path.join(app.config['UPLOAD_FOLDER'], existing_metadata['pnml_filename'])
 
+        _set_progress(session_id, 'Loading event log...')
         event_log = xes_importer.apply(filepath)
         logger.info(f"Loaded {len(event_log)} traces from XES file")
 
@@ -72,12 +92,16 @@ def discover_parameters(session_id):
 
         if pnml_filepath and os.path.exists(pnml_filepath):
             logger.info("Using PNML model and discovering parameters from XES")
+            _set_progress(session_id, 'Loading uploaded Petri net...')
             prosit.import_petri_net_from_pnml(pnml_filepath)
         else:
             logger.info("Discovering process model and parameters from XES")
+            _set_progress(session_id, 'Discovering process model (Inductive Miner)...')
             prosit.discover_process_model(noise_threshold=session.noise_threshold)
         process_model = prosit.process_model
+        _set_progress(session_id, 'Discovering simulation parameters (resources, times, attributes)...')
         parameters = prosit.discover_parameters(**discovery_kwargs)
+        _set_progress(session_id, 'Saving parameters...')
         prosit_metrics = prosit.prosit_metrics or {}
         for metric_cat, metrics in prosit_metrics.items():
             for m, value in metrics.items():
@@ -106,6 +130,7 @@ def discover_parameters(session_id):
                 'activities': process_model.get('activities', []),
                 'transitions': process_model.get('transitions', []),
                 'map_transitionName_to_id': process_model.get('map_transitionName_to_id', {}),
+                'transition_label_map': process_model.get('transition_label_map', {}),
                 'places': process_model.get('places', []),
                 'fitness': process_model.get('fitness', 0),
                 'precision': process_model.get('precision', 0),
@@ -116,6 +141,7 @@ def discover_parameters(session_id):
         session.set_parameters(session_metadata)
         session.status = 'ready'
         db.session.commit()
+        _clear_progress(session_id)
 
         return jsonify({
             'success': True,
@@ -127,6 +153,7 @@ def discover_parameters(session_id):
                 'transitions': process_model.get('transitions', []),
                 'places': process_model.get('places', []),
                 'map_transitionName_to_id': process_model.get('map_transitionName_to_id', {}),
+                'transition_label_map': process_model.get('transition_label_map', {}),
                 'fitness': process_model.get('fitness', 0),
                 'precision': process_model.get('precision', 0),
                 'f_measure': process_model.get('f_measure', 0),
@@ -135,8 +162,7 @@ def discover_parameters(session_id):
             'message': 'Parameters processed successfully',
         })
 
-    except Exception as e:
-        logger.error(f"Discovery error: {e}")
+    except Exception:
         db.session.rollback()
         try:
             session = SimulationSession.query.get(session_id)
@@ -145,4 +171,41 @@ def discover_parameters(session_id):
                 db.session.commit()
         except Exception:
             db.session.rollback()
-        return jsonify({'error': f'Parameter discovery failed: {e}'}), 500
+        _clear_progress(session_id)
+        raise  # let @handle_api_errors produce the JSON response
+
+
+@bp.route('/api/discover/<int:session_id>/progress')
+def discover_progress(session_id):
+    """Return the current discovery phase string, or empty if no work in flight."""
+    message = _discovery_progress.get(session_id)
+    return jsonify({'in_progress': message is not None, 'message': message or ''})
+
+
+@bp.route('/api/metrics/<int:session_id>', methods=['POST'])
+@handle_api_errors('Failed to compute metrics')
+def compute_metrics(session_id):
+    """Run a reference simulation matched to the original log and evaluate.
+
+    Discovery skips this step by default to keep the request fast; the UI
+    fires this endpoint asynchronously to fill in the accuracy tables.
+    """
+    session = SimulationSession.query.get_or_404(session_id)
+    metadata = session.get_parameters() or {}
+    json_filename = metadata.get('json_filename')
+    if not json_filename:
+        return jsonify({'error': 'No discovered parameters; run discovery first'}), 400
+
+    json_filepath = os.path.join(app.config['UPLOAD_FOLDER'], json_filename)
+    if not os.path.exists(json_filepath):
+        return jsonify({'error': 'Parameter file missing'}), 404
+
+    prosit = load_session_prosit(session, with_event_log=True)
+    prosit.load_parameters_from_json_file(json_filepath)
+    metrics = prosit.compute_prosit_metrics()
+
+    metadata['prosit_metrics'] = metrics
+    session.set_parameters(metadata)
+    db.session.commit()
+
+    return jsonify({'success': True, 'prosit_metrics': metrics})

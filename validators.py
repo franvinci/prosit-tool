@@ -81,6 +81,20 @@ def validate_random_state(raw) -> Tuple[int, str | None]:
     return value, None
 
 
+_VALID_ATTRIBUTE_MODES = ('distribution', 'empirical')
+
+
+def validate_attribute_mode(raw) -> Tuple[str, str | None]:
+    if raw is None or raw == '':
+        return Config.DEFAULT_ATTRIBUTE_MODE, None
+    value = str(raw).strip().lower()
+    if value not in _VALID_ATTRIBUTE_MODES:
+        return Config.DEFAULT_ATTRIBUTE_MODE, (
+            f"attribute_mode must be one of {_VALID_ATTRIBUTE_MODES}"
+        )
+    return value, None
+
+
 def validate_num_instances(raw) -> Tuple[int, str | None]:
     """Strict: bad input returns (None, error) so the caller can 400 cleanly."""
     if raw is None or raw == '':

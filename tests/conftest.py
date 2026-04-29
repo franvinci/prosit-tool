@@ -63,3 +63,32 @@ def small_pnml_path(tmp_path_factory, small_xes_path):
     net, im, fm = pm4py.discover_petri_net_inductive(log, noise_threshold=0.2)
     pm4py.write_pnml(net, im, fm, str(out))
     return out
+
+
+@pytest.fixture(scope="session")
+def tiny_xes_path(tmp_path_factory):
+    """Synthetic XES with a handful of traces — used by tests that exercise the
+    full simulate+evaluate pipeline without paying the cost of a real log."""
+    import pandas as pd
+    import pm4py
+
+    rows = []
+    base = pd.Timestamp("2024-01-01 08:00", tz="UTC")
+    for case in range(5):
+        for ev, (act, res) in enumerate([
+            ("A", "r1"), ("B", "r1"), ("C", "r2"), ("D", "r2"),
+        ]):
+            start = base + pd.Timedelta(hours=case * 2 + ev * 0.5)
+            end = start + pd.Timedelta(minutes=10)
+            rows.append({
+                "case:concept:name": f"c{case}",
+                "concept:name": act,
+                "org:resource": res,
+                "start:timestamp": start,
+                "time:timestamp": end,
+            })
+    df = pd.DataFrame(rows)
+    out = tmp_path_factory.mktemp("xes") / "tiny.xes"
+    log = pm4py.convert_to_event_log(df)
+    pm4py.write_xes(log, str(out))
+    return out

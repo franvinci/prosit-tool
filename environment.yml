@@ -1,4 +1,4 @@
-name: prosit
+name: prosit-tool
 channels:
   - conda-forge
   - defaults

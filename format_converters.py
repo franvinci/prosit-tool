@@ -29,7 +29,13 @@ DEFAULT_MIN = 0.0
 DEFAULT_MAX = 60.0
 DEFAULT_FIXED = 1.0
 
-SUPPORTED_DISTRIBUTIONS = ('fixed', 'norm', 'expon', 'uniform')
+SUPPORTED_DISTRIBUTIONS = ('fixed', 'norm', 'expon', 'uniform', 'lognorm', 'gamma')
+
+DEFAULT_LOGNORM_SHAPE = 0.5
+DEFAULT_LOGNORM_SCALE = 1.0
+
+DEFAULT_GAMMA_SHAPE = 2.0
+DEFAULT_GAMMA_SCALE = 1.0
 
 
 def _coerce_float(value: Any, default: float) -> float:
@@ -99,6 +105,48 @@ def distribution_to_prosit(dist_name: str, param_values: dict | None) -> dict:
             'max_value': high,
             'mean_value': (low + high) / 2.0,
         }
+    if dist_name == 'lognorm':
+        # scipy.stats.lognorm uses (s, loc, scale). The UI exposes shape (s),
+        # loc (default 0), and scale; mean is roughly scale * exp(s^2 / 2).
+        shape = _coerce_float(get('shape', 's', default=DEFAULT_LOGNORM_SHAPE), DEFAULT_LOGNORM_SHAPE)
+        loc = _coerce_float(get('loc', default=0.0), 0.0)
+        scale = _coerce_float(get('scale', default=DEFAULT_LOGNORM_SCALE), DEFAULT_LOGNORM_SCALE)
+        return {
+            'dist_name': 'lognorm',
+            'params': [shape, loc, scale],
+            'min_value': _coerce_float(get('min', 'min_value', default=DEFAULT_MIN), DEFAULT_MIN),
+            'max_value': _coerce_float(get('max', 'max_value', default=DEFAULT_MAX), DEFAULT_MAX),
+            'mean_value': _coerce_float(get('mean', 'mean_value', default=scale), scale),
+        }
+    if dist_name == 'gamma':
+        # scipy.stats.gamma uses (a, loc, scale). Mean = a*scale (when loc=0)
+        # and std = sqrt(a)*scale, so the more user-friendly mean/std fields can
+        # be converted back to (shape, scale) when both are provided.
+        loc = _coerce_float(get('loc', default=0.0), 0.0)
+        mean_in = get('mean', 'mean_value')
+        std_in = get('std')
+        if mean_in is not None and std_in is not None:
+            try:
+                mean_f = float(mean_in)
+                std_f = float(std_in)
+            except (TypeError, ValueError):
+                mean_f, std_f = None, None
+            if mean_f and std_f and mean_f > 0 and std_f > 0:
+                shape = (mean_f ** 2) / (std_f ** 2)
+                scale = (std_f ** 2) / mean_f
+            else:
+                shape = _coerce_float(get('shape', 'a', default=DEFAULT_GAMMA_SHAPE), DEFAULT_GAMMA_SHAPE)
+                scale = _coerce_float(get('scale', default=DEFAULT_GAMMA_SCALE), DEFAULT_GAMMA_SCALE)
+        else:
+            shape = _coerce_float(get('shape', 'a', default=DEFAULT_GAMMA_SHAPE), DEFAULT_GAMMA_SHAPE)
+            scale = _coerce_float(get('scale', default=DEFAULT_GAMMA_SCALE), DEFAULT_GAMMA_SCALE)
+        return {
+            'dist_name': 'gamma',
+            'params': [shape, loc, scale],
+            'min_value': _coerce_float(get('min', 'min_value', default=DEFAULT_MIN), DEFAULT_MIN),
+            'max_value': _coerce_float(get('max', 'max_value', default=DEFAULT_MAX), DEFAULT_MAX),
+            'mean_value': shape * scale,
+        }
 
     return {
         'dist_name': 'fixed',
@@ -141,6 +189,21 @@ def distribution_from_prosit(dist_name: str, params: list, min_val: Any,
         else:
             base['min'] = base['min_value']
             base['max'] = base['max_value']
+    elif dist_name == 'lognorm':
+        # scipy.stats.lognorm.params == (shape s, loc, scale).
+        base['shape'] = _coerce_float(params[0] if len(params) > 0 else DEFAULT_LOGNORM_SHAPE, DEFAULT_LOGNORM_SHAPE)
+        base['loc'] = _coerce_float(params[1] if len(params) > 1 else 0.0, 0.0)
+        base['scale'] = _coerce_float(params[2] if len(params) > 2 else DEFAULT_LOGNORM_SCALE, DEFAULT_LOGNORM_SCALE)
+    elif dist_name == 'gamma':
+        # scipy.stats.gamma.params == (a/shape, loc, scale). The UI surfaces
+        # (Mean, Std) since users rarely think in shape/scale terms.
+        shape = _coerce_float(params[0] if len(params) > 0 else DEFAULT_GAMMA_SHAPE, DEFAULT_GAMMA_SHAPE)
+        scale = _coerce_float(params[2] if len(params) > 2 else DEFAULT_GAMMA_SCALE, DEFAULT_GAMMA_SCALE)
+        base['shape'] = shape
+        base['loc'] = _coerce_float(params[1] if len(params) > 1 else 0.0, 0.0)
+        base['scale'] = scale
+        base['mean'] = shape * scale
+        base['std'] = (shape ** 0.5) * scale
     return base
 
 
@@ -191,6 +254,32 @@ def _normalize_from_list(dist_name, params_raw, dist_obj, leaf_value):
         result['min_value'] = low
         result['max_value'] = high
         result['mean_value'] = (low + high) / 2.0
+    elif dist_name == 'lognorm':
+        # scipy.stats.lognorm: (s, loc, scale).
+        s = params_raw[0] if len(params_raw) > 0 else DEFAULT_LOGNORM_SHAPE
+        loc = params_raw[1] if len(params_raw) > 1 else 0.0
+        scale = params_raw[2] if len(params_raw) > 2 else DEFAULT_LOGNORM_SCALE
+        result['params'] = [s, loc, scale]
+        result['min_value'] = dist_obj.get('min_value', DEFAULT_MIN)
+        result['max_value'] = dist_obj.get('max_value', DEFAULT_MAX)
+        result['mean_value'] = dist_obj.get('mean_value', scale)
+    elif dist_name == 'gamma':
+        # scipy.stats.gamma: (a, loc, scale).
+        shape = params_raw[0] if len(params_raw) > 0 else DEFAULT_GAMMA_SHAPE
+        loc = params_raw[1] if len(params_raw) > 1 else 0.0
+        scale = params_raw[2] if len(params_raw) > 2 else DEFAULT_GAMMA_SCALE
+        result['params'] = [shape, loc, scale]
+        result['min_value'] = dist_obj.get('min_value', DEFAULT_MIN)
+        result['max_value'] = dist_obj.get('max_value', DEFAULT_MAX)
+        result['mean_value'] = dist_obj.get('mean_value', shape * scale)
+    else:
+        # Unknown dist_name (e.g. 'beta'): preserve incoming fields
+        # so prosit-pm's dict_to_decrules doesn't blow up on missing 'params'.
+        leaf_default_value = leaf_value if leaf_value is not None else DEFAULT_FIXED
+        result['params'] = list(params_raw) if params_raw else dist_obj.get('params', [leaf_default_value])
+        result['min_value'] = dist_obj.get('min_value', DEFAULT_MIN)
+        result['max_value'] = dist_obj.get('max_value', DEFAULT_MAX)
+        result['mean_value'] = dist_obj.get('mean_value', leaf_default_value)
     return result
 
 
@@ -225,6 +314,41 @@ def _normalize_from_object(dist_name, params_raw, dist_obj, leaf_value):
         result['min_value'] = min_v
         result['max_value'] = max_v
         result['mean_value'] = (min_v + max_v) / 2.0
+    elif dist_name == 'lognorm':
+        # UI-shape input for lognorm carries shape/scale (and optional loc).
+        if isinstance(params_raw, dict):
+            shape = params_raw.get('shape', params_raw.get('s', DEFAULT_LOGNORM_SHAPE))
+            loc = params_raw.get('loc', 0.0)
+            scale = params_raw.get('scale', DEFAULT_LOGNORM_SCALE)
+        else:
+            shape, loc, scale = DEFAULT_LOGNORM_SHAPE, 0.0, DEFAULT_LOGNORM_SCALE
+        result['params'] = [shape, loc, scale]
+        result['min_value'] = min_v
+        result['max_value'] = max_v
+        result['mean_value'] = dist_obj.get('mean_value', scale)
+    elif dist_name == 'gamma':
+        if isinstance(params_raw, dict):
+            shape = params_raw.get('shape', params_raw.get('a', DEFAULT_GAMMA_SHAPE))
+            loc = params_raw.get('loc', 0.0)
+            scale = params_raw.get('scale', DEFAULT_GAMMA_SCALE)
+        else:
+            shape, loc, scale = DEFAULT_GAMMA_SHAPE, 0.0, DEFAULT_GAMMA_SCALE
+        result['params'] = [shape, loc, scale]
+        result['min_value'] = min_v
+        result['max_value'] = max_v
+        result['mean_value'] = dist_obj.get('mean_value', shape * scale)
+    else:
+        # Unknown dist_name: preserve whatever the caller supplied so the
+        # downstream prosit JSON keeps its 'params' list (otherwise simulate
+        # crashes with KeyError: 'params').
+        existing_params = dist_obj.get('params')
+        if isinstance(existing_params, list):
+            result['params'] = existing_params
+        else:
+            result['params'] = [mean]
+        result['min_value'] = min_v
+        result['max_value'] = max_v
+        result['mean_value'] = dist_obj.get('mean_value', mean)
     return result
 
 

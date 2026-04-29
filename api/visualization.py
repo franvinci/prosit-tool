@@ -18,11 +18,26 @@ from flask import Blueprint, request, jsonify
 from app import app
 from models import SimulationSession
 
+from ._decorators import handle_api_errors
+
 logger = logging.getLogger(__name__)
 bp = Blueprint('visualization', __name__)
 
 
 WEEKDAY_LABELS = ('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun')
+
+_UNIT_FACTORS = {'sec': 1, 'min': 60, 'hour': 3600, 'day': 86400}
+_UNIT_LABELS = {'sec': 'seconds', 'min': 'minutes', 'hour': 'hours', 'day': 'days'}
+
+
+def _to_unit(seconds_series, unit):
+    """Convert a pandas series of seconds to the requested unit."""
+    factor = _UNIT_FACTORS.get(unit, 60)
+    return seconds_series / factor
+
+
+def _unit_label(unit):
+    return _UNIT_LABELS.get(unit, 'minutes')
 
 
 def _figure_to_svg() -> str:
@@ -55,58 +70,59 @@ def _load_simulation_df(session):
 
 
 @bp.route('/api/get_activities_and_resources/<int:session_id>')
+@handle_api_errors('Failed to get data')
 def get_activities_and_resources(session_id):
     """List all activities and resources from the saved simulation log."""
-    try:
-        session = SimulationSession.query.get_or_404(session_id)
-        df, err = _load_simulation_df(session)
-        if err:
-            msg, code = err
-            return jsonify({'error': msg}), code
+    session = SimulationSession.query.get_or_404(session_id)
+    df, err = _load_simulation_df(session)
+    if err:
+        msg, code = err
+        return jsonify({'error': msg}), code
 
-        activities = sorted(df['concept:name'].unique().tolist())
-        resources = sorted(df['org:resource'].dropna().unique().tolist())
-        return jsonify({'success': True, 'activities': activities, 'resources': resources})
-
-    except Exception as e:
-        logger.error(f"Get activities and resources error: {e}")
-        return jsonify({'error': f'Failed to get data: {e}'}), 500
+    activities = sorted(df['concept:name'].unique().tolist())
+    resources = sorted(df['org:resource'].dropna().unique().tolist())
+    return jsonify({'success': True, 'activities': activities, 'resources': resources})
 
 
 @bp.route('/api/get_visualization/<int:session_id>/<visualization_type>')
+@handle_api_errors('Failed to generate visualization')
 def get_visualization(session_id, visualization_type):
     """Generate and return a specific visualization from the simulated log."""
-    try:
-        session = SimulationSession.query.get_or_404(session_id)
-        df, err = _load_simulation_df(session)
-        if err:
-            msg, code = err
-            return jsonify({'error': msg}), code
+    session = SimulationSession.query.get_or_404(session_id)
+    df, err = _load_simulation_df(session)
+    if err:
+        msg, code = err
+        return jsonify({'error': msg}), code
 
-        plt.style.use('seaborn-v0_8-whitegrid')
+    plt.style.use('seaborn-v0_8-whitegrid')
 
-        if visualization_type == 'process_map':
-            return _render_process_map(df)
-        if visualization_type == 'case_duration_dist':
-            return _render_case_duration(df)
-        if visualization_type == 'resource_heatmap':
-            return _render_resource_heatmap(df, request.args.get('resource'))
-        if visualization_type == 'activity_duration_boxplot':
-            return _render_activity_duration(df, request.args.get('activity'))
-        if visualization_type == 'waiting_time_dist':
-            return _render_waiting_time(df, request.args.get('activity'), request.args.get('resource'))
+    unit = request.args.get('unit', 'min')
+    if unit not in _UNIT_FACTORS:
+        unit = 'min'
 
-        return jsonify({'error': 'Invalid visualization type.'}), 400
+    if visualization_type == 'process_map':
+        return _render_process_map(df, request.args.get('aggregation', 'median'))
+    if visualization_type == 'case_duration_dist':
+        return _render_case_duration(df, unit)
+    if visualization_type == 'resource_heatmap':
+        return _render_resource_heatmap(df, request.args.get('resource'))
+    if visualization_type == 'activity_duration_boxplot':
+        return _render_activity_duration(df, request.args.get('activity'), unit)
+    if visualization_type == 'waiting_time_dist':
+        return _render_waiting_time(df, request.args.get('activity'), request.args.get('resource'), unit)
 
-    except Exception as e:
-        logger.error(f"Visualization error for {visualization_type}: {e}")
-        return jsonify({'error': f'Failed to generate visualization: {e}'}), 500
+    return jsonify({'error': 'Invalid visualization type.'}), 400
 
 
 # --- per-type renderers -------------------------------------------------------
 
 
-def _render_process_map(df):
+_VALID_AGGREGATIONS = {'median', 'mean', 'min', 'max', 'sum', 'stdev'}
+
+
+def _render_process_map(df, aggregation='median'):
+    if aggregation not in _VALID_AGGREGATIONS:
+        aggregation = 'median'
     log = pm4py.convert_to_event_log(df)
     performance_dfg, start_activities, end_activities = pm4py.discover_performance_dfg(
         log,
@@ -117,19 +133,19 @@ def _render_process_map(df):
     parameters = {
         dfg_perf_visualizer.Parameters.START_ACTIVITIES: start_activities,
         dfg_perf_visualizer.Parameters.END_ACTIVITIES: end_activities,
-        dfg_perf_visualizer.Parameters.AGGREGATION_MEASURE: "median",
+        dfg_perf_visualizer.Parameters.AGGREGATION_MEASURE: aggregation,
         "bgcolor": "white",
     }
     gviz = dfg_perf_visualizer.apply(performance_dfg, parameters=parameters)
     svg_content = gviz.pipe(format='svg', encoding='utf-8')
-    logger.info("Process Map Plot Generated.")
-    return jsonify({'success': True, 'visualization': svg_content})
+    logger.info("Process Map Plot Generated (aggregation=%s).", aggregation)
+    return jsonify({'success': True, 'visualization': svg_content, 'aggregation': aggregation})
 
 
-def _render_case_duration(df):
+def _render_case_duration(df, unit='min'):
     case_starts = df.groupby('case:concept:name')['start:timestamp'].min()
     case_ends = df.groupby('case:concept:name')['time:timestamp'].max()
-    case_durations = (case_ends - case_starts).dt.total_seconds() // 60
+    case_durations = _to_unit((case_ends - case_starts).dt.total_seconds(), unit)
 
     metrics = {
         'average_case_duration': case_durations.mean(),
@@ -138,15 +154,16 @@ def _render_case_duration(df):
         'max_case_duration': case_durations.max(),
     }
 
+    label = _unit_label(unit)
     plt.figure(figsize=(10, 6))
     sns.histplot(case_durations, kde=True)
     plt.title('Case Duration Density Plot')
-    plt.xlabel('Duration (minutes)')
+    plt.xlabel(f'Duration ({label})')
     plt.ylabel('Frequency')
 
     svg_content = _figure_to_svg()
-    logger.info("Case Duration Distribution Plot Generated.")
-    return jsonify({'success': True, 'visualization': svg_content, 'metrics': metrics})
+    logger.info("Case Duration Distribution Plot Generated (unit=%s).", unit)
+    return jsonify({'success': True, 'visualization': svg_content, 'metrics': metrics, 'unit': unit})
 
 
 def _render_resource_heatmap(df, resource_name):
@@ -177,10 +194,10 @@ def _render_resource_heatmap(df, resource_name):
     return jsonify({'success': True, 'visualization': svg_content})
 
 
-def _render_activity_duration(df, activity_name):
+def _render_activity_duration(df, activity_name, unit='min'):
     activity_df = df[df['concept:name'] == activity_name] if activity_name else df
     activity_df = activity_df.assign(
-        duration=(activity_df['time:timestamp'] - activity_df['start:timestamp']).dt.total_seconds() // 60
+        duration=_to_unit((activity_df['time:timestamp'] - activity_df['start:timestamp']).dt.total_seconds(), unit)
     )
 
     metrics = {
@@ -190,17 +207,18 @@ def _render_activity_duration(df, activity_name):
         'max_duration': activity_df['duration'].max(),
     }
 
+    label = _unit_label(unit)
     plt.figure(figsize=(10, 6))
     sns.boxplot(y=activity_df['duration'], showfliers=False)
     plt.title(f'Activity Duration for "{activity_name}"' if activity_name else 'Activity Duration for All Activities')
-    plt.ylabel('Duration (minutes)')
+    plt.ylabel(f'Duration ({label})')
 
     svg_content = _figure_to_svg()
-    logger.info("Activity Duration Plot Generated.")
-    return jsonify({'success': True, 'visualization': svg_content, 'metrics': metrics})
+    logger.info("Activity Duration Plot Generated (unit=%s).", unit)
+    return jsonify({'success': True, 'visualization': svg_content, 'metrics': metrics, 'unit': unit})
 
 
-def _render_waiting_time(df, activity_name, resource_name):
+def _render_waiting_time(df, activity_name, resource_name, unit='min'):
     activities = set(df['concept:name'].unique())
     resources = set(df['org:resource'].unique())
 
@@ -210,7 +228,7 @@ def _render_waiting_time(df, activity_name, resource_name):
         df = df[df['org:resource'] == resource_name]
 
     df = df.assign(
-        waiting_time=(df['start:timestamp'] - df['enabled:timestamp']).dt.total_seconds() // 60
+        waiting_time=_to_unit((df['start:timestamp'] - df['enabled:timestamp']).dt.total_seconds(), unit)
     )
 
     metrics = {
@@ -220,6 +238,7 @@ def _render_waiting_time(df, activity_name, resource_name):
         'max_duration': df['waiting_time'].max(),
     }
 
+    label = _unit_label(unit)
     plt.figure(figsize=(10, 6))
     sns.histplot(df['waiting_time'], kde=True)
 
@@ -234,9 +253,9 @@ def _render_waiting_time(df, activity_name, resource_name):
         title_parts.append('Activity: Any')
 
     plt.title(' -- '.join(title_parts))
-    plt.xlabel('Duration (minutes)')
+    plt.xlabel(f'Duration ({label})')
     plt.ylabel('Frequency')
 
     svg_content = _figure_to_svg()
-    logger.info("Waiting Time Distribution Plot Generated.")
-    return jsonify({'success': True, 'visualization': svg_content, 'metrics': metrics})
+    logger.info("Waiting Time Distribution Plot Generated (unit=%s).", unit)
+    return jsonify({'success': True, 'visualization': svg_content, 'metrics': metrics, 'unit': unit})

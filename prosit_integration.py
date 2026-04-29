@@ -55,19 +55,25 @@ class ProSiTIntegration:
             for place in net.places:
                 places.append(place.name)
 
-            # Create mapping from transition names to IDs
+            # Create mapping from transition names AND labels to IDs so the UI
+            # can highlight by either (activity tabs pass labels, the transition
+            # selector passes names).
             map_transitionName_to_id = {}
+            transition_label_map = {}
             for t in net.transitions:
-                key = t.label if t.label else t.name
-                map_transitionName_to_id[key] = str(id(t))
-            
+                tid = str(id(t))
+                map_transitionName_to_id[t.name] = tid
+                if t.label:
+                    map_transitionName_to_id[t.label] = tid
+                transition_label_map[t.name] = t.label if t.label else t.name
+
             # Generate visualization
             visualization_svg = self._generate_petri_net_visualization(net, initial_marking, final_marking)
 
             fitness = fitness_evaluator.apply(self.event_log, net, initial_marking, final_marking)
             fitness = fitness['averageFitness']
             precision = precision_evaluator.apply(self.event_log, net, initial_marking, final_marking)
-            f_measure = 2*fitness*precision/(fitness+precision)
+            f_measure = 2*fitness*precision/(fitness+precision) if (fitness+precision) else 0.0
             
             # Create process model structure
             self.process_model = {
@@ -75,11 +81,10 @@ class ProSiTIntegration:
                 'transitions': transitions,
                 'places': places,
                 'map_transitionName_to_id': map_transitionName_to_id,
+                'transition_label_map': transition_label_map,
                 'fitness': fitness,
                 'precision': precision,
                 'f_measure': f_measure,
-                # 'start_activities': activities[:1] if activities else [],
-                # 'end_activities': activities[-1:] if activities else [],
                 'visualization': visualization_svg,
                 'net': net,
                 'initial_marking': initial_marking,
@@ -114,13 +119,15 @@ class ProSiTIntegration:
             places = [p.name for p in net.places]
 
             map_transitionName_to_id = {}
+            transition_label_map = {}
             for t in net.transitions:
                 transitions.append(t.name)
+                tid = str(id(t))
+                map_transitionName_to_id[t.name] = tid
                 if t.label:
                     activities.append(t.label)
-                    map_transitionName_to_id[t.label] = str(id(t))
-                else:
-                    map_transitionName_to_id[t.name] = str(id(t))
+                    map_transitionName_to_id[t.label] = tid
+                transition_label_map[t.name] = t.label if t.label else t.name
 
             visualization_svg = self._generate_petri_net_visualization(net, initial_marking, final_marking)
 
@@ -136,6 +143,7 @@ class ProSiTIntegration:
                 'transitions': transitions,
                 'places': places,
                 'map_transitionName_to_id': map_transitionName_to_id,
+                'transition_label_map': transition_label_map,
                 'fitness': fitness,
                 'precision': precision,
                 'f_measure': f_measure,
@@ -161,6 +169,7 @@ class ProSiTIntegration:
         random_state=72,
         use_workload_features=False,
         attribute_mode='distribution',
+        compute_metrics=False,
     ):
         """
         Discover simulation parameters using ProSiT library.
@@ -211,23 +220,10 @@ class ProSiTIntegration:
                 self.prosit_params = self.prosit_params.to_dict()
                 logger.info(f"ProSiT parameters converted to dictionary")
 
-                df_event_log = pm4py.convert_to_dataframe(self.event_log)
-                df_event_log['case:concept:name'] = df_event_log['case:concept:name'].astype(str)
-                df_event_log['time:timestamp'] = pd.to_datetime(df_event_log['time:timestamp'])
-                df_event_log['start:timestamp'] = pd.to_datetime(df_event_log['start:timestamp'])
-
-                df_event_log.sort_values(by=['start:timestamp', 'time:timestamp'], inplace=True)
-                df_event_log.reset_index(drop=True, inplace=True)
-                start_t = df_event_log.iloc[0]['start:timestamp']
-                simulated_event_log = self.run_simulation(n_traces=len(self.event_log), start_timestamp=start_t)
-                logger.info("Simulation completed")
-                metrics = evaluate(df_event_log, simulated_event_log, metrics_labels=['2gd', '3gd', 'ctd', 'car', 'r2gd', 'r3gd', 'ctd_entropy', 'etd_entropy'])
-                self.prosit_metrics = {
-                    'control-flow': {'2gd': metrics['2gd'], '3gd': metrics['3gd']},
-                    'time': {'ctd': metrics['ctd'], 'car': metrics['car']},
-                    'resource-flow': {'r2gd': metrics['r2gd'], 'r3gd': metrics['r3gd']},
-                    'generalization': {'ctd_entropy': metrics['ctd_entropy'], 'etd_entropy': metrics['etd_entropy']}
-                }
+                if compute_metrics:
+                    self.compute_prosit_metrics()
+                else:
+                    self.prosit_metrics = {}
             except Exception as discovery_error:
                 logger.warning(f"ProSiT discovery_from_eventlog failed: {discovery_error}. Falling back to default parameters.")
                 self._create_fallback_parameters()
@@ -238,6 +234,40 @@ class ProSiTIntegration:
         except Exception as e:
             logger.error(f"Error discovering parameters: {str(e)}")
             raise
+
+    def compute_prosit_metrics(self):
+        """Run a simulation matched to the original event log and evaluate metrics.
+
+        Requires ``self.event_log`` and ``self.prosit_params`` to be set.
+        Stores and returns ``self.prosit_metrics`` grouped by category.
+        """
+        if self.event_log is None:
+            raise ValueError("event_log is not loaded; cannot evaluate metrics")
+        if not self.prosit_params:
+            raise ValueError("prosit_params not loaded; cannot evaluate metrics")
+
+        df_event_log = pm4py.convert_to_dataframe(self.event_log)
+        df_event_log['case:concept:name'] = df_event_log['case:concept:name'].astype(str)
+        df_event_log['time:timestamp'] = pd.to_datetime(df_event_log['time:timestamp'])
+        df_event_log['start:timestamp'] = pd.to_datetime(df_event_log['start:timestamp'])
+        df_event_log.sort_values(by=['start:timestamp', 'time:timestamp'], inplace=True)
+        df_event_log.reset_index(drop=True, inplace=True)
+        start_t = df_event_log.iloc[0]['start:timestamp']
+
+        simulated_event_log = self.run_simulation(n_traces=len(self.event_log), start_timestamp=start_t)
+        logger.info("Simulation for metrics completed")
+        metrics = evaluate(
+            df_event_log,
+            simulated_event_log,
+            metrics_labels=['2gd', '3gd', 'ctd', 'car', 'r2gd', 'r3gd', 'ctd_entropy', 'etd_entropy'],
+        )
+        self.prosit_metrics = {
+            'control-flow': {'2gd': metrics['2gd'], '3gd': metrics['3gd']},
+            'time': {'ctd': metrics['ctd'], 'car': metrics['car']},
+            'resource-flow': {'r2gd': metrics['r2gd'], 'r3gd': metrics['r3gd']},
+            'generalization': {'ctd_entropy': metrics['ctd_entropy'], 'etd_entropy': metrics['etd_entropy']},
+        }
+        return self.prosit_metrics
 
     def run_simulation(self, n_traces=100, start_timestamp=None):
         """Run simulation using ProSiT SimulatorEngine.
@@ -490,20 +520,52 @@ class ProSiTIntegration:
                 "label_data_attributes": data_attribute_params.get("label_data_attributes", []),
                 "label_data_attributes_categorical": data_attribute_params.get("label_data_attributes_categorical", []),
                 "attribute_values_label_categorical": data_attribute_params.get("attribute_values_label_categorical", {}),
-                "distribution_data_attributes": {}
+                "distribution_data_attributes": {},
+                # Defaults to 'distribution'; flipped below if prosit-pm wrote
+                # empirical samples instead.
+                "distribution_mode": 'distribution',
             }
 
             raw_dist_attrs = data_attribute_params.get("distribution_data_attributes") or {}
+            mode = None
             if 'mode' in raw_dist_attrs and 'data' in raw_dist_attrs:
+                mode = raw_dist_attrs.get('mode')
                 prosit_dist_attrs = raw_dist_attrs.get('data') or {}
             else:
                 prosit_dist_attrs = raw_dist_attrs
+
+            if mode == 'empirical':
+                # Empirical mode keys are stringified tuples of joint values, not
+                # per-attribute dicts. We can't surface them as editable rows, so
+                # we just expose the attribute names with a read-only marker. The
+                # underlying empirical samples are preserved on save.
+                app_data_attributes['distribution_mode'] = 'empirical'
+                for attr_name in app_data_attributes['label_data_attributes']:
+                    app_data_attributes['distribution_data_attributes'][attr_name] = {
+                        'type': 'empirical',
+                        'readonly': True,
+                    }
+                # Skip the per-attribute conversion loop below.
+                prosit_dist_attrs = {}
 
             categorical_attrs = data_attribute_params.get("label_data_attributes_categorical", [])
 
             for attr, params_dict in prosit_dist_attrs.items():
                 if attr in categorical_attrs:
-                    app_data_attributes["distribution_data_attributes"][attr] = params_dict
+                    # Normalize categorical entries to a stable shape so the UI
+                    # can rely on params.values. prosit-pm sometimes writes
+                    # ``{"type": 0, "values": {...}}`` (truthy garbage), and
+                    # legacy logs may store the bare ``{cat: prob}`` dict.
+                    if isinstance(params_dict, dict) and 'values' in params_dict:
+                        values = params_dict.get('values') or {}
+                    elif isinstance(params_dict, dict):
+                        values = params_dict
+                    else:
+                        values = {}
+                    app_data_attributes["distribution_data_attributes"][attr] = {
+                        'type': 'categorical',
+                        'values': values,
+                    }
                     continue
                 if not isinstance(params_dict, dict):
                     continue
@@ -524,6 +586,7 @@ class ProSiTIntegration:
                     'places': self.process_model['places'],
                     'transitions': self.process_model['transitions'],
                     'map_transitionName_to_id': self.process_model['map_transitionName_to_id'],
+                    'transition_label_map': self.process_model.get('transition_label_map', {}),
                     'visualization': self.process_model['visualization'],
                     'fitness': self.process_model['fitness'],
                     'precision': self.process_model['precision'],

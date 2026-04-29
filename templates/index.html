@@ -76,26 +76,43 @@
                     </div>
 
                     <div class="mb-4">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div class="me-3 flex-grow-1">
-                                <label for="maxDepthTree" class="form-label fw-bold">Decision Tree Max Depth</label>
-                                <select class="form-select" id="maxDepthTree" name="max_depth_tree">
-                                    <option value="0" selected>0 (disabled)</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                    <option value="5">5</option>
-                                </select>
-                            </div>
-                            <div class="ms-3">
-                                <label class="form-label fw-bold mb-1">Incremental Discovery</label>
+                        <label for="maxDepthTree" class="form-label fw-bold">
+                            Decision Tree Max Depth
+                            <i data-feather="info" class="ms-1"
+                               data-bs-toggle="tooltip"
+                               data-bs-placement="top"
+                               title="Max depth of the decision trees used for transitions, resources and times. 0 disables rule discovery (simple frequency/distribution estimates). 1-2 are conservative, robust on small logs. 3-5 are finer-grained but risk overfitting on noisy logs."
+                               style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
+                        </label>
+                        <select class="form-select" id="maxDepthTree" name="max_depth_tree">
+                            <option value="0" selected>0 (disabled)</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </select>
+                        <div class="form-text">Choose 0 to disable rule discovery, or up to 5 for decision trees.</div>
+                    </div>
+
+                    <details class="mb-4">
+                        <summary class="form-label fw-bold" style="cursor: pointer;">Advanced</summary>
+                        <div class="row g-3 mt-1">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold mb-1">
+                                    Incremental Discovery
+                                    <i data-feather="info" class="ms-1"
+                                       data-bs-toggle="tooltip"
+                                       data-bs-placement="top"
+                                       title="When on, decision trees are fitted incrementally event-by-event (Hoeffding-style), letting the model adapt as the log evolves. When off, trees are fitted in batch on the full log. Off is faster on small/static logs; on is preferable when concept drift is suspected."
+                                       style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
+                                </label>
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" id="incrementalDiscoveryToggle">
                                 </div>
-                                <div class="form-text">Disabled when depth is 0</div>
+                                <div class="form-text">Disabled when depth is 0.</div>
                             </div>
-                            <div class="ms-3" id="gracePeriodSection" style="display: none;">
+                            <div class="col-md-6" id="gracePeriodSection" style="display: none;">
                                 <label class="form-label fw-bold mb-1">
                                     Grace Period
                                     <i data-feather="info" class="ms-1"
@@ -104,16 +121,11 @@
                                        title="The grace period is the number of events a leaf should observe between split attempts. Lower grace periods facilitate rapid adaption to sudden concept drifts, while higher grace periods reduce the risk of overfitting and promote more stable decisions."
                                        style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
                                 </label>
-                                <input type="number" class="form-control" id="gracePeriod" name="grace_period" min="1" value="1000" style="width: 120px;">
-                                <div class="form-text">Minimum: 1, Default: 1000</div>
+                                <input type="number" class="form-control" id="gracePeriod" name="grace_period" min="1" value="1000">
+                                <div class="form-text">Minimum: 1, Default: 1000.</div>
                             </div>
-                        </div>
-                        <div class="form-text">Choose 0 to disable rule discovery, or up to 5 for decision trees.</div>
-                    </div>
 
-                    <div class="mb-4">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div class="me-3 flex-grow-1">
+                            <div class="col-md-6">
                                 <label class="form-label fw-bold mb-1">
                                     Discover Multitasking
                                     <i data-feather="info" class="ms-1"
@@ -126,21 +138,16 @@
                                     <input class="form-check-input" type="checkbox" id="enableMultitaskingToggle">
                                 </div>
                             </div>
-                            <div class="ms-3" id="multitaskingThrSection" style="display: none;">
+                            <div class="col-md-6" id="multitaskingThrSection" style="display: none;">
                                 <label for="multitaskingThr" class="form-label fw-bold mb-1">
                                     Multitasking Threshold: <span id="multitaskingThrValue">0.05</span>
                                 </label>
                                 <input type="range" class="form-range" id="multitaskingThr" name="multitasking_thr"
-                                       min="0" max="1" step="0.01" value="0.05" style="width: 180px;">
+                                       min="0" max="1" step="0.01" value="0.05">
                                 <div class="form-text">Min overlap fraction to flag a resource as multitasking.</div>
                             </div>
-                        </div>
-                    </div>
 
-                    <details class="mb-4">
-                        <summary class="form-label fw-bold" style="cursor: pointer;">Advanced</summary>
-                        <div class="d-flex align-items-center justify-content-between mt-3">
-                            <div class="me-3">
+                            <div class="col-md-6">
                                 <label for="randomState" class="form-label fw-bold mb-1">
                                     Random State
                                     <i data-feather="info" class="ms-1"
@@ -149,20 +156,49 @@
                                        title="Seed used for reproducible discovery. Same seed + same input produce identical parameters."
                                        style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
                                 </label>
-                                <input type="number" class="form-control" id="randomState" name="random_state" value="72" style="width: 120px;">
+                                <input type="number" class="form-control" id="randomState" name="random_state" value="72">
                             </div>
-                            <div class="ms-3">
-                                <label class="form-label fw-bold mb-1">Workload Features</label>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold mb-1">
+                                    Workload Features
+                                    <i data-feather="info" class="ms-1"
+                                       data-bs-toggle="tooltip"
+                                       data-bs-placement="top"
+                                       title="Adds workload-aware features (queue length per activity, currently busy resources, in-flight cases) to the feature set used by decision trees. Useful when timing/routing depends on system load; adds some discovery cost."
+                                       style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
+                                </label>
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" id="useWorkloadFeaturesToggle">
                                 </div>
                                 <div class="form-text">Add workload signals to the feature set.</div>
                             </div>
-                            <div class="ms-3 flex-grow-1">
-                                <label for="attributeMode" class="form-label fw-bold mb-1">Attribute Mode</label>
+                            <div class="col-md-6">
+                                <label for="attributeMode" class="form-label fw-bold mb-1">
+                                    Attribute Mode
+                                    <i data-feather="info" class="ms-1"
+                                       data-bs-toggle="tooltip"
+                                       data-bs-placement="top"
+                                       title="distribution: trace attributes are sampled from a fitted parametric distribution (or per-category probability for categorical attributes). Editable in the Trace Attributes tab. empirical: trace attributes are resampled directly from the original log values. Closer to reality but not editable."
+                                       style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
+                                </label>
                                 <select class="form-select" id="attributeMode" name="attribute_mode">
                                     <option value="distribution" selected>distribution</option>
+                                    <option value="empirical">empirical</option>
                                 </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold mb-1">
+                                    Compute Evaluation
+                                    <i data-feather="info" class="ms-1"
+                                       data-bs-toggle="tooltip"
+                                       data-bs-placement="top"
+                                       title="If enabled, after discovery the simulator runs once against the original log and computes accuracy metrics (control flow, timing, resource flow, generalization). On large logs this can take several minutes."
+                                       style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
+                                </label>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="computeEvaluationToggle">
+                                </div>
+                                <div class="form-text">Off by default — can take a few minutes.</div>
                             </div>
                         </div>
                     </details>
@@ -340,7 +376,6 @@
                                 <div id="resourceParams"></div>
                             </div>
                             <div class="col-md-12">
-                                <h6>Activity Assignments</h6>
                                 <div id="activityResourceParams"></div>
                             </div>
                             <div class="col-md-12">
@@ -440,6 +475,10 @@
                                 <i data-feather="download" class="me-1"></i>
                                 Download CSV File
                             </button>
+                            <button class="btn btn-outline-success btn-sm" id="downloadSimulationXesBtn">
+                                <i data-feather="download" class="me-1"></i>
+                                Download XES File
+                            </button>
                             <button class="btn btn-outline-purple btn-sm" onclick="runSimulation()">
                                 <i data-feather="refresh-cw" class="me-1"></i>
                                 Run Again
@@ -461,6 +500,15 @@
                     <i data-feather="pie-chart" class="me-2"></i>
                     Simulation Results
                 </h5>
+                <div class="d-flex align-items-center gap-2">
+                    <label for="resultsTimeUnit" class="small mb-0 text-white">Time unit</label>
+                    <select id="resultsTimeUnit" class="form-select form-select-sm" style="width: auto;">
+                        <option value="sec">Seconds</option>
+                        <option value="min" selected>Minutes</option>
+                        <option value="hour">Hours</option>
+                        <option value="day">Days</option>
+                    </select>
+                </div>
             </div>
             <div class="card-body">
                 <ul class="nav nav-tabs nav-fill mb-3" id="simulationResultsTabs" role="tablist">
@@ -492,6 +540,18 @@
                 </ul>
                 <div class="tab-content" id="simulationResultsTabsContent">
                     <div class="tab-pane fade show active" id="process-map-pane" role="tabpanel">
+                        <div class="row mb-3 align-items-end" id="processMapControls" style="display: none;">
+                            <div class="col-md-4">
+                                <label for="processMapAggregation" class="form-label small mb-1">Edge metric</label>
+                                <select class="form-select form-select-sm" id="processMapAggregation">
+                                    <option value="median" selected>Median time</option>
+                                    <option value="mean">Mean time</option>
+                                    <option value="min">Minimum time</option>
+                                    <option value="max">Maximum time</option>
+                                    <option value="sum">Total time</option>
+                                </select>
+                            </div>
+                        </div>
                         <div id="processMapContainer" class="border rounded p-3" style="min-height: 300px; background-color: #f8f9fa;">
                             <div class="d-flex justify-content-center align-items-center h-100">
                                 <span class="text-muted">Process map will be displayed here after simulation</span>
@@ -565,6 +625,44 @@ let currentSessionId = null;
 let currentParameters = null;
 let originalVisualization = null;
 let simulatedLogData = null;
+
+// Wrap feather.replace so one bad icon (or a node detached mid-iteration) does
+// not break the entire page. Falls back to per-icon replacement and logs the
+// offender to the console.
+(function patchFeatherReplace() {
+    if (!window.feather || window.feather._safeWrapped) return;
+    const orig = window.feather.replace.bind(window.feather);
+    window.feather._safeWrapped = true;
+    window.feather.replace = function (attributes) {
+        try {
+            return orig(attributes);
+        } catch (e) {
+            console.warn('feather.replace bulk failed, falling back per-icon:', e);
+            const els = Array.from(document.querySelectorAll('[data-feather]'));
+            els.forEach((el) => {
+                try {
+                    const name = el.getAttribute('data-feather');
+                    const icon = window.feather.icons[name];
+                    if (!icon || !el.parentNode) return;
+                    const className = el.getAttribute('class') || '';
+                    const attrs = Object.assign({}, attributes || {}, { class: className });
+                    const svgString = icon.toSvg(attrs);
+                    const tmp = document.createElement('div');
+                    tmp.innerHTML = svgString;
+                    const newEl = tmp.firstElementChild;
+                    if (!newEl) return;
+                    Array.from(el.attributes).forEach((a) => {
+                        if (a.name === 'class' || a.name === 'data-feather') return;
+                        newEl.setAttribute(a.name, a.value);
+                    });
+                    el.parentNode.replaceChild(newEl, el);
+                } catch (err) {
+                    console.warn('feather.replace per-icon failed:', el, err);
+                }
+            });
+        }
+    };
+})();
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
@@ -714,8 +812,13 @@ async function handleUpload(e) {
         showAlert('File uploaded successfully', 'success');
         
         // Discover parameters
-        updateLoadingMessage('Discovering parameters...', 'Analyzing process structure and extracting simulation parameters');
-        
+        updateLoadingMessage('Discovering parameters...', 'Preparing discovery...');
+
+        // Poll the discovery progress endpoint every 1.5s and reflect the current
+        // phase under the spinner. Stops on completion (in handler below) or
+        // when the request returns.
+        const progressTimer = startDiscoveryProgressPolling(uploadResult.session_id);
+
         const depthVal = (document.getElementById('maxDepthTree') && document.getElementById('maxDepthTree').value) || '0';
         const incVal = (document.getElementById('incrementalDiscoveryToggle') && document.getElementById('incrementalDiscoveryToggle').checked) ? '1' : '0';
         const gracePeriodVal = (document.getElementById('gracePeriod') && document.getElementById('gracePeriod').value) || '1000';
@@ -735,26 +838,54 @@ async function handleUpload(e) {
             use_workload_features: useWorkloadVal,
             attribute_mode: attrModeVal,
         });
-        const discoverResponse = await fetch(`/api/discover/${uploadResult.session_id}?${discoverParams.toString()}`, {
-            method: 'POST'
-        });
-        
-        const discoverResult = await discoverResponse.json();
-        
+        let discoverResult;
+        try {
+            const discoverResponse = await fetch(`/api/discover/${uploadResult.session_id}?${discoverParams.toString()}`, {
+                method: 'POST'
+            });
+            discoverResult = await discoverResponse.json();
+        } finally {
+            stopDiscoveryProgressPolling(progressTimer);
+        }
+
         if (!discoverResult.success) {
             throw new Error(discoverResult.error);
         }
-        
+
         hideLoading();
         showAlert('Parameters discovered successfully', 'success');
-        
-        // Load the session
-        loadSessionData(uploadResult.session_id, discoverResult.parameters);
-        
+
+        // Load the session — pass through whether the user opted into metrics
+        // computation so renderAccuracyResults can keep the card hidden when off.
+        const computeEvalToggle = document.getElementById('computeEvaluationToggle');
+        const computeEval = !!(computeEvalToggle && computeEvalToggle.checked);
+        loadSessionData(uploadResult.session_id, discoverResult.parameters, computeEval);
+
     } catch (error) {
         hideLoading();
         showAlert(`Error: ${error.message}`, 'danger');
     }
+}
+
+function startDiscoveryProgressPolling(sessionId) {
+    const tick = async () => {
+        try {
+            const resp = await fetch(`/api/discover/${sessionId}/progress`);
+            if (!resp.ok) return;
+            const body = await resp.json();
+            if (body && body.in_progress && body.message) {
+                updateLoadingMessage('Discovering parameters...', body.message);
+            }
+        } catch (e) {
+            // Ignore — polling is best-effort and the request is still in flight.
+        }
+    };
+    tick();
+    return setInterval(tick, 1500);
+}
+
+function stopDiscoveryProgressPolling(handle) {
+    if (handle) clearInterval(handle);
 }
 
 async function loadSession(sessionId) {
@@ -774,21 +905,25 @@ async function loadSession(sessionId) {
     }
 }
 
-function loadSessionData(sessionId, parameters) {
+function loadSessionData(sessionId, parameters, computeEval) {
     currentSessionId = sessionId;
     currentParameters = parameters;
     originalVisualization = parameters.process_model.visualization
-    
+
+    // Track whether the user opted into metrics so we can decide between hiding
+    // the card vs auto-firing the async computation when metrics are missing.
+    currentParameters._compute_evaluation_requested = !!computeEval;
+
     // Hide welcome message
     document.getElementById('welcomeMessage').style.display = 'none';
-    
+
     // Show parameter and simulation cards
     document.getElementById('parametersCard').style.display = 'block';
     document.getElementById('simulationCard').style.display = 'block';
-    
+
     // Render parameters
     renderParameters(parameters);
-    
+
     // Re-initialize feather icons
     feather.replace();
 }
@@ -815,23 +950,32 @@ function renderParameters(parameters) {
     // Render data attribute parameters
     renderDataAttributeParameters(parameters.data_attribute_params || {});
 
-    // Render accuracy results
-    renderAccuracyResults(parameters.prosit_metrics || {});
+    // Render accuracy results. When the user opted out of metrics (toggle off),
+    // we keep the card hidden instead of auto-firing computation.
+    const wantsMetrics = !!(parameters && parameters._compute_evaluation_requested);
+    renderAccuracyResults(parameters.prosit_metrics || {}, currentSessionId, wantsMetrics);
 }
 
 function renderTransitionParameters(transitionParams) {
     const container = document.getElementById('transitionParams');
     const weights = transitionParams.transition_weights || {};
     const transitions = Object.keys(weights);
+    const labelMap = (currentParameters && currentParameters.process_model && currentParameters.process_model.transition_label_map) || {};
 
     let html = '<div class="mb-3">';
     html += '<h6 class="mb-3">Transition Weights <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-info ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Represents the probability of firing a transition when it is enabled." style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></h6>';
     html += '<label class="form-label">Select Transition:</label>';
     html += '<select class="form-select mb-3" id="transitionSelect" onchange="showTransitionWeights(this.value)">';
     html += '<option value="">Choose a transition...</option>';
-    
+
+    const haveLabelMap = Object.keys(labelMap).length > 0;
     transitions.forEach(transition => {
-        html += `<option value="${transition}">${transition}</option>`;
+        const mapped = labelMap[transition];
+        const display = mapped || transition;
+        // Mark silent transitions only when we have a label map and it tells us
+        // the label equals the name (i.e. no label was set on that transition).
+        const suffix = (haveLabelMap && mapped === transition) ? ' (silent)' : '';
+        html += `<option value="${transition}">${display}${suffix}</option>`;
     });
     
     html += '</select>';
@@ -868,10 +1012,12 @@ function showTransitionWeights(transitionName) {
     highlightTransitionVisualization(transitionName);
 
     const weight = currentParameters.transition_params.transition_weights[transitionName];
-    
+    const labelMap = (currentParameters && currentParameters.process_model && currentParameters.process_model.transition_label_map) || {};
+    const displayName = labelMap[transitionName] || transitionName;
+
     // If weight is a number, show slider; if it's an object (decision tree), render tree
     if (typeof weight === 'number') {
-        let html = `<h6 class="mb-3">${transitionName} Weight</h6>`;
+        let html = `<h6 class="mb-3">${displayName} Weight</h6>`;
         html += `
         <div class="mb-3">
             <label class="form-label">Weight Value: <span id="transitionWeightValue">${weight}</span></label>
@@ -886,7 +1032,7 @@ function showTransitionWeights(transitionName) {
     } else {
         // Render a decision tree editor
         const container = document.getElementById('transitionWeightDisplay');
-        container.innerHTML = `<h6 class="mb-3">${transitionName} Decision Tree</h6><div id="dtree-${transitionName.replace(/[^a-zA-Z0-9_-]/g,'_')}\" class="small"></div>`;
+        container.innerHTML = `<h6 class="mb-3">${displayName} Decision Tree</h6><div id="dtree-${transitionName.replace(/[^a-zA-Z0-9_-]/g,'_')}\" class="small"></div>`;
         renderDecisionTreeEditor(weight, container.querySelector('div'));
     }
 }
@@ -902,26 +1048,33 @@ function renderDecisionTreeEditor(treeData, mountEl, treeType = 'transition') {
         if (node && typeof node === 'object' && Object.prototype.hasOwnProperty.call(node, 'value')) {
             const leaf = document.createElement('div');
             const val = (typeof node.value === 'number') ? node.value : parseFloat(node.value) || 0;
-            const inputId = `leaf-${id}-${Math.random().toString(36).slice(2)}`;
+            const suffix = Math.random().toString(36).slice(2);
+            const numberId = `leaf-num-${id}-${suffix}`;
+            const rangeId = `leaf-rng-${id}-${suffix}`;
             leaf.innerHTML = `
-                <div class="d-flex align-items-center gap-2">
-                    <span class="badge bg-secondary">Leaf</span> 
-                    <span>value:</span>
-                    <input type="number" id="${inputId}" class="form-control" style="width: 120px;" step="0.001" min="0" max="1" value="${val}">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="badge bg-secondary">Leaf</span>
+                    <span class="small">value:</span>
+                    <input type="range" id="${rangeId}" class="form-range" style="width: 160px;" min="0" max="1" step="0.001" value="${val}">
+                    <input type="number" id="${numberId}" class="form-control form-control-sm" style="width: 90px;" step="0.001" min="0" max="1" value="${val}">
                     <button class="btn btn-sm btn-outline-primary" onclick="addSplitToNode('${id}', '${treeType}')" title="Add split">
                         <i data-feather="plus" class="me-1"></i>Add Split
                     </button>
                 </div>`;
             setTimeout(() => {
-                const input = document.getElementById(inputId);
-                if (input) {
-                    input.addEventListener('change', () => {
-                        const newVal = parseFloat(input.value);
-                        if (!isNaN(newVal) && newVal >= 0 && newVal <= 1) {
-                            treeData[id].value = newVal;
-                        }
-                    });
-                }
+                const numberInput = document.getElementById(numberId);
+                const rangeInput = document.getElementById(rangeId);
+                const persist = (raw) => {
+                    let v = parseFloat(raw);
+                    if (!Number.isFinite(v)) v = 0;
+                    if (v < 0) v = 0;
+                    if (v > 1) v = 1;
+                    treeData[id].value = v;
+                    if (numberInput && numberInput.value !== String(v)) numberInput.value = v;
+                    if (rangeInput && rangeInput.value !== String(v)) rangeInput.value = v;
+                };
+                if (numberInput) numberInput.addEventListener('change', () => persist(numberInput.value));
+                if (rangeInput) rangeInput.addEventListener('input', () => persist(rangeInput.value));
                 feather.replace();
             }, 0);
             wrapper.appendChild(leaf);
@@ -933,16 +1086,16 @@ function renderDecisionTreeEditor(treeData, mountEl, treeType = 'transition') {
             
             // Check if feature is categorical (contains " = ")
             const isCategorical = node.feature.includes(' = ');
-            const splitDisplay = isCategorical ? 
-                `${escapeHtml(node.feature)}` : 
+            const splitDisplay = isCategorical ?
+                `${escapeHtml(node.feature)}` :
                 `${escapeHtml(node.feature)} ≤ ${escapeHtml(node.threshold)}`;
-            
+
             title.innerHTML = `
                 <div class="d-flex align-items-center gap-2">
                     <button class="btn btn-sm btn-outline-secondary tree-toggle" data-node-id="${id}" title="Collapse/Expand">
                         <i data-feather="chevron-down" class="tree-icon"></i>
                     </button>
-                    <span class="badge bg-primary">Split</span> 
+                    <span class="badge bg-primary">Split</span>
                     <span>${splitDisplay}</span>
                     <button class="btn btn-sm btn-outline-danger" onclick="removeSplitFromNode('${id}', '${treeType}')" title="Remove split">
                         <i data-feather="trash-2" class="me-1"></i>Remove
@@ -950,7 +1103,7 @@ function renderDecisionTreeEditor(treeData, mountEl, treeType = 'transition') {
                 </div>`;
             wrapper.appendChild(title);
             wrapper.appendChild(childrenContainer);
-            
+
             if (node.children) {
                 const trueId = node.children.true;
                 const falseId = node.children.false;
@@ -981,19 +1134,28 @@ function renderDecisionTreeEditor(treeData, mountEl, treeType = 'transition') {
     }
 
     while (mountEl.firstChild) mountEl.removeChild(mountEl.firstChild);
-    
-    // Add tree control buttons
-    const controlsDiv = document.createElement('div');
-    controlsDiv.className = 'mb-3 d-flex gap-2';
-    controlsDiv.innerHTML = `
-        <button class="btn btn-sm btn-outline-secondary" onclick="collapseAllTreeNodes()" title="Collapse All">
-            <i data-feather="chevrons-up" class="me-1"></i>Collapse All
-        </button>
-        <button class="btn btn-sm btn-outline-secondary" onclick="expandAllTreeNodes()" title="Expand All">
-            <i data-feather="chevrons-down" class="me-1"></i>Expand All
-        </button>
+
+    // Tree legend + controls
+    const leafExplanation = treeType === 'resource'
+        ? 'resource selection weight (higher = picked more often)'
+        : 'transition probability (sums to 1 across siblings)';
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'mb-3';
+    headerDiv.innerHTML = `
+        <div class="alert alert-light py-2 mb-2 small border">
+            <span class="badge bg-primary me-1">Split</span> condition learnt from the log &mdash; cases follow the <em>true</em> or <em>false</em> branch.
+            <span class="badge bg-secondary ms-2 me-1">Leaf</span> ${leafExplanation}.
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-secondary" onclick="collapseAllTreeNodes()" title="Collapse All">
+                <i data-feather="chevrons-up" class="me-1"></i>Collapse All
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="expandAllTreeNodes()" title="Expand All">
+                <i data-feather="chevrons-down" class="me-1"></i>Expand All
+            </button>
+        </div>
     `;
-    mountEl.appendChild(controlsDiv);
+    mountEl.appendChild(headerDiv);
     
     const treeRoot = createNode('0');
     mountEl.appendChild(treeRoot);
@@ -1015,6 +1177,11 @@ function renderDecisionTreeEditor(treeData, mountEl, treeType = 'transition') {
 
 // Renders a decision tree whose leaf nodes contain a distribution with parameters
 function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType = 'distribution') {
+    const TIME_TREE_TYPES = ['execution', 'waiting', 'arrival'];
+    const unitSuffix = TIME_TREE_TYPES.includes(treeType) ? 'min' : null;
+    const unitLabel = unitSuffix ? 'minutes' : null;
+    const DIMENSIONLESS_KEYS = new Set(['shape']);
+
     function createLeafControls(node, id) {
         const wrapper = document.createElement('div');
         wrapper.style.marginLeft = '12px';
@@ -1024,8 +1191,8 @@ function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType = 'dis
         const leafHeader = document.createElement('div');
         leafHeader.innerHTML = `
             <div class="d-flex align-items-center gap-2">
-                <span class="badge bg-secondary">Leaf</span> 
-                <span>distribution</span>
+                <span class="badge bg-secondary">Leaf</span>
+                <span>distribution${unitLabel ? ` <small class="text-muted">(${unitLabel})</small>` : ''}</span>
                 <button class="btn btn-sm btn-outline-primary" onclick="addSplitToNode('${id}', '${treeType}')" title="Add split">
                     <i data-feather="plus" class="me-1"></i>Add Split
                 </button>
@@ -1037,8 +1204,31 @@ function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType = 'dis
             node.dist = { dist_name: 'expon', params: { mean: 15 }, min_value: 0, max_value: 100 };
         }
 
+        // Two-column layout: distribution controls + small PDF preview canvas.
+        const row = document.createElement('div');
+        row.className = 'row mt-2';
+        const colControls = document.createElement('div');
+        colControls.className = 'col-md-7';
+        const colChart = document.createElement('div');
+        colChart.className = 'col-md-5 d-flex align-items-center justify-content-center';
+        const chartWrap = document.createElement('div');
+        chartWrap.style.width = '160px';
+        chartWrap.style.height = '160px';
+        const chartCanvas = document.createElement('canvas');
+        chartCanvas.className = 'leaf-distribution-chart';
+        chartCanvas.width = 160;
+        chartCanvas.height = 160;
+        chartWrap.appendChild(chartCanvas);
+        colChart.appendChild(chartWrap);
+        row.appendChild(colControls);
+        row.appendChild(colChart);
+
+        function updateLeafChart() {
+            renderLeafDistributionChart(chartCanvas, node.dist.dist_name, node.dist.params || {});
+        }
+
         const distContainer = document.createElement('div');
-        distContainer.className = 'mt-2';
+        distContainer.className = '';
 
         // Build distribution selector
         const select = document.createElement('select');
@@ -1047,7 +1237,9 @@ function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType = 'dis
             { v: 'fixed', t: 'Fixed' },
             { v: 'norm', t: 'Normal' },
             { v: 'expon', t: 'Exponential' },
-            { v: 'uniform', t: 'Uniform' }
+            { v: 'uniform', t: 'Uniform' },
+            { v: 'lognorm', t: 'Log-normal' },
+            { v: 'gamma', t: 'Gamma' }
         ];
         options.forEach(o => {
             const opt = document.createElement('option');
@@ -1076,6 +1268,19 @@ function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType = 'dis
                 else if (dist === 'norm') { obj.mean = arr[0] ?? node.value ?? 15; obj.std = arr[1] ?? 5; }
                 else if (dist === 'uniform') { obj.min = arr[0] ?? (node.dist.min_value ?? 0); obj.max = arr[1] ?? (node.dist.max_value ?? 100); }
                 else if (dist === 'fixed') { obj.value = arr[0] ?? node.value ?? 1; }
+                else if (dist === 'lognorm') {
+                    // scipy.stats.lognorm: (shape s, loc, scale).
+                    obj.shape = arr[0] ?? 0.5;
+                    obj.loc = arr[1] ?? 0;
+                    obj.scale = arr[2] ?? node.value ?? 1;
+                }
+                else if (dist === 'gamma') {
+                    // scipy.stats.gamma: (a, loc, scale). Surface as Mean/Std.
+                    const a = arr[0] ?? 2.0;
+                    const sc = arr[2] ?? 1;
+                    obj.mean = a * sc;
+                    obj.std = Math.sqrt(a) * sc;
+                }
                 return obj;
             }
             if (Array.isArray(rawExisting)) {
@@ -1117,9 +1322,10 @@ function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType = 'dis
                 const lab = document.createElement('label');
                 lab.className = 'form-label small';
                 lab.textContent = label;
+                const showUnit = unitSuffix && !DIMENSIONLESS_KEYS.has(key);
                 const input = document.createElement('input');
                 input.type = 'number';
-                input.className = 'form-control form-control-sm';
+                input.className = showUnit ? 'form-control' : 'form-control form-control-sm';
                 if (opts.min !== undefined) input.min = String(opts.min);
                 if (opts.max !== undefined) input.max = String(opts.max);
                 input.step = String(opts.step || 0.1);
@@ -1137,10 +1343,22 @@ function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType = 'dis
                             node.dist.min_value = val;
                             node.dist.max_value = val;
                         }
+                        updateLeafChart();
                     }
                 });
                 group.appendChild(lab);
-                group.appendChild(input);
+                if (showUnit) {
+                    const inputGroup = document.createElement('div');
+                    inputGroup.className = 'input-group input-group-sm';
+                    inputGroup.appendChild(input);
+                    const suffix = document.createElement('span');
+                    suffix.className = 'input-group-text';
+                    suffix.textContent = unitSuffix;
+                    inputGroup.appendChild(suffix);
+                    group.appendChild(inputGroup);
+                } else {
+                    group.appendChild(input);
+                }
                 paramsContainer.appendChild(group);
             }
 
@@ -1158,6 +1376,21 @@ function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType = 'dis
             } else if (distName === 'uniform') {
                 numberInput('Min Value', 'min', { min: 0, step: 0.1, defaultValue: minDefault });
                 numberInput('Max Value', 'max', { min: 0, step: 0.1, defaultValue: maxDefault });
+            } else if (distName === 'lognorm') {
+                // scipy.stats.lognorm internals are (shape s, loc, scale) but
+                // we surface them as the more intuitive Median / Sigma / Shift.
+                numberInput('Median (scale)', 'scale', { min: 0, step: 0.1, defaultValue: node.value ?? 1 });
+                numberInput('Sigma (shape)', 'shape', { min: 0.0001, step: 0.01, defaultValue: 0.5 });
+                numberInput('Shift (loc)', 'loc', { step: 0.1, defaultValue: 0 });
+                numberInput('Min', 'min', { step: 0.1, defaultValue: minDefault });
+                numberInput('Max', 'max', { step: 0.1, defaultValue: maxDefault });
+            } else if (distName === 'gamma') {
+                // Surfaced as Mean / Std Dev — the backend converts to scipy
+                // gamma's (shape, scale). loc stays 0 (rarely useful).
+                numberInput('Mean', 'mean', { min: 0.0001, step: 0.1, defaultValue: node.value ?? 15 });
+                numberInput('Std Dev', 'std', { min: 0.0001, step: 0.1, defaultValue: 5 });
+                numberInput('Min', 'min', { step: 0.1, defaultValue: minDefault });
+                numberInput('Max', 'max', { step: 0.1, defaultValue: maxDefault });
             }
         }
 
@@ -1178,12 +1411,25 @@ function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType = 'dis
             if (distName === 'norm') { if (next.mean == null) next.mean = node.value ?? 15; if (next.std == null) next.std = 5; }
             if (distName === 'expon') { if (next.mean == null) next.mean = node.value ?? 15; }
             if (distName === 'uniform') { if (next.min == null) next.min = node.dist.min_value ?? 0; if (next.max == null) next.max = node.dist.max_value ?? 100; }
+            if (distName === 'lognorm') {
+                if (next.shape == null) next.shape = 0.5;
+                if (next.loc == null) next.loc = 0;
+                if (next.scale == null) next.scale = node.value ?? 1;
+            }
+            if (distName === 'gamma') {
+                if (next.mean == null) next.mean = node.value ?? 15;
+                if (next.std == null) next.std = 5;
+            }
             node.dist.params = next;
             renderParams();
+            updateLeafChart();
         });
 
         renderParams();
-        wrapper.appendChild(distContainer);
+        colControls.appendChild(distContainer);
+        wrapper.appendChild(row);
+        // Defer the first chart render so the canvas is in the DOM
+        setTimeout(updateLeafChart, 0);
         return wrapper;
     }
 
@@ -1205,16 +1451,16 @@ function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType = 'dis
             
             // Check if feature is categorical (contains " = ")
             const isCategorical = node.feature.includes(' = ');
-            const splitDisplay = isCategorical ? 
-                `${escapeHtml(node.feature)}` : 
+            const splitDisplay = isCategorical ?
+                `${escapeHtml(node.feature)}` :
                 `${escapeHtml(node.feature)} ≤ ${escapeHtml(node.threshold)}`;
-            
+
             title.innerHTML = `
                 <div class="d-flex align-items-center gap-2">
                     <button class="btn btn-sm btn-outline-secondary tree-toggle" data-node-id="${id}" title="Collapse/Expand">
                         <i data-feather="chevron-down" class="tree-icon"></i>
                     </button>
-                    <span class="badge bg-primary">Split</span> 
+                    <span class="badge bg-primary">Split</span>
                     <span>${splitDisplay}</span>
                     <button class="btn btn-sm btn-outline-danger" onclick="removeSplitFromNode('${id}', '${treeType}')" title="Remove split">
                         <i data-feather="trash-2" class="me-1"></i>Remove
@@ -1222,7 +1468,7 @@ function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType = 'dis
                 </div>`;
             wrapper.appendChild(title);
             wrapper.appendChild(childrenContainer);
-            
+
             if (node.children) {
                 const trueId = node.children.true ?? node.children.True;
                 const falseId = node.children.false ?? node.children.False;
@@ -1252,20 +1498,42 @@ function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType = 'dis
             .replace(/'/g, '&#039;');
     }
 
+    // Destroy any leaf-distribution Chart.js instances inside this mount before
+    // wiping the DOM, otherwise the Chart objects leak (canvases get detached).
+    if (window.Chart) {
+        mountEl.querySelectorAll('canvas.leaf-distribution-chart').forEach(c => {
+            const inst = Chart.getChart(c);
+            if (inst) inst.destroy();
+        });
+    }
     while (mountEl.firstChild) mountEl.removeChild(mountEl.firstChild);
-    
-    // Add tree control buttons
-    const controlsDiv = document.createElement('div');
-    controlsDiv.className = 'mb-3 d-flex gap-2';
-    controlsDiv.innerHTML = `
-        <button class="btn btn-sm btn-outline-secondary" onclick="collapseAllTreeNodes()" title="Collapse All">
-            <i data-feather="chevrons-up" class="me-1"></i>Collapse All
-        </button>
-        <button class="btn btn-sm btn-outline-secondary" onclick="expandAllTreeNodes()" title="Expand All">
-            <i data-feather="chevrons-down" class="me-1"></i>Expand All
-        </button>
+
+    // Tree legend + controls
+    const leafTimeLabel = {
+        execution: 'execution time distribution',
+        waiting: 'waiting time distribution',
+        arrival: 'inter-arrival time distribution',
+    }[treeType] || 'distribution';
+    const leafExplanation = unitLabel
+        ? `${leafTimeLabel} (in ${unitLabel}) for cases reaching this leaf`
+        : `${leafTimeLabel} for cases reaching this leaf`;
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'mb-3';
+    headerDiv.innerHTML = `
+        <div class="alert alert-light py-2 mb-2 small border">
+            <span class="badge bg-primary me-1">Split</span> condition learnt from the log &mdash; cases follow the <em>true</em> or <em>false</em> branch.
+            <span class="badge bg-secondary ms-2 me-1">Leaf</span> ${leafExplanation}.
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-secondary" onclick="collapseAllTreeNodes()" title="Collapse All">
+                <i data-feather="chevrons-up" class="me-1"></i>Collapse All
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="expandAllTreeNodes()" title="Expand All">
+                <i data-feather="chevrons-down" class="me-1"></i>Expand All
+            </button>
+        </div>
     `;
-    mountEl.appendChild(controlsDiv);
+    mountEl.appendChild(headerDiv);
     
     const treeRoot = createNode('0');
     mountEl.appendChild(treeRoot);
@@ -1367,56 +1635,9 @@ function renderResourceParameters(resourceParams) {
 
     container.innerHTML = html;
 
-    // --- Activity Assignments and Multitasking ---
-    let activityHtml = '<div class="row">';
-
-    // Activity Assignments Column
-    activityHtml += '<div class="col-md-6">';
-    activityHtml += '<div class="card">';
-    activityHtml += '<div class="card-header py-2"><h6 class="mb-0">Activity Assignments</h6></div>';
-    activityHtml += '<div class="card-body">';
-    if (activityNames.length === 0) {
-        activityHtml += '<div class="alert alert-info"><small>No activity assignments available. Activities will be assigned to all resources by default during simulation.</small></div>';
-    } else {
-        activityHtml += '<label class="form-label">Select Activity:</label>';
-        activityHtml += '<select class="form-select form-select-sm mb-3" id="activityAssignmentSelect" onchange="renderSelectedActivityAssignment(this.value)">';
-        activityHtml += '<option value="">Choose an activity...</option>';
-        activityNames.forEach(activity => {
-            activityHtml += `<option value="${activity}">${activity}</option>`;
-        });
-        activityHtml += '</select>';
-        activityHtml += '<div id="activityAssignmentDetails" class="border rounded p-3" style="max-height: 200px; overflow-y: auto;>';
-        activityHtml += '<p class="text-muted">Select an activity to view/edit its resource assignments</p>';
-        activityHtml += '</div>';
-    }
-    activityHtml += '</div></div></div>';
-
-    // Max Concurrency Column (per-resource max concurrent cases; 1 = single task)
-    activityHtml += '<div class="col-md-6">';
-    activityHtml += '<div class="card">';
-    activityHtml += '<div class="card-header py-2"><h6 class="mb-0">Max Concurrent Cases <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-info ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Maximum number of cases a resource can handle simultaneously. 1 = single task, ≥2 = multitasking." style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></h6></div>';
-    activityHtml += '<div class="card-body" style="max-height: 240px; overflow-y: auto;">';
-    if (resources.length === 0) {
-        activityHtml += '<p class="text-muted small mb-0">No resources available</p>';
-    } else {
-        resources.forEach(resource => {
-            const value = maxConcurrency[resource] != null ? maxConcurrency[resource] : 1;
-            const escaped = resource.replace(/'/g, "\\'");
-            activityHtml += `
-                <div class="d-flex align-items-center mb-2">
-                    <label class="small me-2 flex-grow-1 text-truncate" title="${resource}">${resource}</label>
-                    <input type="number" class="form-control form-control-sm" min="1" step="1"
-                           style="width: 80px;" value="${value}"
-                           onchange="updateMaxConcurrency('${escaped}', this.value)">
-                </div>
-            `;
-        });
-    }
-    activityHtml += '</div></div></div>';
-
-    activityHtml += '</div>'; // end row
-
-    activityContainer.innerHTML = activityHtml;
+    // --- Activity ↔ Resource matrix (combines assignments + max concurrency) ---
+    activityContainer.innerHTML = renderResourceActivityMatrix(resources, activityNames, actToResources, maxConcurrency);
+    attachMatrixHandlers(activityContainer);
 
     // --- Resource Calendars ---
     calendarContainer.innerHTML = '<div class="card"><div class="card-header py-2"><h6 class="mb-0">Resource Calendars</h6></div><div class="card-body"></div></div>';
@@ -1431,38 +1652,204 @@ function renderResourceParameters(resourceParams) {
     });
 }
 
-// Helper to render resource checkboxes for selected activity
-function renderSelectedActivityAssignment(activity) {
-
-    revertToOriginalVisualization();
-
-    const container = document.getElementById('activityAssignmentDetails');
-    const resources = currentParameters.resource_params.resources || [];
-    const assignments = currentParameters.resource_params.act_to_resources || {};
-    const assigned = assignments[activity] || [];
-
-    highlightTransitionVisualization(activity);
-
-    if (!activity) {
-        container.innerHTML = '<p class="text-muted">Select an activity to view/edit its resource assignments</p>';
-        return;
-    }
-
-    let html = '';
-    resources.forEach(resource => {
-        const isAssigned = assigned.includes(resource);
-        html += `
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" ${isAssigned ? 'checked' : ''}
-                       onchange="updateActivityResource('${activity}', '${resource}', this.checked)">
-                <label class="form-check-label small">${resource}</label>
-            </div>
-        `;
-    });
-
-    container.innerHTML = html;
+function escapeHtmlAttr(s) {
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
+function renderResourceActivityMatrix(resources, activityNames, actToResources, maxConcurrency) {
+    const tooltipSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-info ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Maximum number of cases a resource can handle simultaneously. 1 = single task, ≥2 = multitasking." style="cursor: help; color: var(--light-green);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>';
+
+    function buildMultiSelect(type, allLabel, items) {
+        let html = `<div class="dropdown matrix-multiselect" data-multiselect-type="${type}">
+            <button class="form-select form-select-sm text-start matrix-multiselect-btn" type="button"
+                    data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"
+                    style="width: 220px;">
+                <span class="matrix-multiselect-label">${escapeHtmlAttr(allLabel)}</span>
+            </button>
+            <ul class="dropdown-menu p-2 shadow-sm" style="max-height: 320px; overflow-y: auto; min-width: 240px;">
+                <li><div class="form-check">
+                    <input class="form-check-input matrix-multiselect-all" type="checkbox" checked>
+                    <label class="form-check-label small fw-bold ms-1">(All)</label>
+                </div></li>
+                <li><hr class="dropdown-divider my-1"></li>`;
+        items.forEach(item => {
+            const safe = escapeHtmlAttr(item);
+            html += `<li><div class="form-check">
+                <input class="form-check-input matrix-multiselect-item" type="checkbox" data-value="${safe}" checked>
+                <label class="form-check-label small text-truncate ms-1" title="${safe}">${escapeHtmlAttr(item)}</label>
+            </div></li>`;
+        });
+        html += `</ul></div>`;
+        return html;
+    }
+
+    let html = '<div class="card">';
+    html += '<div class="card-header py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">';
+    html += '<h6 class="mb-0">Activity &harr; Resource Assignments</h6>';
+    html += '<div class="d-flex gap-2 align-items-center flex-wrap">';
+    html += buildMultiSelect('activity', 'All activities', activityNames);
+    html += buildMultiSelect('resource', 'All resources', resources);
+    html += '</div>';
+    html += '</div>';
+
+    if (activityNames.length === 0 || resources.length === 0) {
+        html += '<div class="card-body"><div class="alert alert-info mb-0"><small>No activities or resources to display. Activities will be assigned to all resources by default during simulation.</small></div></div></div>';
+        return html;
+    }
+
+    // Build assigned set for fast lookup
+    const assignedSet = {};
+    activityNames.forEach(act => { assignedSet[act] = new Set(actToResources[act] || []); });
+
+    html += '<div class="card-body p-0 resource-matrix-scroll">';
+    html += '<table class="table table-sm table-bordered mb-0 resource-matrix">';
+
+    // Header row: corner + per-resource header with max-concurrency input
+    html += '<thead><tr>';
+    html += '<th class="sticky-left sticky-corner small text-muted" style="min-width:220px;">Activity \\ Resource</th>';
+    resources.forEach(resource => {
+        const safeAttr = escapeHtmlAttr(resource);
+        const cval = (maxConcurrency[resource] != null ? maxConcurrency[resource] : 1);
+        html += `<th class="text-center" data-resource="${safeAttr}" style="min-width:130px;">
+            <div class="small fw-bold text-truncate" title="${safeAttr}" style="max-width: 150px; margin: 0 auto;">${escapeHtmlAttr(resource)}</div>
+            <div class="d-flex align-items-center justify-content-center mt-1" title="Max concurrent cases">
+                <span class="text-muted small me-1">max</span>
+                <input type="number" class="form-control form-control-sm matrix-max-concurrency"
+                       min="1" step="1" style="width: 60px;" value="${cval}">
+            </div>
+        </th>`;
+    });
+    html += '</tr></thead>';
+
+    // Body
+    html += '<tbody>';
+    activityNames.forEach(activity => {
+        const safeAttr = escapeHtmlAttr(activity);
+        html += `<tr data-activity="${safeAttr}">`;
+        html += `<th class="sticky-left small fw-normal text-truncate" title="${safeAttr}" style="max-width:240px;">${escapeHtmlAttr(activity)}</th>`;
+        resources.forEach(resource => {
+            const isAssigned = assignedSet[activity].has(resource);
+            const safeRes = escapeHtmlAttr(resource);
+            html += `<td class="text-center" data-resource="${safeRes}">
+                <input type="checkbox" class="form-check-input matrix-cell"${isAssigned ? ' checked' : ''}>
+            </td>`;
+        });
+        html += '</tr>';
+    });
+    html += '</tbody></table>';
+    html += '</div></div>';
+
+    html += `<div class="form-text mt-2">${tooltipSvg} Use the matrix to (un)assign resources to activities and adjust per-resource max concurrent cases. Filters apply to rows and columns independently.</div>`;
+    return html;
+}
+
+function attachMatrixHandlers(scope) {
+    // Checkbox toggles → updateActivityResource
+    scope.querySelectorAll('.matrix-cell').forEach(input => {
+        input.addEventListener('change', (e) => {
+            const tr = e.target.closest('tr');
+            const td = e.target.closest('td');
+            if (!tr || !td) return;
+            updateActivityResource(tr.getAttribute('data-activity'), td.getAttribute('data-resource'), e.target.checked);
+        });
+    });
+    // Max-concurrency inputs → updateMaxConcurrency
+    scope.querySelectorAll('.matrix-max-concurrency').forEach(input => {
+        input.addEventListener('change', (e) => {
+            const th = e.target.closest('th');
+            if (!th) return;
+            updateMaxConcurrency(th.getAttribute('data-resource'), e.target.value);
+        });
+    });
+    // Multi-select dropdown filters: each dropdown holds a list of checkboxes
+    // (plus a master "(All)" toggle). Selecting a subset shows only matching
+    // rows / columns; default state has every item checked (== show all).
+    const dropdowns = scope.querySelectorAll('.matrix-multiselect');
+    function applyMatrixFilters() {
+        const selected = { activity: null, resource: null };
+        dropdowns.forEach(dd => {
+            const type = dd.getAttribute('data-multiselect-type');
+            const items = Array.from(dd.querySelectorAll('.matrix-multiselect-item'));
+            const checked = items.filter(c => c.checked).map(c => c.getAttribute('data-value'));
+            // null means "all"
+            selected[type] = (checked.length === items.length) ? null : new Set(checked);
+        });
+
+        scope.querySelectorAll('.resource-matrix tbody tr[data-activity]').forEach(tr => {
+            const a = tr.getAttribute('data-activity');
+            tr.style.display = (!selected.activity || selected.activity.has(a)) ? '' : 'none';
+        });
+        const hidden = new Set();
+        scope.querySelectorAll('.resource-matrix thead th[data-resource]').forEach(th => {
+            const r = th.getAttribute('data-resource');
+            const visible = !selected.resource || selected.resource.has(r);
+            th.style.display = visible ? '' : 'none';
+            if (!visible) hidden.add(r);
+        });
+        scope.querySelectorAll('.resource-matrix tbody td[data-resource]').forEach(td => {
+            td.style.display = hidden.has(td.getAttribute('data-resource')) ? 'none' : '';
+        });
+    }
+
+    function refreshDropdownLabel(dd) {
+        const type = dd.getAttribute('data-multiselect-type');
+        const items = Array.from(dd.querySelectorAll('.matrix-multiselect-item'));
+        const label = dd.querySelector('.matrix-multiselect-label');
+        const all = dd.querySelector('.matrix-multiselect-all');
+        const checked = items.filter(c => c.checked);
+        if (all) {
+            all.checked = checked.length === items.length;
+            all.indeterminate = checked.length > 0 && checked.length < items.length;
+        }
+        if (!label) return;
+        if (checked.length === items.length) {
+            label.textContent = type === 'activity' ? 'All activities' : 'All resources';
+        } else if (checked.length === 0) {
+            label.textContent = '(none)';
+        } else if (checked.length === 1) {
+            label.textContent = checked[0].nextElementSibling.textContent;
+        } else {
+            label.textContent = `${checked.length} selected`;
+        }
+    }
+
+    dropdowns.forEach(dd => {
+        const allCb = dd.querySelector('.matrix-multiselect-all');
+        const items = Array.from(dd.querySelectorAll('.matrix-multiselect-item'));
+        if (allCb) {
+            allCb.addEventListener('change', () => {
+                items.forEach(c => { c.checked = allCb.checked; });
+                refreshDropdownLabel(dd);
+                applyMatrixFilters();
+            });
+        }
+        items.forEach(c => {
+            c.addEventListener('change', () => {
+                refreshDropdownLabel(dd);
+                applyMatrixFilters();
+            });
+        });
+        // Click-anywhere-on-item-row should toggle the checkbox without
+        // closing the dropdown
+        dd.querySelectorAll('.dropdown-menu li').forEach(li => {
+            li.addEventListener('click', (e) => {
+                if (e.target.closest('input, label')) return;
+                const cb = li.querySelector('input[type="checkbox"]');
+                if (cb) { cb.checked = !cb.checked; cb.dispatchEvent(new Event('change')); }
+            });
+        });
+        refreshDropdownLabel(dd);
+    });
+    // Initialize tooltips inside the matrix region
+    scope.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+        try { new bootstrap.Tooltip(el); } catch (_) {}
+    });
+}
 
 function showResourceWeight(resourceName) {
 
@@ -1565,6 +1952,8 @@ function showActivityExecution(activityName) {
                         <option value="norm" ${distribution === 'norm' ? 'selected' : ''}>Normal</option>
                         <option value="expon" ${distribution === 'expon' ? 'selected' : ''}>Exponential</option>
                         <option value="uniform" ${distribution === 'uniform' ? 'selected' : ''}>Uniform</option>
+                        <option value="lognorm" ${distribution === 'lognorm' ? 'selected' : ''}>Log-normal</option>
+                        <option value="gamma" ${distribution === 'gamma' ? 'selected' : ''}>Gamma</option>
                     </select>
                 </div>
                 <div class="col-md-6">
@@ -1656,6 +2045,8 @@ function showResourceWaiting(resourceName) {
                         <option value="norm" ${distribution === 'norm' ? 'selected' : ''}>Normal</option>
                         <option value="expon" ${distribution === 'expon' ? 'selected' : ''}>Exponential</option>
                         <option value="uniform" ${distribution === 'uniform' ? 'selected' : ''}>Uniform</option>
+                        <option value="lognorm" ${distribution === 'lognorm' ? 'selected' : ''}>Log-normal</option>
+                        <option value="gamma" ${distribution === 'gamma' ? 'selected' : ''}>Gamma</option>
                     </select>
                 </div>
                 <div class="col-md-6">
@@ -1676,28 +2067,57 @@ function renderDataAttributeParameters(dataParams) {
 
     const categoricalAttrs = dataParams.label_data_attributes_categorical || [];
     const distributions = dataParams.distribution_data_attributes || {};
+    const isEmpirical = dataParams.distribution_mode === 'empirical';
     let html = '<h6 class="mb-3">Case Attribute Distributions</h6>';
+
+    if (isEmpirical) {
+        html += `
+            <div class="alert alert-info py-2 small">
+                <strong>Empirical mode:</strong> attributes are sampled jointly from observed value combinations.
+                Editing per attribute isn't available; the original samples are preserved on save.
+            </div>`;
+    }
+
+    destroyAttributeCharts();
 
     for (const [attribute, params] of Object.entries(distributions)) {
         const isCategorical = categoricalAttrs.includes(attribute);
+        const empiricalEntry = !!(params && typeof params === 'object' && params.type === 'empirical');
+        const safeAttr = escapeHtmlAttr(attribute);
+        const canvasId = attributeChartCanvasId(attribute);
         html += `
-            <div class="card mb-3" data-attribute="${attribute}">
-                <div class="card-header py-2">
-                    <h6 class="mb-0">${attribute}</h6>
+            <div class="card mb-3" data-attribute="${safeAttr}">
+                <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">${escapeHtmlAttr(attribute)}</h6>
+                    ${empiricalEntry ? '<span class="badge bg-secondary">empirical · read-only</span>' : ''}
                 </div>
                 <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-7" data-attribute-controls="${safeAttr}">
         `;
 
+        if (empiricalEntry) {
+            html += '<p class="text-muted small mb-0">Sampled from joint empirical distribution at simulation time.</p></div><div class="col-md-5"></div></div></div></div>';
+            continue;
+        }
+
         if (isCategorical) {
-            html += '<div class="row">';
-            for (const [category, probability] of Object.entries(params)) {
+            // Backend now always returns {type: 'categorical', values: {...}}
+            // for categorical attributes, but accept the legacy bare {cat: prob}
+            // dict shape for forwards-compat with old saved sessions.
+            const values = (params && typeof params === 'object' && params.values && typeof params.values === 'object')
+                ? params.values
+                : (params || {});
+            html += `<div class="row" data-cat-attribute="${escapeHtmlAttr(attribute)}">`;
+            for (const [category, probability] of Object.entries(values)) {
+                const safeCat = escapeHtmlAttr(category);
+                const probNum = parseFloat(probability) || 0;
                 html += `
-                    <div class="col-md-6 mb-2">
-                        <label class="form-label small">${category}</label>
-                        <div class="input-group input-group-sm">
-                            <input type="number" class="form-control" min="0" max="1" step="0.001"
-                                   value="${probability}"
-                                   onchange="updateDataAttributeParam('${attribute}', true, null, parseFloat(this.value), '${category}')">
+                    <div class="col-md-6 mb-3" data-category="${safeCat}">
+                        <label class="form-label small mb-1 text-truncate d-block" title="${safeCat}">${escapeHtmlAttr(category)}</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="range" class="form-range cat-prob-range" min="0" max="1" step="0.001" value="${probNum}">
+                            <input type="number" class="form-control form-control-sm cat-prob-number" min="0" max="1" step="0.001" style="width: 90px;" value="${probNum}">
                         </div>
                     </div>
                 `;
@@ -1715,6 +2135,8 @@ function renderDataAttributeParameters(dataParams) {
                             <option value="norm" ${distribution === 'norm' ? 'selected' : ''}>Normal</option>
                             <option value="expon" ${distribution === 'expon' ? 'selected' : ''}>Exponential</option>
                             <option value="uniform" ${distribution === 'uniform' ? 'selected' : ''}>Uniform</option>
+                            <option value="lognorm" ${distribution === 'lognorm' ? 'selected' : ''}>Log-normal</option>
+                            <option value="gamma" ${distribution === 'gamma' ? 'selected' : ''}>Gamma</option>
                         </select>
                     </div>
                     <div class="col-md-6">
@@ -1723,9 +2145,399 @@ function renderDataAttributeParameters(dataParams) {
                 </div>
             `;
         }
-        html += `</div></div>`;
+        // Close col-md-7 (controls) and add col-md-5 with the chart canvas
+        html += `</div>
+                        <div class="col-md-5 d-flex flex-column align-items-center justify-content-center">
+                            <div style="width: 200px; height: 200px;">
+                                <canvas id="${canvasId}" width="200" height="200"></canvas>
+                            </div>
+                            <div class="cat-chart-legend small mt-2 text-center" data-attribute-legend="${safeAttr}" style="max-width: 240px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
     }
     container.innerHTML = html;
+    attachCategoricalSliderHandlers(container);
+    renderAllAttributeCharts(distributions, categoricalAttrs);
+}
+
+const attributeCharts = {};
+
+function attributeChartCanvasId(attribute) {
+    return 'attrChart_' + String(attribute).replace(/[^a-zA-Z0-9_-]/g, '_');
+}
+
+function destroyAttributeCharts() {
+    Object.values(attributeCharts).forEach(c => { try { c.destroy(); } catch (_) {} });
+    Object.keys(attributeCharts).forEach(k => delete attributeCharts[k]);
+}
+
+const ATTRIBUTE_CHART_PALETTE = [
+    '#7b2cbf', '#06d6a0', '#5fb3a3', '#c77dff', '#048a81',
+    '#5a189a', '#f8961e', '#43aa8b', '#577590', '#f94144',
+    '#9d4edd', '#1b9aaa', '#ef476f', '#ffd166', '#118ab2',
+];
+
+function _renderAttributeLegend(attribute, labels, colors, values) {
+    const legend = document.querySelector(`[data-attribute-legend="${escapeHtmlAttr(attribute)}"]`);
+    if (!legend) return;
+    const total = values.reduce((a, b) => a + b, 0) || 1;
+    legend.innerHTML = labels.map((lbl, i) => {
+        const pct = ((values[i] / total) * 100).toFixed(1);
+        return `<span class="d-inline-block me-2 mb-1" style="white-space: nowrap;">
+            <span style="display:inline-block; width:10px; height:10px; background:${colors[i]}; border-radius:2px; vertical-align:middle; margin-right:4px;"></span>
+            <span title="${escapeHtmlAttr(lbl)}">${escapeHtmlAttr(lbl)}</span>
+            <span class="text-muted">(${pct}%)</span>
+        </span>`;
+    }).join('');
+}
+
+function renderCategoricalPieChart(attribute, values) {
+    const canvas = document.getElementById(attributeChartCanvasId(attribute));
+    if (!canvas || !window.Chart) return;
+    if (attributeCharts[attribute]) {
+        attributeCharts[attribute].destroy();
+    }
+    const labels = Object.keys(values);
+    const data = labels.map(k => parseFloat(values[k]) || 0);
+    const colors = labels.map((_, i) => ATTRIBUTE_CHART_PALETTE[i % ATTRIBUTE_CHART_PALETTE.length]);
+    attributeCharts[attribute] = new Chart(canvas.getContext('2d'), {
+        type: 'pie',
+        data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 1 }] },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: 1,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => {
+                            const total = ctx.dataset.data.reduce((a, b) => a + b, 0) || 1;
+                            const pct = (ctx.parsed / total) * 100;
+                            return `${ctx.label}: ${ctx.parsed.toFixed(3)} (${pct.toFixed(1)}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    _renderAttributeLegend(attribute, labels, colors, data);
+}
+
+function updateCategoricalPieChart(attribute, values) {
+    const chart = attributeCharts[attribute];
+    if (!chart) return renderCategoricalPieChart(attribute, values);
+    const labels = Object.keys(values);
+    const data = labels.map(k => parseFloat(values[k]) || 0);
+    chart.data.labels = labels;
+    chart.data.datasets[0].data = data;
+    chart.update('none');
+    const colors = labels.map((_, i) => ATTRIBUTE_CHART_PALETTE[i % ATTRIBUTE_CHART_PALETTE.length]);
+    _renderAttributeLegend(attribute, labels, colors, data);
+}
+
+// Lanczos approximation of the log-Gamma function — used for the gamma PDF.
+function _logGamma(z) {
+    if (z < 0.5) {
+        return Math.log(Math.PI / Math.sin(Math.PI * z)) - _logGamma(1 - z);
+    }
+    const g = 7;
+    const c = [
+        0.99999999999980993, 676.5203681218851, -1259.1392167224028,
+        771.32342877765313, -176.61502916214059, 12.507343278686905,
+        -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7,
+    ];
+    z -= 1;
+    let x = c[0];
+    for (let i = 1; i < g + 2; i++) x += c[i] / (z + i);
+    const t = z + g + 0.5;
+    return 0.5 * Math.log(2 * Math.PI) + (z + 0.5) * Math.log(t) - t + Math.log(x);
+}
+
+function _attributePdf(distribution, params, x) {
+    switch (distribution) {
+        case 'fixed': {
+            const v = parseFloat(params.value ?? 0);
+            return Math.abs(x - v) < 1e-6 ? 1 : 0;
+        }
+        case 'norm': {
+            const mean = parseFloat(params.mean ?? 0);
+            const std = parseFloat(params.std ?? 1);
+            if (std <= 0) return 0;
+            return Math.exp(-((x - mean) ** 2) / (2 * std * std)) / (std * Math.sqrt(2 * Math.PI));
+        }
+        case 'expon': {
+            const mean = parseFloat(params.mean ?? 1);
+            if (x < 0 || mean <= 0) return 0;
+            return Math.exp(-x / mean) / mean;
+        }
+        case 'uniform': {
+            const lo = parseFloat(params.min ?? 0);
+            const hi = parseFloat(params.max ?? 1);
+            if (hi <= lo) return 0;
+            return (x >= lo && x <= hi) ? 1 / (hi - lo) : 0;
+        }
+        case 'lognorm': {
+            // scipy lognorm: shape = sigma of underlying normal, loc = shift, scale = exp(mu)
+            const shape = parseFloat(params.shape ?? 0.5);
+            const loc = parseFloat(params.loc ?? 0);
+            const scale = parseFloat(params.scale ?? 1);
+            const t = x - loc;
+            if (t <= 0 || shape <= 0 || scale <= 0) return 0;
+            const z = (Math.log(t) - Math.log(scale)) / shape;
+            return Math.exp(-0.5 * z * z) / (t * shape * Math.sqrt(2 * Math.PI));
+        }
+        case 'gamma': {
+            // UI surfaces mean/std → derive scipy gamma's (shape a, scale).
+            const mean = parseFloat(params.mean ?? 1);
+            const std = parseFloat(params.std ?? 1);
+            if (mean <= 0 || std <= 0 || x < 0) return 0;
+            const a = (mean * mean) / (std * std);
+            const scale = (std * std) / mean;
+            if (a <= 0 || scale <= 0) return 0;
+            const logPdf = (a - 1) * Math.log(Math.max(x, 1e-12)) - x / scale - a * Math.log(scale) - _logGamma(a);
+            return Math.exp(logPdf);
+        }
+        default: return null;
+    }
+}
+
+function _attributeRange(distribution, params) {
+    switch (distribution) {
+        case 'fixed': {
+            const v = parseFloat(params.value ?? 0);
+            return [v - 1, v + 1];
+        }
+        case 'norm': {
+            const mean = parseFloat(params.mean ?? 0);
+            const std = parseFloat(params.std ?? 1);
+            return [mean - 4 * std, mean + 4 * std];
+        }
+        case 'expon': {
+            const mean = parseFloat(params.mean ?? 1);
+            return [0, Math.max(1, 5 * mean)];
+        }
+        case 'uniform': {
+            const lo = parseFloat(params.min ?? 0);
+            const hi = parseFloat(params.max ?? 1);
+            const pad = Math.max(1, (hi - lo) * 0.1);
+            return [lo - pad, hi + pad];
+        }
+        case 'lognorm': {
+            const shape = parseFloat(params.shape ?? 0.5);
+            const loc = parseFloat(params.loc ?? 0);
+            const scale = parseFloat(params.scale ?? 1);
+            const lo = loc;
+            const hi = loc + scale * Math.exp(3 * shape);
+            return [lo, hi];
+        }
+        case 'gamma': {
+            const mean = parseFloat(params.mean ?? 1);
+            const std = parseFloat(params.std ?? 1);
+            return [0, Math.max(1, mean + 4 * std)];
+        }
+        default: return null;
+    }
+}
+
+function renderNumericPdfChart(attribute, distribution, params) {
+    const canvas = document.getElementById(attributeChartCanvasId(attribute));
+    if (!canvas || !window.Chart) return;
+    if (attributeCharts[attribute]) {
+        attributeCharts[attribute].destroy();
+        delete attributeCharts[attribute];
+    }
+    // Reset legend area; numeric charts don't need a swatch list.
+    const legend = document.querySelector(`[data-attribute-legend="${escapeHtmlAttr(attribute)}"]`);
+    if (legend) legend.innerHTML = `<span class="text-muted">${escapeHtmlAttr(distribution)} PDF</span>`;
+
+    const range = _attributeRange(distribution, params);
+    if (!range) {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#888';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('No preview for this distribution', canvas.width / 2, canvas.height / 2);
+        return;
+    }
+    const N = 120;
+    const [xMin, xMax] = range;
+    const step = (xMax - xMin) / (N - 1);
+    const xs = [], ys = [];
+    for (let i = 0; i < N; i++) {
+        const x = xMin + step * i;
+        xs.push(x);
+        ys.push(_attributePdf(distribution, params, x));
+    }
+    attributeCharts[attribute] = new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: xs.map(x => x.toFixed(2)),
+            datasets: [{
+                data: ys,
+                borderColor: '#7b2cbf',
+                backgroundColor: 'rgba(123, 44, 191, 0.15)',
+                fill: true,
+                tension: 0.25,
+                pointRadius: 0,
+                borderWidth: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: 1,
+            plugins: { legend: { display: false }, tooltip: { enabled: false } },
+            scales: {
+                x: { ticks: { maxTicksLimit: 5, font: { size: 9 } }, grid: { display: false } },
+                y: { ticks: { display: false }, grid: { display: false } }
+            }
+        }
+    });
+}
+
+function renderLeafDistributionChart(canvas, distName, params) {
+    if (!canvas || !window.Chart) return;
+    const existing = Chart.getChart(canvas);
+    if (existing) existing.destroy();
+
+    const range = _attributeRange(distName, params || {});
+    const ctx = canvas.getContext('2d');
+    if (!range) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#888';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('No preview', canvas.width / 2, canvas.height / 2);
+        return;
+    }
+    const N = 80;
+    const [xMin, xMax] = range;
+    const step = (xMax - xMin) / Math.max(1, N - 1);
+    const xs = [], ys = [];
+    for (let i = 0; i < N; i++) {
+        const x = xMin + step * i;
+        xs.push(x);
+        ys.push(_attributePdf(distName, params, x));
+    }
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: xs.map(x => x.toFixed(1)),
+            datasets: [{
+                data: ys,
+                borderColor: '#7b2cbf',
+                backgroundColor: 'rgba(123, 44, 191, 0.15)',
+                fill: true,
+                tension: 0.25,
+                pointRadius: 0,
+                borderWidth: 2,
+            }]
+        },
+        options: {
+            responsive: false,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { enabled: false } },
+            scales: {
+                x: { ticks: { maxTicksLimit: 4, font: { size: 9 } }, grid: { display: false } },
+                y: { ticks: { display: false }, grid: { display: false } }
+            }
+        }
+    });
+}
+
+function renderAllAttributeCharts(distributions, categoricalAttrs) {
+    if (!window.Chart) return;
+    Object.entries(distributions).forEach(([attribute, params]) => {
+        if (params && typeof params === 'object' && params.type === 'empirical') return;
+        const isCategorical = categoricalAttrs.includes(attribute);
+        if (isCategorical) {
+            const values = (params && typeof params === 'object' && params.values && typeof params.values === 'object')
+                ? params.values
+                : (params || {});
+            renderCategoricalPieChart(attribute, values);
+        } else {
+            const distribution = params.distribution || 'norm';
+            const distParams = params.parameters || params || {};
+            renderNumericPdfChart(attribute, distribution, distParams);
+        }
+    });
+}
+
+function attachCategoricalSliderHandlers(scope) {
+    scope.querySelectorAll('[data-cat-attribute]').forEach(group => {
+        const attribute = group.getAttribute('data-cat-attribute');
+        const cells = Array.from(group.querySelectorAll('[data-category]'));
+
+        function applyValuesToUI(values) {
+            cells.forEach((cell, i) => {
+                const v = values[i];
+                const r = cell.querySelector('.cat-prob-range');
+                const n = cell.querySelector('.cat-prob-number');
+                if (r) r.value = v;
+                if (n) n.value = v;
+            });
+        }
+
+        function persistAll(values) {
+            const valueMap = {};
+            cells.forEach((cell, i) => {
+                const cat = cell.getAttribute('data-category');
+                valueMap[cat] = values[i];
+                updateDataAttributeParam(attribute, true, null, values[i], cat);
+            });
+            updateCategoricalPieChart(attribute, valueMap);
+        }
+
+        function distributeFromIndex(editedIdx, rawValue) {
+            let v = parseFloat(rawValue);
+            if (!Number.isFinite(v)) v = 0;
+            if (v < 0) v = 0;
+            if (v > 1) v = 1;
+
+            // Snapshot of current values
+            const current = cells.map(c => parseFloat(c.querySelector('.cat-prob-number').value) || 0);
+            const next = current.slice();
+            next[editedIdx] = v;
+
+            const remaining = Math.max(0, 1 - v);
+            // Sum of the *other* categories' current values
+            let sumOthers = 0;
+            for (let i = 0; i < current.length; i++) if (i !== editedIdx) sumOthers += current[i];
+
+            if (sumOthers > 0) {
+                // Rescale proportionally so others sum to (1 - v)
+                const factor = remaining / sumOthers;
+                for (let i = 0; i < next.length; i++) {
+                    if (i !== editedIdx) next[i] = current[i] * factor;
+                }
+            } else {
+                // All others are 0: distribute the remainder uniformly
+                const otherCount = next.length - 1;
+                const eq = otherCount > 0 ? remaining / otherCount : 0;
+                for (let i = 0; i < next.length; i++) {
+                    if (i !== editedIdx) next[i] = eq;
+                }
+            }
+
+            applyValuesToUI(next);
+            persistAll(next);
+        }
+
+        cells.forEach((cell, idx) => {
+            const range = cell.querySelector('.cat-prob-range');
+            const number = cell.querySelector('.cat-prob-number');
+            if (!range || !number) return;
+            range.addEventListener('input', () => distributeFromIndex(idx, range.value));
+            number.addEventListener('change', () => distributeFromIndex(idx, number.value));
+        });
+
+        // Initial sum display
+        applyValuesToUI(cells.map(c => parseFloat(c.querySelector('.cat-prob-number').value) || 0));
+    });
 }
 
 // Parameter update functions
@@ -1796,6 +2608,10 @@ function updateExecutionParam(activity, param, value) {
             currentParameters.execution_time_params.activity_durations[activity].parameters = { mean: 120 };
         } else if (value === 'uniform') {
             currentParameters.execution_time_params.activity_durations[activity].parameters = { min: 30, max: 240 };
+        } else if (value === 'lognorm') {
+            currentParameters.execution_time_params.activity_durations[activity].parameters = { shape: 0.5, loc: 0, scale: 60, min: 0, max: 600 };
+        } else if (value === 'gamma') {
+            currentParameters.execution_time_params.activity_durations[activity].parameters = { mean: 60, std: 30, min: 0, max: 600 };
         }
         console.log(`Updated execution distribution for ${activity}:`, currentParameters.execution_time_params.activity_durations[activity]);
     } else {
@@ -1849,6 +2665,10 @@ function updateWaitingParam(resource, param, value) {
             currentParameters.waiting_time_params.resource_waiting_times[resource].parameters = { mean: 120 };
         } else if (value === 'uniform') {
             currentParameters.waiting_time_params.resource_waiting_times[resource].parameters = { min: 30, max: 240 };
+        } else if (value === 'lognorm') {
+            currentParameters.waiting_time_params.resource_waiting_times[resource].parameters = { shape: 0.5, loc: 0, scale: 60, min: 0, max: 600 };
+        } else if (value === 'gamma') {
+            currentParameters.waiting_time_params.resource_waiting_times[resource].parameters = { mean: 60, std: 30, min: 0, max: 600 };
         }
         console.log(`Updated waiting distribution for ${resource}:`, currentParameters.waiting_time_params.resource_waiting_times[resource]);
     } else {
@@ -1868,6 +2688,49 @@ function updateWaitingParam(resource, param, value) {
 }
 
 
+const DISTRIBUTION_DEFAULTS = {
+    fixed:   { value: 1.0, min: 1.0, max: 1.0 },
+    norm:    { mean: 15.0, std: 5.0, min: 0.0, max: 60.0 },
+    expon:   { mean: 15.0, min: 0.0, max: 60.0 },
+    uniform: { min: 0.0, max: 60.0 },
+    lognorm: { shape: 0.5, loc: 0.0, scale: 15.0, min: 0.0, max: 60.0 },
+    gamma:   { mean: 15.0, std: 8.0, min: 0.0, max: 60.0 },
+};
+
+// When the user switches distribution, carry over compatible parameters from
+// the previous distribution instead of resetting to defaults. Aliases handle
+// distributions that use different names for the same concept (e.g. fixed
+// "value" and norm "mean" both describe the central tendency).
+const PARAM_ALIASES = {
+    value: ['mean', 'scale'],
+    mean:  ['value', 'scale'],
+    scale: ['mean', 'value'],
+};
+
+function mergeDistParams(oldParams, newDist) {
+    const defaults = DISTRIBUTION_DEFAULTS[newDist] || {};
+    const merged = { ...defaults };
+    if (!oldParams || typeof oldParams !== 'object' || Array.isArray(oldParams)) return merged;
+    for (const k of Object.keys(defaults)) {
+        const direct = parseFloat(oldParams[k]);
+        if (Number.isFinite(direct)) {
+            merged[k] = direct;
+            continue;
+        }
+        const aliases = PARAM_ALIASES[k] || [];
+        for (const a of aliases) {
+            const v = parseFloat(oldParams[a]);
+            if (Number.isFinite(v)) { merged[k] = v; break; }
+        }
+    }
+    // Fixed forces min == max == value to keep the simulator happy.
+    if (newDist === 'fixed' && merged.value != null) {
+        merged.min = merged.value;
+        merged.max = merged.value;
+    }
+    return merged;
+}
+
 function updateDataAttributeParam(attribute, isCategorical, param, value, category = null) {
     if (!currentParameters.data_attribute_params) {
         currentParameters.data_attribute_params = {};
@@ -1876,12 +2739,16 @@ function updateDataAttributeParam(attribute, isCategorical, param, value, catego
         currentParameters.data_attribute_params.distribution_data_attributes = {};
     }
 
-    // If categorical: update probability of category
+    // If categorical: update probability of category inside the {type, values}
+    // wrapper so we don't clobber the type discriminator on save.
     if (isCategorical) {
-        if (!currentParameters.data_attribute_params.distribution_data_attributes[attribute]) {
-            currentParameters.data_attribute_params.distribution_data_attributes[attribute] = {};
+        const dist = currentParameters.data_attribute_params.distribution_data_attributes;
+        if (!dist[attribute] || typeof dist[attribute] !== 'object' || !dist[attribute].values) {
+            // Either missing or legacy {cat: prob} shape — wrap it.
+            const legacy = (dist[attribute] && typeof dist[attribute] === 'object') ? dist[attribute] : {};
+            dist[attribute] = { type: 'categorical', values: { ...legacy } };
         }
-        currentParameters.data_attribute_params.distribution_data_attributes[attribute][category] = parseFloat(value);
+        dist[attribute].values[category] = parseFloat(value);
         return;
     }
 
@@ -1893,19 +2760,9 @@ function updateDataAttributeParam(attribute, isCategorical, param, value, catego
     const targetObject = currentParameters.data_attribute_params.distribution_data_attributes[attribute];
 
     if (param === 'distribution') {
+        const oldParams = targetObject.parameters || {};
         targetObject.distribution = value;
-
-        // Reset parameters based on selected distribution
-        if (value === 'fixed') {
-            targetObject.parameters = { value: 1.0, min: 1.0, max: 1.0 };
-        } else if (value === 'norm') {
-            targetObject.parameters = { mean: 15.0, std: 5.0, min: 0.0, max: 60.0 };
-        } else if (value === 'expon') {
-            targetObject.parameters = { mean: 15.0, min: 0.0, max: 60.0 };
-        } else if (value === 'uniform') {
-            targetObject.parameters = { min: 0.0, max: 60.0 };
-        }
-
+        targetObject.parameters = mergeDistParams(oldParams, value);
         console.log(`Updated data attribute distribution for ${attribute}:`, targetObject);
     } else {
         if (!targetObject.parameters) {
@@ -2034,10 +2891,14 @@ async function runSimulation() {
             const resultText = document.getElementById('simulationResultText');
             resultText.textContent = `Generated ${result.num_events} events in ${numInstances} process instances.`;
             
-            // Setup download button
+            // Setup download buttons
             const downloadBtn = document.getElementById('downloadSimulationBtn');
             downloadBtn.onclick = () => {
                 window.location.href = `/api/download/${result.sim_output_filename}`;
+            };
+            const downloadXesBtn = document.getElementById('downloadSimulationXesBtn');
+            downloadXesBtn.onclick = () => {
+                window.location.href = `/api/download_xes/${result.sim_output_filename}`;
             };
             
             // Show the results
@@ -2181,6 +3042,8 @@ function renderInterArrivalTimeParameters(waitingParams) {
         html += `<option value="norm" ${distribution === 'norm' ? 'selected' : ''}>Normal</option>`;
         html += `<option value="expon" ${distribution === 'expon' ? 'selected' : ''}>Exponential</option>`;
         html += `<option value="uniform" ${distribution === 'uniform' ? 'selected' : ''}>Uniform</option>`;
+        html += `<option value="lognorm" ${distribution === 'lognorm' ? 'selected' : ''}>Log-normal</option>`;
+        html += `<option value="gamma" ${distribution === 'gamma' ? 'selected' : ''}>Gamma</option>`;
         html += '</select>';
         html += '</div>';
         
@@ -2233,6 +3096,10 @@ function updateInterArrivalParam(param, value) {
             currentParameters.inter_arrival_params.inter_arrival_time.parameters = { mean: 120 };
         } else if (value === 'uniform') {
             currentParameters.inter_arrival_params.inter_arrival_time.parameters = { min: 30, max: 240 };
+        } else if (value === 'lognorm') {
+            currentParameters.inter_arrival_params.inter_arrival_time.parameters = { shape: 0.5, loc: 0, scale: 60, min: 0, max: 600 };
+        } else if (value === 'gamma') {
+            currentParameters.inter_arrival_params.inter_arrival_time.parameters = { mean: 60, std: 30, min: 0, max: 600 };
         }
         console.log(`Updated inter-arrival distribution:`, currentParameters.inter_arrival_params.inter_arrival_time);
     } else {
@@ -2345,14 +3212,94 @@ function renderDistributionParameters(itemName, distribution, params, type) {
                 <div class="row">
                     <div class="col-md-6">
                         <label class="form-label small">Min Value</label>
-                        <input type="number" class="form-control form-control-sm" 
+                        <input type="number" class="form-control form-control-sm"
                                min="0" step="0.1" value="${params.min || params.min_value || 0}"
                                ${input('min')}>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small">Max Value</label>
-                        <input type="number" class="form-control form-control-sm" 
+                        <input type="number" class="form-control form-control-sm"
                                min="1" step="0.1" value="${params.max || params.max_value || 100}"
+                               ${input('max')}>
+                    </div>
+                </div>
+            `;
+            break;
+
+        case 'gamma': {
+            // Surface Mean + Std Dev (intuitive) instead of scipy's (a, loc, scale).
+            // The backend converts back via shape = mean^2/std^2, scale = std^2/mean.
+            const meanVal = params.mean ?? (params.shape != null && params.scale != null ? params.shape * params.scale : (params.mean_value ?? 1));
+            const stdVal = params.std ?? (params.shape != null && params.scale != null ? Math.sqrt(params.shape) * params.scale : 1);
+            html = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label small" title="Mean of the distribution. Internally maps to scipy gamma's shape/scale.">Mean</label>
+                        <input type="number" class="form-control form-control-sm"
+                               min="0.0001" step="0.1" value="${meanVal}"
+                               ${input('mean')}>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small" title="Standard deviation. Smaller = sharper peak around mean.">Std Dev</label>
+                        <input type="number" class="form-control form-control-sm"
+                               min="0.0001" step="0.1" value="${stdVal}"
+                               ${input('std')}>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-6">
+                        <label class="form-label small">Min</label>
+                        <input type="number" class="form-control form-control-sm"
+                               step="0.1" value="${params.min ?? params.min_value ?? 0}"
+                               ${input('min')}>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small">Max</label>
+                        <input type="number" class="form-control form-control-sm"
+                               step="0.1" value="${params.max ?? params.max_value ?? 100}"
+                               ${input('max')}>
+                    </div>
+                </div>
+            `;
+            break;
+        }
+
+        case 'lognorm':
+            // scipy.stats.lognorm uses (shape s, loc, scale). We expose them as
+            // Median / Sigma / Shift — the underlying distribution has median
+            // == scale (when loc=0), and sigma is the std on the log scale.
+            html = `
+                <div class="row">
+                    <div class="col-md-4">
+                        <label class="form-label small" title="Median value of the distribution (scipy 'scale').">Median</label>
+                        <input type="number" class="form-control form-control-sm"
+                               min="0" step="0.1" value="${params.scale ?? params.mean_value ?? 1}"
+                               ${input('scale')}>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small" title="Spread on the log scale (scipy 'shape' / sigma). Larger = wider distribution.">Sigma</label>
+                        <input type="number" class="form-control form-control-sm"
+                               min="0.0001" step="0.01" value="${params.shape ?? 0.5}"
+                               ${input('shape')}>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small" title="Location offset (scipy 'loc'). Usually 0.">Shift</label>
+                        <input type="number" class="form-control form-control-sm"
+                               step="0.1" value="${params.loc ?? 0}"
+                               ${input('loc')}>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-6">
+                        <label class="form-label small">Min</label>
+                        <input type="number" class="form-control form-control-sm"
+                               step="0.1" value="${params.min ?? params.min_value ?? 0}"
+                               ${input('min')}>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small">Max</label>
+                        <input type="number" class="form-control form-control-sm"
+                               step="0.1" value="${params.max ?? params.max_value ?? 100}"
                                ${input('max')}>
                     </div>
                 </div>
@@ -2534,11 +3481,36 @@ function renderPetriNet(processModel) {
     container.innerHTML = activityList;
 }
 
-function renderAccuracyResults(metrics) {
+function metricsAreEmpty(metrics) {
+    if (!metrics || typeof metrics !== 'object') return true;
+    // Each top-level category is a sub-dict; metrics are non-empty if at least one
+    // category exists with at least one numeric value inside.
+    return !Object.values(metrics).some(
+        v => v && typeof v === 'object' && Object.keys(v).length > 0
+    );
+}
+
+function renderAccuracyResults(metrics, sessionId, autoCompute) {
     const card = document.getElementById('accuracyCard');
     const container = document.getElementById('accuracyResultsContainer');
 
-    if (!metrics || typeof metrics !== 'object') {
+    if (metricsAreEmpty(metrics)) {
+        if (autoCompute && sessionId !== undefined && sessionId !== null) {
+            // User opted into metrics — show the card with a spinner and fire
+            // the async computation. The endpoint stores the result on the
+            // session so reload picks it up.
+            card.style.display = 'block';
+            container.innerHTML = `
+                <div class="d-flex align-items-center text-muted">
+                    <div class="spinner-border spinner-border-sm me-2" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <span>Computing accuracy metrics... this can take a few minutes.</span>
+                </div>`;
+            fetchAndRenderMetrics(sessionId);
+            return;
+        }
+        // Toggle off and no cached metrics — hide the card entirely.
         container.innerHTML = '<p class="text-muted">No accuracy results available.</p>';
         card.style.display = 'none';
         return;
@@ -2641,6 +3613,38 @@ function renderAccuracyResults(metrics) {
     });
 }
 
+async function fetchAndRenderMetrics(sessionId) {
+    const container = document.getElementById('accuracyResultsContainer');
+    try {
+        const resp = await fetch(`/api/metrics/${sessionId}`, { method: 'POST' });
+        const result = await resp.json();
+        if (!resp.ok || !result.success) {
+            const detail = result && result.error ? result.error : `HTTP ${resp.status}`;
+            container.innerHTML = `
+                <div class="alert alert-warning mb-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Failed to compute metrics: ${detail}</span>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="renderAccuracyResults({}, ${sessionId}, true)">Retry</button>
+                    </div>
+                </div>`;
+            return;
+        }
+        // Cache the metrics on the current session and re-render the tables.
+        if (currentParameters && currentSessionId === sessionId) {
+            currentParameters.prosit_metrics = result.prosit_metrics;
+        }
+        renderAccuracyResults(result.prosit_metrics, sessionId, true);
+    } catch (err) {
+        container.innerHTML = `
+            <div class="alert alert-warning mb-0">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>Failed to compute metrics: ${err.message}</span>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="renderAccuracyResults({}, ${sessionId}, true)">Retry</button>
+                </div>
+            </div>`;
+    }
+}
+
 /**
  * [FIXED] Correctly updates the inter-arrival time calendar.
  * The original function was modifying 'waiting_time_params' instead of 'inter_arrival_params'.
@@ -2690,16 +3694,11 @@ function showAddResourceModal() {
                                    min="0" max="1" step="0.01" value="0.1">
                         </div>
                         <div class="mb-3" id="copyFromResourceGroup" style="display:none;">
-                            <label for="copyFromResourceSelect" class="form-label">Copy Decision Trees From</label>
+                            <label for="copyFromResourceSelect" class="form-label">Copy From Existing Resource</label>
                             <select class="form-select" id="copyFromResourceSelect">
                                 <option value="">Select a resource</option>
                             </select>
-                            <div class="form-text">Copy both weight and waiting-time trees if available</div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="newResourceMaxConcurrency" class="form-label">Max Concurrent Cases</label>
-                            <input type="number" class="form-control" id="newResourceMaxConcurrency" min="1" step="1" value="1">
-                            <div class="form-text">1 = single task, ≥2 = can handle multiple cases simultaneously.</div>
+                            <div class="form-text">Copies weight, waiting time, calendar, max concurrency, and activity assignments.</div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -2750,11 +3749,6 @@ function addNewResource() {
     const resourceName = document.getElementById('newResourceName').value.trim();
     const weightInputEl = document.getElementById('newResourceWeight');
     const resourceWeight = weightInputEl && weightInputEl.offsetParent !== null ? parseFloat(weightInputEl.value) : null;
-    const maxConcurrencyInput = document.getElementById('newResourceMaxConcurrency');
-    let maxConcurrencyValue = parseInt((maxConcurrencyInput && maxConcurrencyInput.value) || '1', 10);
-    if (!Number.isFinite(maxConcurrencyValue) || maxConcurrencyValue < 1) {
-        maxConcurrencyValue = 1;
-    }
     const copyFrom = (document.getElementById('copyFromResourceSelect') && document.getElementById('copyFromResourceSelect').value) || '';
     
     if (!resourceName) {
@@ -2769,71 +3763,82 @@ function addNewResource() {
     
     // Add to resources list
     currentParameters.resource_params.resources.push(resourceName);
-    
-    // Add resource weight
-    if (!currentParameters.resource_params.resource_weights) {
-        currentParameters.resource_params.resource_weights = {};
-    }
-    // Decision tree for resource weight if in DT mode
+
+    // When the user picks "copy from" we duplicate every related field — calendar,
+    // max concurrency, activity assignments, weight, waiting time — so the new
+    // resource is a true clone instead of a half-blank stub.
+    const rp = currentParameters.resource_params;
+
+    // Resource weight
+    if (!rp.resource_weights) rp.resource_weights = {};
     if (isDecisionTreeModeForResourceWeights()) {
-        if (copyFrom && currentParameters.resource_params.resource_weights[copyFrom]) {
-            currentParameters.resource_params.resource_weights[resourceName] = deepClone(currentParameters.resource_params.resource_weights[copyFrom]);
+        if (copyFrom && rp.resource_weights[copyFrom] !== undefined) {
+            rp.resource_weights[resourceName] = deepClone(rp.resource_weights[copyFrom]);
         } else {
-            // In DT mode, user must choose an existing resource to copy from
             alert('Please choose a resource to copy the decision tree from.');
             return;
         }
+    } else if (copyFrom && rp.resource_weights[copyFrom] !== undefined) {
+        rp.resource_weights[resourceName] = deepClone(rp.resource_weights[copyFrom]);
     } else {
-        currentParameters.resource_params.resource_weights[resourceName] = (typeof resourceWeight === 'number' && !isNaN(resourceWeight)) ? resourceWeight : 0.1;
+        rp.resource_weights[resourceName] = (typeof resourceWeight === 'number' && !isNaN(resourceWeight)) ? resourceWeight : 0.1;
     }
-    
-    // Set max concurrency for the new resource (default 1)
-    if (!currentParameters.resource_params.max_concurrency) {
-        currentParameters.resource_params.max_concurrency = {};
+
+    // Max concurrency — copied from source when provided, else default 1.
+    if (!rp.max_concurrency) rp.max_concurrency = {};
+    if (copyFrom && rp.max_concurrency[copyFrom] !== undefined) {
+        rp.max_concurrency[resourceName] = rp.max_concurrency[copyFrom];
+    } else {
+        rp.max_concurrency[resourceName] = 1;
     }
-    currentParameters.resource_params.max_concurrency[resourceName] = maxConcurrencyValue;
-    
-    // Add default calendar (9-17 weekdays)
-    if (!currentParameters.resource_params.calendars) {
-        currentParameters.resource_params.calendars = {};
+
+    // Calendar
+    if (!rp.calendars) rp.calendars = {};
+    if (copyFrom && rp.calendars[copyFrom]) {
+        rp.calendars[resourceName] = deepClone(rp.calendars[copyFrom]);
+    } else {
+        rp.calendars[resourceName] = {
+            'Monday': createDefaultWorkingHours(),
+            'Tuesday': createDefaultWorkingHours(),
+            'Wednesday': createDefaultWorkingHours(),
+            'Thursday': createDefaultWorkingHours(),
+            'Friday': createDefaultWorkingHours(),
+            'Saturday': {},
+            'Sunday': {}
+        };
     }
-    currentParameters.resource_params.calendars[resourceName] = {
-        'Monday': createDefaultWorkingHours(),
-        'Tuesday': createDefaultWorkingHours(),
-        'Wednesday': createDefaultWorkingHours(),
-        'Thursday': createDefaultWorkingHours(),
-        'Friday': createDefaultWorkingHours(),
-        'Saturday': {},
-        'Sunday': {}
-    };
-    
-    // Add to activity assignments (assign to all activities by default)
-    if (currentParameters.resource_params.act_to_resources) {
-        Object.keys(currentParameters.resource_params.act_to_resources).forEach(activity => {
-            currentParameters.resource_params.act_to_resources[activity].push(resourceName);
+
+    // Activity assignments — when copying, mirror exactly the activities the
+    // source resource was bound to. Otherwise default to every activity.
+    if (rp.act_to_resources) {
+        Object.keys(rp.act_to_resources).forEach(activity => {
+            const list = rp.act_to_resources[activity];
+            if (!Array.isArray(list)) return;
+            const sourceAssigned = copyFrom ? list.includes(copyFrom) : true;
+            if (sourceAssigned && !list.includes(resourceName)) {
+                list.push(resourceName);
+            }
         });
     }
-    
 
-    
-    // Add default waiting time parameters
+    // Waiting time
     if (!currentParameters.waiting_time_params) {
         currentParameters.waiting_time_params = {};
     }
     if (!currentParameters.waiting_time_params.resource_waiting_times) {
         currentParameters.waiting_time_params.resource_waiting_times = {};
     }
+    const wt = currentParameters.waiting_time_params.resource_waiting_times;
     if (isDecisionTreeModeForWaitingTimes()) {
-        if (copyFrom && currentParameters.waiting_time_params.resource_waiting_times[copyFrom]) {
-            currentParameters.waiting_time_params.resource_waiting_times[resourceName] = deepClone(currentParameters.waiting_time_params.resource_waiting_times[copyFrom]);
+        if (copyFrom && wt[copyFrom] !== undefined) {
+            wt[resourceName] = deepClone(wt[copyFrom]);
         } else {
-            currentParameters.waiting_time_params.resource_waiting_times[resourceName] = getDefaultWaitingTree(15);
+            wt[resourceName] = getDefaultWaitingTree(15);
         }
+    } else if (copyFrom && wt[copyFrom] !== undefined) {
+        wt[resourceName] = deepClone(wt[copyFrom]);
     } else {
-        currentParameters.waiting_time_params.resource_waiting_times[resourceName] = {
-            distribution: 'expon',
-            parameters: { mean: 15 }
-        };
+        wt[resourceName] = { distribution: 'expon', parameters: { mean: 15 } };
     }
     
     // Refresh the UI
@@ -2958,23 +3963,63 @@ function returnActivitiesPerResource(resource) {
     return activitiesForResource;
 }
 
+function getResultsTimeUnit() {
+    const sel = document.getElementById('resultsTimeUnit');
+    return (sel && sel.value) || 'min';
+}
+
+const TIME_UNIT_LABELS = { sec: 'sec', min: 'min', hour: 'hr', day: 'd' };
+
+async function loadProcessMap(sessionId, aggregation = 'median') {
+    const response_process_map = await fetch(`/api/get_visualization/${sessionId}/process_map?aggregation=${encodeURIComponent(aggregation)}`);
+    const result_process_map = await response_process_map.json();
+    renderProcessMap(result_process_map.visualization);
+}
+
 async function loadAllVisualizations(sessionId) {
 
-    const response_process_map = await fetch(`/api/get_visualization/${sessionId}/process_map`);
-    const result_process_map = await response_process_map.json();
-    const processMap = result_process_map.visualization;
+    const aggSelect = document.getElementById('processMapAggregation');
+    const aggControls = document.getElementById('processMapControls');
+    const aggregation = aggSelect ? aggSelect.value : 'median';
+    if (aggControls) aggControls.style.display = '';
+    if (aggSelect && !aggSelect.dataset.bound) {
+        aggSelect.addEventListener('change', () => loadProcessMap(sessionId, aggSelect.value));
+        aggSelect.dataset.bound = '1';
+    }
 
-    renderProcessMap(processMap);
+    await loadProcessMap(sessionId, aggregation);
 
-    const response_case_duration = await fetch(`/api/get_visualization/${sessionId}/case_duration_dist`);
-    const result_case_durations = await response_case_duration.json();
-    const caseDurationDist = result_case_durations;
-
-    renderCaseDuration(caseDurationDist);
+    await loadCaseDuration(sessionId);
 
     // Resource heatmap will be loaded when a resource is selected from the dropdown
 
     fetchAndPopulateDropdowns(sessionId);
+
+    const unitSelect = document.getElementById('resultsTimeUnit');
+    if (unitSelect && !unitSelect.dataset.bound) {
+        unitSelect.addEventListener('change', () => reloadTimeBasedVisualizations(sessionId));
+        unitSelect.dataset.bound = '1';
+    }
+}
+
+async function loadCaseDuration(sessionId) {
+    const unit = getResultsTimeUnit();
+    const response = await fetch(`/api/get_visualization/${sessionId}/case_duration_dist?unit=${encodeURIComponent(unit)}`);
+    const result = await response.json();
+    renderCaseDuration(result);
+}
+
+async function reloadTimeBasedVisualizations(sessionId) {
+    await loadCaseDuration(sessionId);
+    const actSel = document.getElementById('activitySelect');
+    if (actSel && document.getElementById('activityDurationBoxplotContainer')) {
+        renderActivityDurationBoxplot(actSel.value || '');
+    }
+    if (document.getElementById('waitingTimeVisualizationContainer')) {
+        const waitAct = document.getElementById('waitingTimeSelect_act');
+        const waitRes = document.getElementById('waitingTimeSelect_res');
+        renderWaitingTimeVisualization(waitAct ? waitAct.value : '', waitRes ? waitRes.value : '');
+    }
 }
 
 async function fetchAndPopulateDropdowns(sessionId) {
@@ -3044,6 +4089,7 @@ function renderCaseDuration(caseDurationDist) {
 
     const container_dist = document.getElementById('caseDurationDist');
     console.log('Rendering SVG visualization');
+    const unitLabel = TIME_UNIT_LABELS[caseDurationDist.unit || getResultsTimeUnit()] || 'min';
     // Direct SVG content - embed it
     container_dist.innerHTML = `
         <div class="text-center">
@@ -3055,19 +4101,19 @@ function renderCaseDuration(caseDurationDist) {
             <div class="row text-center">
                 <div class="col-md-3">
                     <div class="fw-bold text-success">Mean</div>
-                    <div class="text-muted">${caseDurationDist.metrics.average_case_duration.toFixed(2)} mins</div>
+                    <div class="text-muted">${caseDurationDist.metrics.average_case_duration.toFixed(2)} ${unitLabel}</div>
                 </div>
                 <div class="col-md-3">
                     <div class="fw-bold text-success">Median</div>
-                    <div class="text-muted">${caseDurationDist.metrics.median_case_duration.toFixed(2)} mins</div>
+                    <div class="text-muted">${caseDurationDist.metrics.median_case_duration.toFixed(2)} ${unitLabel}</div>
                 </div>
                 <div class="col-md-3">
                     <div class="fw-bold text-success">Min</div>
-                    <div class="text-muted">${caseDurationDist.metrics.min_case_duration.toFixed(2)} mins</div>
+                    <div class="text-muted">${caseDurationDist.metrics.min_case_duration.toFixed(2)} ${unitLabel}</div>
                 </div>
                 <div class="col-md-3">
                     <div class="fw-bold text-success">Max</div>
-                    <div class="text-muted">${caseDurationDist.metrics.max_case_duration.toFixed(2)} mins</div>
+                    <div class="text-muted">${caseDurationDist.metrics.max_case_duration.toFixed(2)} ${unitLabel}</div>
                 </div>
             </div>
         </div>
@@ -3099,15 +4145,18 @@ async function renderResourceHeatmap(resourceName) {
 
 async function renderActivityDurationBoxplot(activityName) {
     const sessionId = currentSessionId;
-    const url = activityName ? 
-        `/api/get_visualization/${sessionId}/activity_duration_boxplot?activity=${activityName}` :
-        `/api/get_visualization/${sessionId}/activity_duration_boxplot`;
-    
+    const unit = getResultsTimeUnit();
+    const params = new URLSearchParams();
+    if (activityName) params.append('activity', activityName);
+    params.append('unit', unit);
+    const url = `/api/get_visualization/${sessionId}/activity_duration_boxplot?${params.toString()}`;
+
     const response = await fetch(url);
     const result = await response.json();
 
     const container = document.getElementById('activityDurationBoxplotContainer');
     console.log('Rendering SVG visualization');
+    const unitLabel = TIME_UNIT_LABELS[result.unit || unit] || 'min';
     // Direct SVG content - embed it
     container.innerHTML = `
         <div class="text-center">
@@ -3119,19 +4168,19 @@ async function renderActivityDurationBoxplot(activityName) {
             <div class="row text-center">
                 <div class="col-md-3">
                     <div class="fw-bold text-success">Mean</div>
-                    <div class="text-muted">${result.metrics.average_duration.toFixed(2)} mins</div>
+                    <div class="text-muted">${result.metrics.average_duration.toFixed(2)} ${unitLabel}</div>
                 </div>
                 <div class="col-md-3">
                     <div class="fw-bold text-success">Median</div>
-                    <div class="text-muted">${result.metrics.median_duration.toFixed(2)} mins</div>
+                    <div class="text-muted">${result.metrics.median_duration.toFixed(2)} ${unitLabel}</div>
                 </div>
                 <div class="col-md-3">
                     <div class="fw-bold text-success">Min</div>
-                    <div class="text-muted">${result.metrics.min_duration.toFixed(2)} mins</div>
+                    <div class="text-muted">${result.metrics.min_duration.toFixed(2)} ${unitLabel}</div>
                 </div>
                 <div class="col-md-3">
                     <div class="fw-bold text-success">Max</div>
-                    <div class="text-muted">${result.metrics.max_duration.toFixed(2)} mins</div>
+                    <div class="text-muted">${result.metrics.max_duration.toFixed(2)} ${unitLabel}</div>
                 </div>
             </div>
         </div>
@@ -3167,8 +4216,8 @@ function generateFeaturesForTreeType(treeType) {
             
         case 'arrival':
             // Arrival time: "hour", "weekday"
-            features.push({ value: 'hour', label: 'hour' });
-            features.push({ value: 'weekday', label: 'weekday' });
+            features.push({ value: 'hour', label: 'hour', group: 'Time' });
+            features.push({ value: 'weekday', label: 'weekday', group: 'Time' });
             break;
             
         case 'execution':
@@ -3180,7 +4229,7 @@ function generateFeaturesForTreeType(treeType) {
             
         case 'waiting':
             // Waiting time: "workload", list of activities, attributes
-            features.push({ value: 'workload', label: 'workload' });
+            features.push({ value: 'workload', label: 'workload', group: 'Workload' });
             features.push(...generateActivityFeatures(activities));
             features.push(...generateAttributeFeatures(attributes, categoricalAttributes, categoricalValues));
             break;
@@ -3199,7 +4248,7 @@ function generateFeaturesForTreeType(treeType) {
                 features.push(...generateAttributeFeatures(attributes, categoricalAttributes, categoricalValues));
             } else if (treeType === 'waiting') {
                 // Waiting time: "workload", list of activities, attributes
-                features.push({ value: 'workload', label: 'workload' });
+                features.push({ value: 'workload', label: 'workload', group: 'Workload' });
                 features.push(...generateActivityFeatures(activities));
                 features.push(...generateAttributeFeatures(attributes, categoricalAttributes, categoricalValues));
             } else {
@@ -3212,8 +4261,8 @@ function generateFeaturesForTreeType(treeType) {
             
         default:
             // Default features for unknown tree types
-            features.push({ value: 'hour', label: 'hour' });
-            features.push({ value: 'weekday', label: 'weekday' });
+            features.push({ value: 'hour', label: 'hour', group: 'Time' });
+            features.push({ value: 'weekday', label: 'weekday', group: 'Time' });
             features.push(...generateAttributeFeatures(attributes, categoricalAttributes, categoricalValues));
     }
     
@@ -3222,44 +4271,48 @@ function generateFeaturesForTreeType(treeType) {
 
 function generateAttributeFeatures(attributes, categoricalAttributes, categoricalValues) {
     const features = [];
-    
+
     Object.keys(attributes).forEach(attr => {
         if (categoricalAttributes.includes(attr)) {
             // For categorical attributes, create attr=value options
             const values = categoricalValues[attr] || Object.keys(attributes[attr]);
             values.forEach(value => {
-                features.push({ 
-                    value: `${attr} = ${value}`, 
-                    label: `${attr} = ${value}` 
+                features.push({
+                    value: `${attr} = ${value}`,
+                    label: `${attr} = ${value}`,
+                    group: 'Trace attributes',
                 });
             });
         } else {
             // For numeric attributes, just use the attribute name
-            features.push({ value: attr, label: attr });
+            features.push({ value: attr, label: attr, group: 'Trace attributes' });
         }
     });
-    
+
     return features;
 }
 
 function generateActivityFeatures(activities) {
     return activities.map(activity => ({
         value: activity,
-        label: activity
+        label: activity,
+        group: 'Activities',
     }));
 }
 
 function generateResourceFeatures(resources) {
     return resources.map(resource => ({
         value: resource,
-        label: resource
+        label: resource,
+        group: 'Resources',
     }));
 }
 
 function generateResourceEqualsFeatures(resources) {
     return resources.map(resource => ({
         value: `resource = ${resource}`,
-        label: `resource = ${resource}`
+        label: `resource = ${resource}`,
+        group: 'Resources',
     }));
 }
 
@@ -3412,7 +4465,30 @@ function addSplitToNode(nodeId, treeType) {
     // Generate features based on tree type
     const features = generateFeaturesForTreeType(treeType);
     console.log('Generated features:', features);
-    
+
+    // Group features by their `group` field; preserve insertion order so sticky
+    // headers reflect the same ordering as the rendered list.
+    const featureGroups = {};
+    const groupOrder = [];
+    features.forEach(f => {
+        const g = f.group || 'Other';
+        if (!(g in featureGroups)) {
+            featureGroups[g] = [];
+            groupOrder.push(g);
+        }
+        featureGroups[g].push(f);
+    });
+    const escapeAttr = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    const dropdownItemsHtml = groupOrder.map(g => {
+        const header = `<li class="split-feature-group-header">${escapeAttr(g)}</li>`;
+        const items = featureGroups[g].map(f =>
+            `<li><button type="button" class="dropdown-item small" data-value="${escapeAttr(f.value)}">${escapeAttr(f.label)}</button></li>`
+        ).join('');
+        return header + items;
+    }).join('');
+    const firstFeatureValue = features.length ? features[0].value : '';
+    const firstFeatureLabel = features.length ? features[0].label : 'Choose a feature...';
+
     const modalHtml = `
         <div class="modal fade" id="addSplitModal" tabindex="-1">
             <div class="modal-dialog">
@@ -3422,11 +4498,18 @@ function addSplitToNode(nodeId, treeType) {
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
-                        <div class="mb-3">
-                            <label for="splitFeature" class="form-label">Feature</label>
-                            <select class="form-select" id="splitFeature">
-                                ${features.map(feature => `<option value="${feature.value}">${feature.label}</option>`).join('')}
-                            </select>
+                        <div class="mb-3 split-feature-dropdown">
+                            <label for="splitFeatureBtn" class="form-label">Feature</label>
+                            <div class="dropdown w-100">
+                                <button class="form-select text-start" type="button" id="splitFeatureBtn"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span id="splitFeatureLabel">${escapeAttr(firstFeatureLabel)}</span>
+                                </button>
+                                <input type="hidden" id="splitFeature" value="${escapeAttr(firstFeatureValue)}">
+                                <ul class="dropdown-menu w-100 shadow-sm">
+                                    ${dropdownItemsHtml}
+                                </ul>
+                            </div>
                         </div>
                         <div class="mb-3" id="thresholdGroup">
                             <label for="splitThreshold" class="form-label">Threshold (≤)</label>
@@ -3464,15 +4547,30 @@ function addSplitToNode(nodeId, treeType) {
     
     // Add modal to body
     document.body.insertAdjacentHTML('beforeend', modalHtml);
-    
-    // Setup feature change handler to show/hide threshold for categorical features
+
+    // Wire up the custom feature dropdown: click on an item updates the
+    // hidden input + the visible label, then fires a synthetic 'change' event
+    // so the rest of the modal logic (which used to listen on the <select>)
+    // keeps working unmodified.
     const featureSelect = document.getElementById('splitFeature');
+    const featureLabelEl = document.getElementById('splitFeatureLabel');
+    const featureMenu = document.querySelector('#addSplitModal .dropdown-menu');
+    if (featureMenu) {
+        featureMenu.querySelectorAll('.dropdown-item').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const v = btn.getAttribute('data-value');
+                featureSelect.value = v;
+                if (featureLabelEl) featureLabelEl.textContent = btn.textContent;
+                featureSelect.dispatchEvent(new Event('change'));
+            });
+        });
+    }
     const thresholdGroup = document.getElementById('thresholdGroup');
-    
+
     function toggleThresholdVisibility() {
         const selectedFeature = featureSelect.value;
         const isCategorical = selectedFeature.includes(' = ');
-        
+
         if (isCategorical) {
             thresholdGroup.style.display = 'none';
         } else {
@@ -3488,10 +4586,11 @@ function addSplitToNode(nodeId, treeType) {
     
     // Setup distribution controls for distribution trees
     if (treeType === 'distribution' || treeType === 'execution' || treeType === 'waiting' || treeType === 'arrival') {
+        const splitUnit = (treeType === 'execution' || treeType === 'waiting' || treeType === 'arrival') ? 'min' : null;
         // Use setTimeout to ensure DOM is ready
         setTimeout(() => {
-            setupDistributionControls('trueValueContainer', 'true');
-            setupDistributionControls('falseValueContainer', 'false');
+            setupDistributionControls('trueValueContainer', 'true', splitUnit);
+            setupDistributionControls('falseValueContainer', 'false', splitUnit);
         }, 100);
     }
     
@@ -3500,13 +4599,13 @@ function addSplitToNode(nodeId, treeType) {
     modal.show();
 }
 
-function setupDistributionControls(containerId, branch) {
+function setupDistributionControls(containerId, branch, unitSuffix) {
     const container = document.getElementById(containerId);
     if (!container) {
         console.error('Container not found:', containerId);
         return;
     }
-    console.log('Setting up distribution controls for:', containerId, branch);
+    console.log('Setting up distribution controls for:', containerId, branch, unitSuffix);
     container.innerHTML = `
         <div class="row">
             <div class="col-md-6">
@@ -3516,6 +4615,8 @@ function setupDistributionControls(containerId, branch) {
                     <option value="norm">Normal</option>
                     <option value="expon" selected>Exponential</option>
                     <option value="uniform">Uniform</option>
+                    <option value="lognorm">Log-normal</option>
+                    <option value="gamma">Gamma</option>
                 </select>
             </div>
             <div class="col-md-6">
@@ -3523,51 +4624,44 @@ function setupDistributionControls(containerId, branch) {
             </div>
         </div>
     `;
-    
+
     const distSelect = document.getElementById(`${branch}Distribution`);
     const paramsContainer = document.getElementById(`${branch}Params`);
-    
+
+    function numInput(id, value, marginClass) {
+        const cls = marginClass ? ` ${marginClass}` : '';
+        if (unitSuffix) {
+            return `<div class="input-group input-group-sm${cls}">
+                        <input type="number" class="form-control" id="${id}" min="0" step="0.1" value="${value}">
+                        <span class="input-group-text">${unitSuffix}</span>
+                    </div>`;
+        }
+        return `<input type="number" class="form-control form-control-sm${cls}" id="${id}" min="0" step="0.1" value="${value}">`;
+    }
+
     function renderParams() {
         const dist = distSelect.value;
         let html = '';
-        
+
         if (dist === 'fixed') {
-            html = `
-                <label class="form-label small">Value</label>
-                <input type="number" class="form-control form-control-sm" id="${branch}Value" min="0" step="0.1" value="15">
-            `;
+            html = `<label class="form-label small">Value</label>${numInput(`${branch}Value`, 15)}`;
         } else if (dist === 'norm') {
-            html = `
-                <label class="form-label small">Mean</label>
-                <input type="number" class="form-control form-control-sm mb-1" id="${branch}Mean" min="0" step="0.1" value="15">
-                <label class="form-label small">Std Dev</label>
-                <input type="number" class="form-control form-control-sm mb-1" id="${branch}Std" min="0" step="0.1" value="5">
-                <label class="form-label small">Min</label>
-                <input type="number" class="form-control form-control-sm mb-1" id="${branch}Min" min="0" step="0.1" value="0">
-                <label class="form-label small">Max</label>
-                <input type="number" class="form-control form-control-sm" id="${branch}Max" min="0" step="0.1" value="100">
-            `;
+            html = `<label class="form-label small">Mean</label>${numInput(`${branch}Mean`, 15, 'mb-1')}
+                    <label class="form-label small">Std Dev</label>${numInput(`${branch}Std`, 5, 'mb-1')}
+                    <label class="form-label small">Min</label>${numInput(`${branch}Min`, 0, 'mb-1')}
+                    <label class="form-label small">Max</label>${numInput(`${branch}Max`, 100)}`;
         } else if (dist === 'expon') {
-            html = `
-                <label class="form-label small">Mean</label>
-                <input type="number" class="form-control form-control-sm mb-1" id="${branch}Mean" min="0" step="0.1" value="15">
-                <label class="form-label small">Min</label>
-                <input type="number" class="form-control form-control-sm mb-1" id="${branch}Min" min="0" step="0.1" value="0">
-                <label class="form-label small">Max</label>
-                <input type="number" class="form-control form-control-sm" id="${branch}Max" min="0" step="0.1" value="100">
-            `;
+            html = `<label class="form-label small">Mean</label>${numInput(`${branch}Mean`, 15, 'mb-1')}
+                    <label class="form-label small">Min</label>${numInput(`${branch}Min`, 0, 'mb-1')}
+                    <label class="form-label small">Max</label>${numInput(`${branch}Max`, 100)}`;
         } else if (dist === 'uniform') {
-            html = `
-                <label class="form-label small">Min</label>
-                <input type="number" class="form-control form-control-sm mb-1" id="${branch}Min" min="0" step="0.1" value="0">
-                <label class="form-label small">Max</label>
-                <input type="number" class="form-control form-control-sm" id="${branch}Max" min="0" step="0.1" value="100">
-            `;
+            html = `<label class="form-label small">Min</label>${numInput(`${branch}Min`, 0, 'mb-1')}
+                    <label class="form-label small">Max</label>${numInput(`${branch}Max`, 100)}`;
         }
-        
+
         paramsContainer.innerHTML = html;
     }
-    
+
     distSelect.addEventListener('change', renderParams);
     renderParams();
 }
@@ -3901,9 +4995,10 @@ function removeSplitFromNode(nodeId, treeType) {
     
     // Setup distribution controls for distribution trees
     if (treeType === 'distribution' || treeType === 'execution' || treeType === 'waiting' || treeType === 'arrival') {
+        const removeUnit = (treeType === 'execution' || treeType === 'waiting' || treeType === 'arrival') ? 'min' : null;
         // Use setTimeout to ensure DOM is ready
         setTimeout(() => {
-            setupDistributionControls('newLeafValueContainer', 'newLeaf');
+            setupDistributionControls('newLeafValueContainer', 'newLeaf', removeUnit);
         }, 100);
     }
     
@@ -4070,16 +5165,19 @@ function updateWaitingTimeVisualization() {
 
 async function renderWaitingTimeVisualization(activity='', resource='') {
     const sessionId = currentSessionId;
+    const unit = getResultsTimeUnit();
     const params = new URLSearchParams();
     if (activity) params.append('activity', activity);
     if (resource) params.append('resource', resource);
-    
-    const url = `/api/get_visualization/${sessionId}/waiting_time_dist${params.toString() ? '?' + params.toString() : ''}`;
+    params.append('unit', unit);
+
+    const url = `/api/get_visualization/${sessionId}/waiting_time_dist?${params.toString()}`;
     const response = await fetch(url);
     const result = await response.json();
 
     const container = document.getElementById('waitingTimeVisualizationContainer');
     console.log('Rendering SVG visualization');
+    const unitLabel = TIME_UNIT_LABELS[result.unit || unit] || 'min';
     // Direct SVG content - embed it
     container.innerHTML = `
         <div class="text-center">
@@ -4091,19 +5189,19 @@ async function renderWaitingTimeVisualization(activity='', resource='') {
             <div class="row text-center">
                 <div class="col-md-3">
                     <div class="fw-bold text-success">Mean</div>
-                    <div class="text-muted">${result.metrics.average_duration.toFixed(2)} mins</div>
+                    <div class="text-muted">${result.metrics.average_duration.toFixed(2)} ${unitLabel}</div>
                 </div>
                 <div class="col-md-3">
                     <div class="fw-bold text-success">Median</div>
-                    <div class="text-muted">${result.metrics.median_duration.toFixed(2)} mins</div>
+                    <div class="text-muted">${result.metrics.median_duration.toFixed(2)} ${unitLabel}</div>
                 </div>
                 <div class="col-md-3">
                     <div class="fw-bold text-success">Min</div>
-                    <div class="text-muted">${result.metrics.min_duration.toFixed(2)} mins</div>
+                    <div class="text-muted">${result.metrics.min_duration.toFixed(2)} ${unitLabel}</div>
                 </div>
                 <div class="col-md-3">
                     <div class="fw-bold text-success">Max</div>
-                    <div class="text-muted">${result.metrics.max_duration.toFixed(2)} mins</div>
+                    <div class="text-muted">${result.metrics.max_duration.toFixed(2)} ${unitLabel}</div>
                 </div>
             </div>
         </div>

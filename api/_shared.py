@@ -12,11 +12,6 @@ from prosit_integration import ProSiTIntegration
 logger = logging.getLogger(__name__)
 
 
-def allowed_file(filename):
-    """Check if uploaded file has allowed extension."""
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ('xes', 'pnml')
-
-
 def load_session_prosit(session, *, with_event_log=False, compute_metrics=False):
     """Build a fresh ProSiTIntegration for a session.
 

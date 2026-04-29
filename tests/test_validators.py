@@ -4,6 +4,7 @@ import pytest
 
 from validators import (
     parse_bool,
+    validate_attribute_mode,
     validate_grace_period,
     validate_max_depth_tree,
     validate_multitasking_thr,
@@ -132,3 +133,26 @@ def test_num_instances_rejects_garbage():
 ])
 def test_parse_bool(raw, expected):
     assert parse_bool(raw) is expected
+
+
+# --- validate_attribute_mode -------------------------------------------------
+
+
+def test_attribute_mode_default_when_missing():
+    val, err = validate_attribute_mode(None)
+    assert val == 'distribution'
+    assert err is None
+
+
+def test_attribute_mode_accepts_distribution():
+    assert validate_attribute_mode('distribution') == ('distribution', None)
+
+
+def test_attribute_mode_accepts_empirical():
+    assert validate_attribute_mode('empirical') == ('empirical', None)
+
+
+def test_attribute_mode_rejects_garbage():
+    val, err = validate_attribute_mode('foo')
+    assert val == 'distribution'
+    assert err is not None

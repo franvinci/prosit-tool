@@ -104,20 +104,15 @@ ProSiT provides a controlled environment for "what-if" analyses and process opti
 2. Create the conda environment:
    ```bash
    conda env create -f environment.yml
-   conda activate prosit
+   conda activate prosit-tool
    ```
 
-3. Install the application:
-   ```bash
-   pip install -e .
-   ```
-
-4. Run the application:
+3. Run the application:
    ```bash
    python main.py
    ```
 
-5. Access the application at `http://localhost:5050`
+4. Access the application at `http://localhost:5050`
 
 ## 📖 Usage
 
@@ -172,23 +167,35 @@ The tool evaluates simulation quality by comparing generated logs with original 
 ```
 prosit/
 ├── 📱 app.py                 # Flask application configuration
-├── 🚀 main.py               # Application entry point
-├── 🗃️ models.py             # Database models and schemas
-├── 🛣️ routes.py             # Web routes and API endpoints
+├── 🚀 main.py                # Application entry point
+├── 🗃️ models.py              # Database models and schemas
+├── ⚙️ config.py              # Centralized configuration constants
+├── ✅ validators.py          # Request input validators
+├── 🔌 api/                   # Flask blueprints (HTTP API endpoints)
+│   ├── upload.py             # File upload endpoint
+│   ├── discovery.py          # Process discovery endpoint
+│   ├── parameters.py         # Parameter get/update endpoints
+│   ├── simulation.py         # Simulation, download, export endpoints
+│   ├── visualization.py      # Visualization renderers
+│   ├── errors.py             # 404/500 JSON error handlers
+│   ├── _shared.py            # Helpers shared across blueprints
+│   └── _decorators.py        # @handle_api_errors decorator
 ├── 🔧 prosit_integration.py  # Core ProSiT integration layer
-├── 📚 prosit/               # Core ProSiT library
-├── 🎨 templates/           # HTML templates and UI components
-├── 🎭 static/              # CSS, JavaScript, and static assets
-├── 🔧 installer/           # Platform-specific setup scripts
-│   ├── ubuntu/             # Linux installation scripts
-│   ├── windows/            # Windows installation scripts
-│   └── macos/              # macOS installation scripts
-├── 📋 example_data/        # Sample XES files for testing
-├── 🐳 docker-compose.yml   # Docker Compose configuration
-├── 🐳 Dockerfile          # Docker image definition
-├── 📦 environment.yml     # Conda environment specification
-├── 📄 LICENSE             # MIT License
-└── 📖 README.md           # This documentation
+├── 🔄 format_converters.py   # UI ↔ ProSiT distribution conversions
+├── 📊 evaluation.py          # Simulation accuracy metrics
+├── 🎨 templates/             # HTML templates and UI components
+├── 🎭 static/                # CSS, JavaScript, and static assets
+├── 🔧 installer/             # Platform-specific setup scripts
+│   ├── ubuntu/               # Linux installation scripts
+│   ├── windows/              # Windows installation scripts
+│   └── macos/                # macOS installation scripts
+├── 📋 example_data/          # Sample XES files for testing
+├── 🧪 tests/                 # Pytest suite (smoke, security, units)
+├── 🐳 docker-compose.yml     # Docker Compose configuration
+├── 🐳 Dockerfile             # Docker image definition
+├── 📦 environment.yml        # Conda environment specification
+├── 📄 LICENSE                # MIT License
+└── 📖 README.md              # This documentation
 ```
 
 ## 🏛️ System Architecture Diagram
@@ -197,12 +204,16 @@ prosit/
 
 ## 🔌 API Endpoints
 
-- `GET /` - Main application interface
-- `POST /upload` - Upload XES event log
-- `POST /discover` - Discover process model
-- `POST /simulate` - Run simulation
-- `GET /results/<session_id>` - Get simulation results
-- `GET /download/<session_id>/<file_type>` - Download result files
+- `GET /` — Main application interface
+- `POST /api/upload` — Upload XES event log (and optional PNML), creates a session
+- `POST /api/discover/<session_id>` — Discover Petri net + simulation parameters
+- `GET /api/parameters/<session_id>` — Load discovered parameters for a session
+- `PUT /api/parameters/<session_id>` — Save edited parameters back to the session
+- `POST /api/simulate/<session_id>` — Run a simulation for the session
+- `GET /api/export_parameters/<session_id>` — Download the ProSiT JSON parameter file
+- `GET /api/download/<filename>` — Download a generated simulation CSV
+- `GET /api/get_activities_and_resources/<session_id>` — List activities/resources from the simulated log
+- `GET /api/get_visualization/<session_id>/<visualization_type>` — Render a chart from the simulated log
 
 ## ⚙️ Configuration
 
@@ -254,8 +265,8 @@ The application uses SQLite by default, but can be configured to use other datab
 ### Setting up Development Environment
 1. Clone the repository
 2. Create conda environment: `conda env create -f environment.yml`
-3. Activate environment: `conda activate prosit`
-4. Install in development mode: `pip install -e .`
+3. Activate environment: `conda activate prosit-tool`
+4. Run tests: `pytest`
 5. Run with debug mode: `FLASK_ENV=development python main.py`
 
 ### Contributing

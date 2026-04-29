@@ -47,20 +47,64 @@ def test_discover_xes_only(client, small_xes_path):
     assert body["success"] is True
     assert body["process_model"]["activities"], "expected non-empty activities"
     assert body["parameters"]["execution_time_params"]
-    assert body["prosit_metrics"], "expected non-empty prosit_metrics"
+    # Metrics are now computed via /api/metrics/<sid>; discover skips them.
+    assert body.get("prosit_metrics") is not None
+    assert body.get("prosit_metrics") == {}
+
+
+def test_compute_metrics_endpoint_returns_metrics(client, tiny_xes_path):
+    """The async metrics endpoint runs simulation+evaluate and stores the result.
+
+    Uses a tiny synthetic log to keep the test under a few seconds — the
+    expensive bits (r2gd, r3gd) scale with the number of traces and resources.
+    """
+    upload = _upload_xes(client, tiny_xes_path).get_json()
+    sid = upload["session_id"]
+    discover = client.post(f"/api/discover/{sid}")
+    assert discover.status_code == 200, discover.data
+
+    metrics_resp = client.post(f"/api/metrics/{sid}")
+    assert metrics_resp.status_code == 200, metrics_resp.data
+    body = metrics_resp.get_json()
+    assert body["success"] is True
+    metrics = body["prosit_metrics"]
+    assert "control-flow" in metrics
+    assert "time" in metrics
+    assert "resource-flow" in metrics
+    assert "generalization" in metrics
+
+    # And the cached metrics are now persisted on the session.
+    cached = client.get(f"/api/parameters/{sid}").get_json()
+    assert cached["parameters"].get("prosit_metrics")
 
 
 def test_discover_with_pnml(client, small_xes_path, small_pnml_path):
-    """Regression test for BUG #1 (prosit_metrics undefined in PNML branch).
-
-    Will fail until Phase 2 lands. Documenting it here makes the bug visible
-    and turns the fix into a confirmable green checkmark.
-    """
+    """Regression test for BUG #1 (prosit_metrics undefined in PNML branch)."""
     upload = _upload_xes_and_pnml(client, small_xes_path, small_pnml_path).get_json()
     sid = upload["session_id"]
 
     resp = client.post(f"/api/discover/{sid}")
     assert resp.status_code == 200, resp.data
+    body = resp.get_json()
+    assert body["success"] is True
+    assert body["process_model"]["activities"], "expected non-empty activities"
+    assert body.get("prosit_metrics") is not None
+
+
+def test_export_parameters_returns_json_body(client, small_xes_path):
+    """Regression for B2: export must stream JSON without leaking /tmp files."""
+    upload = _upload_xes(client, small_xes_path).get_json()
+    sid = upload["session_id"]
+
+    discover = client.post(f"/api/discover/{sid}")
+    assert discover.status_code == 200, discover.data
+
+    resp = client.get(f"/api/export_parameters/{sid}")
+    assert resp.status_code == 200, resp.data
+    assert resp.mimetype == "application/json"
+    body = json.loads(resp.data)
+    assert isinstance(body, dict)
+    assert body, "exported parameters JSON should not be empty"
 
 
 def test_full_pipeline(client, small_xes_path):

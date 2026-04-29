@@ -66,6 +66,44 @@ def test_upload_without_pnml_field(client, small_xes_path):
     assert resp.status_code == 200, resp.data
 
 
+def test_internal_error_does_not_leak_stack_trace(client, small_xes_path, tmp_path):
+    """S1: 500 responses must not expose Traceback / paths / 'at 0x' to the client."""
+    import io
+    import os
+
+    with open(small_xes_path, "rb") as f:
+        data = {
+            "xes_file": (io.BytesIO(f.read()), small_xes_path.name),
+            "pnml_file": (io.BytesIO(b""), ""),
+        }
+    upload = client.post("/api/upload", data=data, content_type="multipart/form-data").get_json()
+    sid = upload["session_id"]
+
+    # Delete the uploaded XES from disk so the discovery view crashes when it
+    # tries to load the event log. The file-existence check happens BEFORE
+    # the load, so we need to bypass it: rename instead of delete to keep the
+    # `os.path.exists` check happy and trigger the failure deeper in pm4py.
+    from app import app as flask_app
+    upload_folder = flask_app.config["UPLOAD_FOLDER"]
+    xes_path = os.path.join(upload_folder, upload["filename"])
+    # Truncate to a non-XES payload so xes_importer.apply raises.
+    with open(xes_path, "wb") as f:
+        f.write(b"not a valid xes file")
+
+    resp = client.post(f"/api/discover/{sid}")
+    assert resp.status_code == 500, resp.data
+
+    body = resp.get_json()
+    assert body["error"] == "Parameter discovery failed"
+    assert "error_id" in body and len(body["error_id"]) >= 16
+
+    # Critical: nothing internal should leak.
+    raw = resp.data.decode("utf-8", errors="replace")
+    assert "Traceback" not in raw
+    assert " at 0x" not in raw
+    assert upload_folder not in raw
+
+
 def test_simulate_invalid_num_instances_returns_400(client, small_xes_path):
     """Phase 5: bad input now goes through the validator → 400, not 500."""
     import io

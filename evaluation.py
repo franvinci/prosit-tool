@@ -23,7 +23,7 @@ import datetime
 
 def evaluate(original_log, simulated_log, metrics_labels=["cfld", "ngd", "red", "aed", "red", "aed", "car", "ctd", "car_entropy", "hwd", "ctd_entropy", "etd_entropy"]):
 
-    event_log_ids = EventLogIDs(  
+    event_log_ids = EventLogIDs(
         case="case:concept:name",
         activity="concept:name",
         resource="org:resource",
@@ -31,6 +31,8 @@ def evaluate(original_log, simulated_log, metrics_labels=["cfld", "ngd", "red", 
         end_time="time:timestamp"
     )
 
+    original_log = original_log.copy()
+    simulated_log = simulated_log.copy()
 
     original_log[event_log_ids.start_time] = pd.to_datetime(original_log[event_log_ids.start_time], format='ISO8601', utc=True)
     original_log[event_log_ids.end_time] = pd.to_datetime(original_log[event_log_ids.end_time], format='ISO8601', utc=True)
@@ -155,12 +157,17 @@ def compute_atd_entropy(df_log: pd.DataFrame) -> float:
     for i in range(1, len(ordered_first_ts_list)):
         arrival_times.append((ordered_first_ts_list[i] - ordered_first_ts_list[i-1]).total_seconds()/60)
 
+    if len(arrival_times) < 2:
+        return 0.0
+
     hist, _ = np.histogram(arrival_times, bins='auto', density=True)
     hist = hist[hist > 0]
+    if hist.size == 0 or np.sum(hist) == 0:
+        return 0.0
     probs = hist / np.sum(hist)
     atd_entr = entropy(probs)
 
-    return atd_entr
+    return float(atd_entr)
 
 
 def compute_ctd_entropy(df_log: pd.DataFrame) -> float:
@@ -168,15 +175,22 @@ def compute_ctd_entropy(df_log: pd.DataFrame) -> float:
     log = pm4py.convert_to_event_log(df_log)
     cycle_times = []
     for trace in log:
+        if not trace:
+            continue
         start = trace[0]['start:timestamp']
         end = trace[-1]['time:timestamp']
         cycle_times.append((end-start).total_seconds()//60)
-    
+
+    if len(cycle_times) < 2:
+        return 0.0
+
     hist, _ = np.histogram(cycle_times, bins='auto', density=True)
+    if np.sum(hist) == 0:
+        return 0.0
     probs = hist / np.sum(hist)
     ctd_entr = entropy(probs)
 
-    return ctd_entr
+    return float(ctd_entr)
 
 
 def compute_etd_entropy(df_log: pd.DataFrame) -> float:
@@ -185,12 +199,18 @@ def compute_etd_entropy(df_log: pd.DataFrame) -> float:
     etd_entropies = []
     for act in activities:
         df_log_act = df_log[df_log["concept:name"] == act]
+        if df_log_act.empty:
+            continue
         ex_times = (df_log_act["time:timestamp"] - df_log_act["start:timestamp"]).apply(lambda x: x.total_seconds() // 60)
+        if len(ex_times) < 2:
+            continue
         hist, _ = np.histogram(list(ex_times), bins='auto', density=True)
+        if np.sum(hist) == 0:
+            continue
         probs = hist / np.sum(hist)
         etd_entropies.append(entropy(probs))
 
-    return np.mean(etd_entropies)
+    return float(np.mean(etd_entropies)) if etd_entropies else 0.0
 
 
 def build_handover_matrix(df: pd.DataFrame, resources: list, case_id_col: str='case:concept:name', resource_col: str='org:resource') -> pd.DataFrame:
@@ -222,14 +242,16 @@ def compute_handover_error(df_sim: pd.DataFrame, df_test: pd.DataFrame, case_id_
 
 
 def compute_resource_flow_distance(df_sim: pd.DataFrame, df_test: pd.DataFrame):
-    
-    event_log_ids = EventLogIDs(  
+
+    event_log_ids = EventLogIDs(
         case="case:concept:name",
         activity="org:resource",
         start_time="start:timestamp",
         end_time="time:timestamp"
     )
 
+    df_test = df_test.copy()
+    df_sim = df_sim.copy()
 
     df_test[event_log_ids.start_time] = pd.to_datetime(df_test[event_log_ids.start_time], format='ISO8601', utc=True)
     df_test[event_log_ids.end_time] = pd.to_datetime(df_test[event_log_ids.end_time], format='ISO8601', utc=True)
@@ -248,13 +270,16 @@ def compute_resource_flow_distance(df_sim: pd.DataFrame, df_test: pd.DataFrame):
 
 
 def compute_resource_ngd(df_sim: pd.DataFrame, df_test: pd.DataFrame, n=3):
-    
-    event_log_ids = EventLogIDs(  
+
+    event_log_ids = EventLogIDs(
         case="case:concept:name",
         activity="org:resource",
         start_time="start:timestamp",
         end_time="time:timestamp"
     )
+
+    df_test = df_test.copy()
+    df_sim = df_sim.copy()
 
     df_test[event_log_ids.start_time] = pd.to_datetime(df_test[event_log_ids.start_time], format='ISO8601', utc=True)
     df_test[event_log_ids.end_time] = pd.to_datetime(df_test[event_log_ids.end_time], format='ISO8601', utc=True)
