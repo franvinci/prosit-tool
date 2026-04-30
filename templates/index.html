@@ -1,332 +1,291 @@
 {% extends "base.html" %}
 
-{% block content %}
-<div class="row">
-    <div class="col-lg-3">
-        <div class="card shadow-sm mb-4">
-            <div class="card-header" style="background: linear-gradient(135deg, #6f42c1 0%, #5a32a0 100%); color: white;">
-                <h5 class="card-title mb-0">
-                    <i data-feather="upload" class="me-2"></i>
-                    Upload Process Data
-                </h5>
-            </div>
-            <div class="card-body">
-                <form id="uploadForm" enctype="multipart/form-data">
-                    <div class="mb-3">
-                        <label for="xesFile" class="form-label fw-bold">Event Log File (XES or CSV)</label>
-                        <input type="file" class="form-control" id="xesFile" name="xes_file" accept=".xes,.csv" required>
-                        <div class="form-text">Upload an XES or CSV event log; map columns below.</div>
-                    </div>
+{% block sidebar_sessions %}
+{% for session in sessions %}
+{% set badge_class = 'success' if session.status in ('ready', 'completed') else 'warning' if session.status == 'uploaded' else ('danger' if session.status == 'error' else 'info') %}
+<div class="recent-session-item" data-session-id="{{ session.id }}">
+    <div class="d-flex justify-content-between align-items-start gap-2 w-100">
+        <div class="recent-session-main flex-grow-1 cursor-pointer" onclick="loadSession({{ session.id }})">
+            <h6 class="mb-1 text-truncate" title="{{ session._display_label }}">{{ session._display_label }}</h6>
+            <small class="d-block">
+                {{ (session.last_used_at or session.created_at).strftime('%Y-%m-%d %H:%M') }}
+                {% if session._run_count > 0 %}· {{ session._run_count }} run{{ '' if session._run_count == 1 else 's' }}{% endif %}
+            </small>
+        </div>
+        <div class="d-flex flex-column align-items-end gap-1">
+            <span class="badge session-status-badge bg-{{ badge_class }}">{{ session.status }}</span>
+            <button type="button"
+                    class="btn btn-sm btn-link p-0 recent-session-delete"
+                    title="Delete session"
+                    onclick="event.stopPropagation(); deleteSession({{ session.id }}, '{{ session._display_label|replace("'", "\\'") }}')">
+                <i data-feather="trash-2" style="width: 14px; height: 14px;"></i>
+            </button>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="sidebar-empty">No sessions yet — upload a log to get started.</div>
+{% endfor %}
+{% endblock %}
 
-                    <div id="csvColumnMapping" class="mb-3" style="display: none;">
-                        <div class="alert alert-info py-2 small mb-2">Map your event-log columns to the required fields.</div>
+{% block content %}
+<div id="homeView" class="home-view">
+    <div class="home-hero">
+        <h1 class="home-hero-title">ProSiT</h1>
+        <p class="home-hero-subtitle">Process Simulation Tool — discover and simulate business processes from event logs.</p>
+
+        <div class="home-upload-card">
+            <form id="uploadForm" enctype="multipart/form-data">
+                <!-- Step 1 — file selection (full-width hero input) -->
+                <div class="home-step">
+                    <div class="home-step-header">
+                        <span class="home-step-num">1</span>
+                        <div>
+                            <div class="home-step-title">Event Log</div>
+                            <div class="home-step-sub">Upload an XES or CSV file with your process traces.</div>
+                        </div>
+                    </div>
+                    <input type="file" class="form-control home-step-file" id="xesFile" name="xes_file" accept=".xes,.csv" required>
+
+                    <div id="csvColumnMapping" class="home-csv-mapping" style="display: none;">
+                        <div class="form-text mb-2">Match the columns from your file to the required event-log fields.</div>
                         <div class="row g-2">
-                            <div class="col-md-6">
+                            <div class="col-md-4 col-lg-2-5">
                                 <label for="csvCaseIdCol" class="form-label small mb-1">Case ID</label>
                                 <select class="form-select form-select-sm" id="csvCaseIdCol" name="case_id_col"></select>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4 col-lg-2-5">
                                 <label for="csvActivityCol" class="form-label small mb-1">Activity</label>
                                 <select class="form-select form-select-sm" id="csvActivityCol" name="activity_col"></select>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4 col-lg-2-5">
                                 <label for="csvEndTsCol" class="form-label small mb-1">End timestamp</label>
                                 <select class="form-select form-select-sm" id="csvEndTsCol" name="end_ts_col"></select>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-2-5">
                                 <label for="csvStartTsCol" class="form-label small mb-1">Start timestamp</label>
                                 <select class="form-select form-select-sm" id="csvStartTsCol" name="start_ts_col"></select>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-lg-2-5">
                                 <label for="csvResourceCol" class="form-label small mb-1">Resource</label>
                                 <select class="form-select form-select-sm" id="csvResourceCol" name="resource_col"></select>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="mb-4">
-                        <label class="form-label fw-bold">Choose Petri Net Source</label>
-                        <div class="row g-2">
-                            <div class="col-md-6">
+                <!-- Step 2 — discovery configuration in 3 balanced columns -->
+                <div class="home-step">
+                    <div class="home-step-header">
+                        <span class="home-step-num">2</span>
+                        <div>
+                            <div class="home-step-title">Discovery</div>
+                            <div class="home-step-sub">Choose the process model source and tune discovery.</div>
+                        </div>
+                    </div>
+
+                    <div class="home-config-grid">
+                        <div class="home-config-cell">
+                            <label class="form-section-label">
+                                <i data-feather="git-merge" style="width:14px;height:14px;"></i>
+                                Petri Net Source
+                            </label>
+                            <div class="home-upload-source">
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="petriNetSource" id="discoverNet" value="discover" checked>
                                     <label class="form-check-label" for="discoverNet">
-                                        <strong>Discover from Event Log</strong><br>
-                                        <small class="text-muted">Use inductive miner to discover Petri net</small>
+                                        <strong>Discover from Event Log</strong>
+                                        <small class="text-muted d-block">Use inductive miner</small>
                                     </label>
                                 </div>
-                            </div>
-                            <div class="col-md-6">
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="petriNetSource" id="importNet" value="import">
                                     <label class="form-check-label" for="importNet">
-                                        <strong>Import Petri net from PNML File</strong><br>
-                                        <small class="text-muted">Use existing Petri net from PNML file</small>
+                                        <strong>Import PNML File</strong>
+                                        <small class="text-muted d-block">Use existing Petri net</small>
                                     </label>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div id="discoverySection" class="upload-section">
-                        <div class="mb-3">
-                            <label for="noiseThreshold" class="form-label">
-                                Noise Threshold: <span id="thresholdValue">0.2</span>
-                            </label>
-                            <input type="range" class="form-range" id="noiseThreshold" name="noise_threshold" 
-                                   min="0" max="1" step="0.05" value="0.2">
-                            <div class="form-text">Lower threshold leads to higher fitness, while 1 promotes simplicity and precision.</div>
-                        </div>
-                    </div>
 
-                    <div id="pnmlSection" class="upload-section" style="display: none;">
-                        <div class="mb-3">
-                            <label for="pnmlFile" class="form-label">
-                                PNML Petri Net File
-                                <i data-feather="info" class="ms-1" 
-                                   data-bs-toggle="tooltip" 
-                                   data-bs-placement="top" 
-                                   title="The Petri net must be a valid sound Petri net model."
+                        <div class="home-config-cell">
+                            <div id="discoverySection" class="upload-section">
+                                <label for="noiseThreshold" class="form-section-label">
+                                    Noise Threshold: <span id="thresholdValue">0.2</span>
+                                </label>
+                                <input type="range" class="form-range" id="noiseThreshold" name="noise_threshold"
+                                       min="0" max="1" step="0.05" value="0.2">
+                                <div class="form-text">Lower → higher fitness; 1 → simpler, more precise.</div>
+                            </div>
+
+                            <div id="pnmlSection" class="upload-section" style="display: none;">
+                                <label for="pnmlFile" class="form-section-label">
+                                    PNML Petri Net File
+                                    <i data-feather="info" class="ms-1"
+                                       data-bs-toggle="tooltip"
+                                       data-bs-placement="top"
+                                       title="The Petri net must be a valid sound Petri net model."
+                                       style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
+                                </label>
+                                <input type="file" class="form-control form-control-sm" id="pnmlFile" name="pnml_file" accept=".pnml">
+                                <div class="form-text">Upload your PNML Petri net model file.</div>
+                            </div>
+                        </div>
+
+                        <div class="home-config-cell">
+                            <label for="maxDepthTree" class="form-section-label">
+                                Decision Tree Max Depth
+                                <i data-feather="info" class="ms-1"
+                                   data-bs-toggle="tooltip"
+                                   data-bs-placement="top"
+                                   title="Max depth of the decision trees used for transitions, resources and times. 0 disables rule discovery (simple frequency/distribution estimates). 1-2 are conservative, robust on small logs. 3-5 are finer-grained but risk overfitting on noisy logs."
                                    style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
                             </label>
-                            <input type="file" class="form-control" id="pnmlFile" name="pnml_file" accept=".pnml">
-                            <div class="form-text">Upload your PNML Petri net model file.</div>
+                            <select class="form-select" id="maxDepthTree" name="max_depth_tree">
+                                <option value="0" selected>0 (disabled)</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                            </select>
+                            <div class="form-text">0 disables rule discovery, up to 5 for decision trees.</div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="mb-4">
-                        <label for="maxDepthTree" class="form-label fw-bold">
-                            Decision Tree Max Depth
-                            <i data-feather="info" class="ms-1"
-                               data-bs-toggle="tooltip"
-                               data-bs-placement="top"
-                               title="Max depth of the decision trees used for transitions, resources and times. 0 disables rule discovery (simple frequency/distribution estimates). 1-2 are conservative, robust on small logs. 3-5 are finer-grained but risk overfitting on noisy logs."
-                               style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
-                        </label>
-                        <select class="form-select" id="maxDepthTree" name="max_depth_tree">
-                            <option value="0" selected>0 (disabled)</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
-                        </select>
-                        <div class="form-text">Choose 0 to disable rule discovery, or up to 5 for decision trees.</div>
-                    </div>
+                <details class="mt-3 mb-2">
+                    <summary class="form-section-label" style="cursor: pointer;">Advanced</summary>
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold mb-1">
+                                Incremental Discovery
+                                <i data-feather="info" class="ms-1"
+                                   data-bs-toggle="tooltip"
+                                   data-bs-placement="top"
+                                   title="When on, decision trees are fitted incrementally event-by-event (Hoeffding-style), letting the model adapt as the log evolves. When off, trees are fitted in batch on the full log. Off is faster on small/static logs; on is preferable when concept drift is suspected."
+                                   style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
+                            </label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="incrementalDiscoveryToggle">
+                            </div>
+                            <div class="form-text">Disabled when depth is 0.</div>
+                        </div>
+                        <div class="col-md-3" id="gracePeriodSection">
+                            <label class="form-label fw-bold mb-1">
+                                Grace Period
+                                <i data-feather="info" class="ms-1"
+                                   data-bs-toggle="tooltip"
+                                   data-bs-placement="top"
+                                   title="The grace period is the number of events a leaf should observe between split attempts. Lower grace periods facilitate rapid adaption to sudden concept drifts, while higher grace periods reduce the risk of overfitting and promote more stable decisions."
+                                   style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
+                            </label>
+                            <input type="number" class="form-control form-control-sm" id="gracePeriod" name="grace_period" min="1" value="1000">
+                            <div class="form-text">Minimum: 1, Default: 1000.</div>
+                        </div>
 
-                    <details class="mb-4">
-                        <summary class="form-label fw-bold" style="cursor: pointer;">Advanced</summary>
-                        <div class="row g-3 mt-1">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold mb-1">
-                                    Incremental Discovery
-                                    <i data-feather="info" class="ms-1"
-                                       data-bs-toggle="tooltip"
-                                       data-bs-placement="top"
-                                       title="When on, decision trees are fitted incrementally event-by-event (Hoeffding-style), letting the model adapt as the log evolves. When off, trees are fitted in batch on the full log. Off is faster on small/static logs; on is preferable when concept drift is suspected."
-                                       style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
-                                </label>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="incrementalDiscoveryToggle">
-                                </div>
-                                <div class="form-text">Disabled when depth is 0.</div>
-                            </div>
-                            <div class="col-md-6" id="gracePeriodSection">
-                                <label class="form-label fw-bold mb-1">
-                                    Grace Period
-                                    <i data-feather="info" class="ms-1"
-                                       data-bs-toggle="tooltip"
-                                       data-bs-placement="top"
-                                       title="The grace period is the number of events a leaf should observe between split attempts. Lower grace periods facilitate rapid adaption to sudden concept drifts, while higher grace periods reduce the risk of overfitting and promote more stable decisions."
-                                       style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
-                                </label>
-                                <input type="number" class="form-control" id="gracePeriod" name="grace_period" min="1" value="1000">
-                                <div class="form-text">Minimum: 1, Default: 1000.</div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold mb-1">
-                                    Discover Multitasking
-                                    <i data-feather="info" class="ms-1"
-                                       data-bs-toggle="tooltip"
-                                       data-bs-placement="top"
-                                       title="If enabled, the discovery infers per-resource max concurrent cases from observed event overlaps."
-                                       style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
-                                </label>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="enableMultitaskingToggle">
-                                </div>
-                            </div>
-                            <div class="col-md-6" id="multitaskingThrSection">
-                                <label for="multitaskingThr" class="form-label fw-bold mb-1">
-                                    Multitasking Threshold: <span id="multitaskingThrValue">0.05</span>
-                                </label>
-                                <input type="range" class="form-range" id="multitaskingThr" name="multitasking_thr"
-                                       min="0" max="1" step="0.01" value="0.05">
-                                <div class="form-text">Min overlap fraction to flag a resource as multitasking.</div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label for="randomState" class="form-label fw-bold mb-1">
-                                    Random State
-                                    <i data-feather="info" class="ms-1"
-                                       data-bs-toggle="tooltip"
-                                       data-bs-placement="top"
-                                       title="Seed used for reproducible discovery. Same seed + same input produce identical parameters."
-                                       style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
-                                </label>
-                                <input type="number" class="form-control" id="randomState" name="random_state" value="72">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold mb-1">
-                                    Workload Features
-                                    <i data-feather="info" class="ms-1"
-                                       data-bs-toggle="tooltip"
-                                       data-bs-placement="top"
-                                       title="Adds workload-aware features (queue length per activity, currently busy resources, in-flight cases) to the feature set used by decision trees. Useful when timing/routing depends on system load; adds some discovery cost."
-                                       style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
-                                </label>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="useWorkloadFeaturesToggle">
-                                </div>
-                                <div class="form-text">Add workload signals to the feature set.</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="attributeMode" class="form-label fw-bold mb-1">
-                                    Attribute Mode
-                                    <i data-feather="info" class="ms-1"
-                                       data-bs-toggle="tooltip"
-                                       data-bs-placement="top"
-                                       title="distribution: trace attributes are sampled from a fitted parametric distribution (or per-category probability for categorical attributes). Editable in the Trace Attributes tab. empirical: trace attributes are resampled directly from the original log values. Closer to reality but not editable."
-                                       style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
-                                </label>
-                                <select class="form-select" id="attributeMode" name="attribute_mode">
-                                    <option value="distribution" selected>distribution</option>
-                                    <option value="empirical">empirical</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold mb-1">
-                                    Compute Evaluation
-                                    <i data-feather="info" class="ms-1"
-                                       data-bs-toggle="tooltip"
-                                       data-bs-placement="top"
-                                       title="If enabled, after discovery the simulator runs once against the original log and computes accuracy metrics (control flow, timing, resource flow, generalization). On large logs this can take several minutes."
-                                       style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
-                                </label>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="computeEvaluationToggle">
-                                </div>
-                                <div class="form-text">Off by default — can take a few minutes.</div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold mb-1">
+                                Discover Multitasking
+                                <i data-feather="info" class="ms-1"
+                                   data-bs-toggle="tooltip"
+                                   data-bs-placement="top"
+                                   title="If enabled, the discovery infers per-resource max concurrent cases from observed event overlaps."
+                                   style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
+                            </label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="enableMultitaskingToggle">
                             </div>
                         </div>
-                    </details>
+                        <div class="col-md-3" id="multitaskingThrSection">
+                            <label for="multitaskingThr" class="form-label fw-bold mb-1">
+                                Multitasking Threshold: <span id="multitaskingThrValue">0.05</span>
+                            </label>
+                            <input type="range" class="form-range" id="multitaskingThr" name="multitasking_thr"
+                                   min="0" max="1" step="0.01" value="0.05">
+                            <div class="form-text">Min overlap fraction.</div>
+                        </div>
 
-                    <button type="submit" class="btn w-100" id="uploadBtn" style="background: linear-gradient(135deg, #28a745 0%, #20a039 100%); border: none; color: white;">
-                        <i data-feather="upload" class="me-2"></i>
-                        <span id="uploadBtnText">Upload & Discover</span>
-                    </button>
-                </form>
-            </div>
+                        <div class="col-md-3">
+                            <label for="randomState" class="form-label fw-bold mb-1">
+                                Random State
+                                <i data-feather="info" class="ms-1"
+                                   data-bs-toggle="tooltip"
+                                   data-bs-placement="top"
+                                   title="Seed used for reproducible discovery. Same seed + same input produce identical parameters."
+                                   style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
+                            </label>
+                            <input type="number" class="form-control form-control-sm" id="randomState" name="random_state" value="72">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold mb-1">
+                                Workload Features
+                                <i data-feather="info" class="ms-1"
+                                   data-bs-toggle="tooltip"
+                                   data-bs-placement="top"
+                                   title="Adds workload-aware features (queue length per activity, currently busy resources, in-flight cases) to the feature set used by decision trees. Useful when timing/routing depends on system load; adds some discovery cost."
+                                   style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
+                            </label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="useWorkloadFeaturesToggle">
+                            </div>
+                            <div class="form-text">Add workload signals.</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="attributeMode" class="form-label fw-bold mb-1">
+                                Attribute Mode
+                                <i data-feather="info" class="ms-1"
+                                   data-bs-toggle="tooltip"
+                                   data-bs-placement="top"
+                                   title="distribution: trace attributes are sampled from a fitted parametric distribution (or per-category probability for categorical attributes). Editable in the Trace Attributes tab. empirical: trace attributes are resampled directly from the original log values. Closer to reality but not editable."
+                                   style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
+                            </label>
+                            <select class="form-select form-select-sm" id="attributeMode" name="attribute_mode">
+                                <option value="distribution" selected>distribution</option>
+                                <option value="empirical">empirical</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold mb-1">
+                                Compute Evaluation
+                                <i data-feather="info" class="ms-1"
+                                   data-bs-toggle="tooltip"
+                                   data-bs-placement="top"
+                                   title="If enabled, after discovery the simulator runs once against the original log and computes accuracy metrics (control flow, timing, resource flow, generalization). On large logs this can take several minutes."
+                                   style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
+                            </label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="computeEvaluationToggle">
+                            </div>
+                            <div class="form-text">Off by default.</div>
+                        </div>
+                    </div>
+                </details>
+
+                <button type="submit" class="home-upload-submit" id="uploadBtn">
+                    <i data-feather="upload" class="me-2"></i>
+                    <span id="uploadBtnText">Upload & Discover</span>
+                </button>
+            </form>
         </div>
 
-        <div class="card shadow-sm">
-            <div class="card-header bg-secondary text-white">
-                <h6 class="card-title mb-0">
-                    <i data-feather="clock" class="me-2"></i>
-                    Recent Sessions
-                </h6>
-            </div>
-            <div class="card-body p-0">
-                <div class="list-group list-group-flush" id="sessionsList">
-                    {% for session in sessions %}
-                    {% set badge_class = 'success' if session.status in ('ready', 'completed') else 'warning' if session.status == 'uploaded' else ('danger' if session.status == 'error' else 'info') %}
-                    <div class="list-group-item recent-session-item" data-session-id="{{ session.id }}">
-                        <div class="d-flex justify-content-between align-items-start gap-2">
-                            <div class="recent-session-main flex-grow-1 cursor-pointer" onclick="loadSession({{ session.id }})">
-                                <h6 class="mb-1 text-truncate" title="{{ session._display_label }}">{{ session._display_label }}</h6>
-                                <small class="text-muted d-block">
-                                    {{ (session.last_used_at or session.created_at).strftime('%Y-%m-%d %H:%M') }}
-                                    {% if session._run_count > 0 %}· {{ session._run_count }} run{{ '' if session._run_count == 1 else 's' }}{% endif %}
-                                </small>
-                            </div>
-                            <div class="d-flex flex-column align-items-end gap-1">
-                                <span class="badge bg-{{ badge_class }}">{{ session.status }}</span>
-                                <button type="button"
-                                        class="btn btn-sm btn-link text-danger p-0 recent-session-delete"
-                                        title="Delete session"
-                                        onclick="event.stopPropagation(); deleteSession({{ session.id }}, '{{ session._display_label|replace("'", "\\'") }}')">
-                                    <i data-feather="trash-2" style="width: 14px; height: 14px;"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    {% else %}
-                    <div class="list-group-item text-center text-muted py-3">
-                        <small>No sessions yet — upload a log to get started.</small>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
+        <div class="home-feature-strip">
+            <div class="feature"><i data-feather="upload" style="width:14px;height:14px;"></i> Upload XES / CSV</div>
+            <div class="feature"><i data-feather="settings" style="width:14px;height:14px;"></i> Tune parameters</div>
+            <div class="feature"><i data-feather="play" style="width:14px;height:14px;"></i> Simulate</div>
+            <div class="feature"><i data-feather="download" style="width:14px;height:14px;"></i> Export results</div>
         </div>
     </div>
+</div>
 
-    <div class="col-lg-9">
-        <div id="welcomeMessage" class="card shadow-sm mb-4">
-            <div class="card-body text-center py-5">
-                <i data-feather="shuffle" class="text-primary mb-3" style="width: 64px; height: 64px;"></i>
-                <h3 class="text-gradient mb-3">Welcome to ProSiT</h3>
-                <p class="text-muted mb-4">
-                    Process Simulation Tool for discovering and simulating business processes.
-                    Upload your XES event log file to get started.
-                </p>
-                <div class="row g-3 text-start">
-                    <div class="col-md-6">
-                        <div class="d-flex align-items-start">
-                            <i data-feather="upload" class="text-primary me-3 mt-1"></i>
-                            <div>
-                                <h6 class="mb-1">Upload Process Data</h6>
-                                <small class="text-muted">Upload XES event logs and optional PNML Petri nets</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="d-flex align-items-start">
-                            <i data-feather="settings" class="text-primary me-3 mt-1"></i>
-                            <div>
-                                <h6 class="mb-1">Configure Parameters</h6>
-                                <small class="text-muted">Discover and fine-tune simulation parameters</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="d-flex align-items-start">
-                            <i data-feather="play" class="text-primary me-3 mt-1"></i>
-                            <div>
-                                <h6 class="mb-1">Run Simulation</h6>
-                                <small class="text-muted">Execute process simulations with custom parameters</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="d-flex align-items-start">
-                            <i data-feather="download" class="text-primary me-3 mt-1"></i>
-                            <div>
-                                <h6 class="mb-1">Export Results</h6>
-                                <small class="text-muted">Download parameters and simulation results</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+<div id="workingView" class="working-view" style="display: none;">
 
-        <!-- What-If Analysis Navigator -->
+        <!-- Scenario Analysis Navigator -->
         <div class="card shadow-sm mb-4" id="whatIfCard" style="display: none;">
             <div class="card-header text-white d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #6f42c1 0%, #5a32a0 100%);">
                 <h5 class="card-title mb-0">
                     <i data-feather="layers" class="me-2"></i>
-                    What-If Scenarios
+                    Scenario Analysis
                 </h5>
                 <button class="btn btn-light btn-sm" onclick="showCreateWhatIfModal()">
                     <i data-feather="plus" class="me-1"></i>
@@ -339,7 +298,7 @@
                 </div>
                 <div id="whatIfDirtyHint" class="form-text mt-2 text-warning" style="display: none;">
                     <i data-feather="edit-3" style="width: 14px; height: 14px;"></i>
-                    Parameters edited. Click "Run Simulation" to save them — the baseline auto-forks into a new what-if; existing what-ifs are updated in place.
+                    Parameters edited. Click "Run Simulation" to save them — the baseline auto-forks into a new scenario; existing scenarios are updated in place.
                 </div>
             </div>
         </div>
@@ -565,12 +524,7 @@
             </div>
         </div>
 
-    </div>
-</div>
-
-<div class="row my-4">
-    <div class="col-lg-12">
-        <div class="card shadow-sm" id="simulationResultsCard" style="display: none;">
+        <div class="card shadow-sm mt-4" id="simulationResultsCard" style="display: none;">
             <div class="card-header bg-info text-white">
                 <h5 class="card-title mb-0">
                     <i data-feather="pie-chart" class="me-2"></i>
@@ -712,7 +666,6 @@
             </div>
         </div>
     </div>
-</div>
 {% endblock %}
 
 {% block scripts %}
@@ -730,6 +683,174 @@ let currentRuns = [];
 let activeRunId = null;
 let parametersDirty = false;
 const BASELINE_RUN_NAME = 'As-Is';
+
+// ---------------------------------------------------------------------------
+// View / sidebar plumbing — Claude-style layout: collapsible left sidebar,
+// home view (centered hero) before any session, working view afterwards.
+// ---------------------------------------------------------------------------
+const SIDEBAR_STATE_KEY = 'prosit:sidebarCollapsed';
+const SIDEBAR_MOBILE_BREAKPOINT = 768;
+
+function isMobileViewport() {
+    return window.matchMedia(`(max-width: ${SIDEBAR_MOBILE_BREAKPOINT}px)`).matches;
+}
+
+function applySidebarState(collapsed, persist = true) {
+    const sidebar = document.getElementById('appSidebar');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    const toggleBtn = document.getElementById('sidebarToggleBtn');
+    if (!sidebar) return;
+    sidebar.classList.toggle('collapsed', collapsed);
+    if (backdrop) backdrop.classList.toggle('visible', !collapsed && isMobileViewport());
+    // After feather.replace() runs once the original <i> is replaced by an
+    // <svg> and setAttribute('data-feather') no longer triggers re-render.
+    // Replace the icon HTML entirely each time so the swap is reliable.
+    if (toggleBtn) {
+        const next = collapsed ? 'chevrons-right' : 'chevrons-left';
+        toggleBtn.innerHTML = `<i data-feather="${next}" id="sidebarToggleIcon"></i>`;
+        if (window.feather) feather.replace();
+    }
+    if (persist && !isMobileViewport()) {
+        try { localStorage.setItem(SIDEBAR_STATE_KEY, collapsed ? '1' : '0'); } catch (e) {}
+    }
+}
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('appSidebar');
+    if (!sidebar) return;
+    applySidebarState(!sidebar.classList.contains('collapsed'));
+}
+
+function showHomeView() {
+    const home = document.getElementById('homeView');
+    const working = document.getElementById('workingView');
+    if (home) home.style.display = 'flex';
+    if (working) working.style.display = 'none';
+}
+
+function showWorkingView() {
+    const home = document.getElementById('homeView');
+    const working = document.getElementById('workingView');
+    if (home) home.style.display = 'none';
+    if (working) working.style.display = 'block';
+    // On mobile, the sidebar overlays the content — collapse it so the user
+    // sees the working view immediately after picking a session.
+    if (isMobileViewport()) applySidebarState(true, false);
+}
+
+function resetToHomeView() {
+    currentSessionId = null;
+    currentParameters = null;
+    currentRuns = [];
+    activeRunId = null;
+    const ids = ['parametersCard', 'simulationCard', 'whatIfCard', 'accuracyCard', 'simulationResultsCard'];
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+    const stickyBar = document.getElementById('stickyRunBar');
+    if (stickyBar) stickyBar.style.display = 'none';
+    if (typeof _setSimOutputFilename === 'function') _setSimOutputFilename(null);
+    clearParametersDirty();
+    showHomeView();
+    highlightActiveSession(null);
+}
+
+function newDiscovery() {
+    if (parametersDirty) {
+        if (!confirm('You have unsaved parameter edits. Start a new discovery anyway? Your edits will be discarded.')) return;
+    }
+    resetToHomeView();
+    // Clear file input + reset form so the next discovery starts clean.
+    const form = document.getElementById('uploadForm');
+    if (form) form.reset();
+    const csvMap = document.getElementById('csvColumnMapping');
+    if (csvMap) csvMap.style.display = 'none';
+    const thrVal = document.getElementById('thresholdValue');
+    if (thrVal) thrVal.textContent = '0.2';
+    const mtThrVal = document.getElementById('multitaskingThrValue');
+    if (mtThrVal) mtThrVal.textContent = '0.05';
+    // On mobile, collapse the sidebar after starting a new discovery.
+    if (isMobileViewport()) applySidebarState(true, false);
+}
+
+function highlightActiveSession(sessionId) {
+    const items = document.querySelectorAll('.recent-session-item');
+    items.forEach(item => {
+        const id = item.getAttribute('data-session-id');
+        item.classList.toggle('active', sessionId != null && String(sessionId) === id);
+    });
+}
+
+function _filenameToLabel(filename) {
+    if (!filename) return 'Untitled session';
+    let name = filename;
+    const i = name.indexOf('_');
+    if (i > 0 && /^\d+$/.test(name.slice(0, i))) {
+        name = name.slice(i + 1);
+    }
+    return name.replace(/\.(xes|csv)$/i, '') || filename;
+}
+
+// Insert a freshly-uploaded session at the top of the sidebar list so the
+// user sees it immediately without a page reload. Mirrors the Jinja template
+// used at first render. Removes any "no sessions yet" empty state.
+function prependSessionItem(sessionId, filename, status = 'uploaded') {
+    const container = document.getElementById('sidebarSessionsContainer');
+    if (!container) return;
+    const empty = container.querySelector('.sidebar-empty');
+    if (empty) empty.remove();
+    const existing = container.querySelector(`.recent-session-item[data-session-id="${sessionId}"]`);
+    if (existing) existing.remove();
+
+    const label = _filenameToLabel(filename);
+    const labelEsc = label.replace(/'/g, "\\'");
+    const now = new Date();
+    const ts = now.toISOString().slice(0, 16).replace('T', ' ');
+    const badgeClass = status === 'ready' || status === 'completed'
+        ? 'success'
+        : status === 'error'
+            ? 'danger'
+            : status === 'uploaded'
+                ? 'warning'
+                : 'info';
+
+    const html = `
+        <div class="recent-session-item" data-session-id="${sessionId}">
+            <div class="d-flex justify-content-between align-items-start gap-2 w-100">
+                <div class="recent-session-main flex-grow-1 cursor-pointer" onclick="loadSession(${sessionId})">
+                    <h6 class="mb-1 text-truncate" title="${_escapeHtmlAttr(label)}">${_escapeHtmlAttr(label)}</h6>
+                    <small class="d-block">${ts}</small>
+                </div>
+                <div class="d-flex flex-column align-items-end gap-1">
+                    <span class="badge session-status-badge bg-${badgeClass}">${status}</span>
+                    <button type="button"
+                            class="btn btn-sm btn-link p-0 recent-session-delete"
+                            title="Delete session"
+                            onclick="event.stopPropagation(); deleteSession(${sessionId}, '${labelEsc}')">
+                        <i data-feather="trash-2" style="width: 14px; height: 14px;"></i>
+                    </button>
+                </div>
+            </div>
+        </div>`;
+    container.insertAdjacentHTML('afterbegin', html);
+    if (window.feather) feather.replace();
+}
+
+// Apply the persisted sidebar state immediately (no DOMContentLoaded wait) so
+// the first paint matches the user's last preference instead of flashing
+// expanded then collapsing.
+(function initSidebarState() {
+    let collapsed = false;
+    if (isMobileViewport()) {
+        collapsed = true;
+    } else {
+        try {
+            collapsed = localStorage.getItem(SIDEBAR_STATE_KEY) === '1';
+        } catch (e) {}
+    }
+    applySidebarState(collapsed, false);
+})();
 
 function activeRun() {
     if (activeRunId == null) return null;
@@ -913,7 +1034,7 @@ function showCreateWhatIfModal(prefilledName = '') {
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">New What-If Scenario</h5>
+                        <h5 class="modal-title">New Scenario</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
@@ -1057,18 +1178,7 @@ async function deleteSession(sessionId, label) {
         const item = document.querySelector(`.recent-session-item[data-session-id="${sessionId}"]`);
         if (item) item.remove();
         if (sessionId === currentSessionId) {
-            currentSessionId = null;
-            currentParameters = null;
-            currentRuns = [];
-            activeRunId = null;
-            document.getElementById('parametersCard').style.display = 'none';
-            document.getElementById('simulationCard').style.display = 'none';
-            document.getElementById('whatIfCard').style.display = 'none';
-            document.getElementById('accuracyCard').style.display = 'none';
-            document.getElementById('simulationResultsCard').style.display = 'none';
-            document.getElementById('welcomeMessage').style.display = 'block';
-            document.getElementById('stickyRunBar').style.display = 'none';
-            _setSimOutputFilename(null);
+            resetToHomeView();
         }
         showAlert('Session deleted', 'info', 2500);
     } catch (err) {
@@ -1410,7 +1520,11 @@ async function handleUpload(e) {
         if (!uploadResult.success) {
             throw new Error(uploadResult.error);
         }
-        
+
+        // Reflect the new session in the sidebar immediately so it behaves like
+        // a Claude chat: the upload becomes a clickable item right away.
+        prependSessionItem(uploadResult.session_id, uploadResult.filename, 'uploaded');
+
         showAlert('File uploaded successfully', 'success');
         
         // Discover parameters
@@ -1465,6 +1579,16 @@ async function handleUpload(e) {
         currentRuns = [];
         activeRunId = null;
         await loadSessionData(uploadResult.session_id, discoverResult.parameters, computeEval);
+
+        // Refresh the sidebar item's status badge now that discovery is done.
+        const sidebarItem = document.querySelector(
+            `.recent-session-item[data-session-id="${uploadResult.session_id}"] .session-status-badge`
+        );
+        if (sidebarItem) {
+            sidebarItem.textContent = 'ready';
+            sidebarItem.classList.remove('bg-warning', 'bg-danger', 'bg-info');
+            sidebarItem.classList.add('bg-success');
+        }
 
     } catch (error) {
         hideLoading();
@@ -1546,13 +1670,15 @@ async function loadSessionData(sessionId, parameters, computeEval) {
     _setSimOutputFilename(null);
     clearParametersDirty();
 
-    document.getElementById('welcomeMessage').style.display = 'none';
+    showWorkingView();
     document.getElementById('parametersCard').style.display = 'block';
     document.getElementById('simulationCard').style.display = 'block';
     document.getElementById('whatIfCard').style.display = 'block';
 
     const stickyBar = document.getElementById('stickyRunBar');
     if (stickyBar) stickyBar.style.display = 'block';
+
+    highlightActiveSession(sessionId);
 
     renderParameters(parameters);
 
@@ -3495,7 +3621,7 @@ async function saveParameters() {
         // The baseline is intentionally read-only. To persist edits the user
         // either runs (auto-forks into a What-If N) or explicitly creates a
         // new scenario via the "+ New Scenario" button.
-        showAlert('The As-Is baseline is read-only. Click Run, or "+ New Scenario", to save your edits as a what-if.', 'warning', 4500);
+        showAlert('The As-Is baseline is read-only. Click Run, or "+ New Scenario", to save your edits as a new scenario.', 'warning', 4500);
         return;
     }
     if (activeRunId == null) {
@@ -3538,8 +3664,8 @@ async function runSimulation() {
     }
 
     // The active scenario decides where edits land. Editing the read-only
-    // baseline auto-creates a "What-If N" scenario and runs against that;
-    // editing inside an existing what-if just saves in place before running.
+    // baseline auto-creates a "Scenario N" and runs against that; editing
+    // inside an existing scenario just saves in place before running.
     if (parametersDirty && isBaselineActive()) {
         const created = await autoCreateWhatIfForRun();
         if (!created) return;
@@ -3602,10 +3728,12 @@ async function runSimulation() {
 }
 
 // When the user edits the read-only baseline and hits Run, fork a fresh
-// what-if with an auto-numbered "What-If N" name. No prompt — the user can
+// scenario with an auto-numbered "Scenario N" name. No prompt — the user can
 // rename via the chip's inline rename button afterwards.
 function _nextDefaultWhatIfName() {
-    const re = /^What-If\s+(\d+)$/i;
+    // Match both "Scenario N" (current) and "What-If N" (legacy) so existing
+    // sessions don't restart numbering when reopened.
+    const re = /^(?:Scenario|What-If)\s+(\d+)$/i;
     let max = 0;
     currentRuns.forEach(r => {
         const m = (r.name || '').match(re);
@@ -3614,7 +3742,7 @@ function _nextDefaultWhatIfName() {
             if (Number.isFinite(n) && n > max) max = n;
         }
     });
-    return `What-If ${max + 1}`;
+    return `Scenario ${max + 1}`;
 }
 
 async function autoCreateWhatIfForRun() {

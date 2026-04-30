@@ -20,58 +20,74 @@
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="{{ url_for('index') }}">
-                <i data-feather="shuffle" class="me-2"></i>
-                ProSiT
-            </a>
-            <span class="navbar-text text-light opacity-75">
-                Process Simulation Tool
-            </span>
-        </div>
-    </nav>
-
-    <!-- Sticky Run Simulation toolbar (visible only when a session is active) -->
-    <div id="stickyRunBar" class="sticky-run-bar" style="display: none;">
-        <div class="container-fluid d-flex flex-wrap align-items-center justify-content-end gap-2 px-3">
-            <div class="input-group input-group-sm" style="width: auto;">
-                <span class="input-group-text">Instances</span>
-                <input type="number" id="stickyNumInstances" class="form-control" style="max-width: 90px;"
-                       min="1" max="10000" value="100">
-            </div>
-            <div class="input-group input-group-sm" style="width: auto;">
-                <span class="input-group-text">Start</span>
-                <input type="datetime-local" id="stickyStartTimestamp" class="form-control" style="max-width: 200px;">
-            </div>
-            <button type="button" class="btn btn-sm sticky-run-btn"
-                    id="stickyRunBtn"
-                    onclick="runSimulationFromSticky()">
-                <i data-feather="play" class="me-1" style="width: 14px; height: 14px;"></i>
-                <span id="stickyRunBtnLabel">Run Simulation</span>
-            </button>
-            <div class="dropdown">
-                <button type="button"
-                        id="stickyDownloadBtn"
-                        class="btn btn-sm btn-outline-success dropdown-toggle"
-                        data-bs-toggle="dropdown" aria-expanded="false"
-                        disabled>
-                    <i data-feather="download" class="me-1" style="width: 14px; height: 14px;"></i>
-                    Download
+    <div class="app-shell">
+        <!-- Sidebar with sessions list -->
+        <aside id="appSidebar" class="app-sidebar">
+            <div class="sidebar-header">
+                <a class="sidebar-brand" href="{{ url_for('index') }}" onclick="event.preventDefault(); newDiscovery();">
+                    <i data-feather="shuffle"></i>
+                    <span class="brand-text">ProSiT</span>
+                </a>
+                <button type="button" class="sidebar-toggle" id="sidebarToggleBtn"
+                        onclick="toggleSidebar()" title="Toggle sidebar">
+                    <i data-feather="chevrons-left" id="sidebarToggleIcon"></i>
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li><button type="button" class="dropdown-item" onclick="downloadSimulation('csv')">CSV</button></li>
-                    <li><button type="button" class="dropdown-item" onclick="downloadSimulation('xes')">XES</button></li>
-                </ul>
             </div>
+            <div class="sidebar-body">
+                <button type="button" class="sidebar-new-discovery" onclick="newDiscovery()" title="Start a new discovery">
+                    <i data-feather="plus" style="width: 16px; height: 16px;"></i>
+                    <span class="label">New Discovery</span>
+                </button>
+                <div class="sidebar-section-title">Recent Sessions</div>
+                <div class="sidebar-sessions" id="sidebarSessionsContainer">
+                    {% block sidebar_sessions %}{% endblock %}
+                </div>
+            </div>
+        </aside>
+        <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+
+        <div class="app-main">
+            <!-- Sticky Run Simulation toolbar (visible only when a session is active) -->
+            <div id="stickyRunBar" class="sticky-run-bar" style="display: none;">
+                <div class="container-fluid d-flex flex-wrap align-items-center justify-content-end gap-2 px-3">
+                    <div class="input-group input-group-sm" style="width: auto;">
+                        <span class="input-group-text">Instances</span>
+                        <input type="number" id="stickyNumInstances" class="form-control" style="max-width: 90px;"
+                               min="1" max="10000" value="100">
+                    </div>
+                    <div class="input-group input-group-sm" style="width: auto;">
+                        <span class="input-group-text">Start</span>
+                        <input type="datetime-local" id="stickyStartTimestamp" class="form-control" style="max-width: 200px;">
+                    </div>
+                    <button type="button" class="btn btn-sm sticky-run-btn"
+                            id="stickyRunBtn"
+                            onclick="runSimulationFromSticky()">
+                        <i data-feather="play" class="me-1" style="width: 14px; height: 14px;"></i>
+                        <span id="stickyRunBtnLabel">Run Simulation</span>
+                    </button>
+                    <div class="dropdown">
+                        <button type="button"
+                                id="stickyDownloadBtn"
+                                class="btn btn-sm btn-outline-success dropdown-toggle"
+                                data-bs-toggle="dropdown" aria-expanded="false"
+                                disabled>
+                            <i data-feather="download" class="me-1" style="width: 14px; height: 14px;"></i>
+                            Download
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><button type="button" class="dropdown-item" onclick="downloadSimulation('csv')">CSV</button></li>
+                            <li><button type="button" class="dropdown-item" onclick="downloadSimulation('xes')">XES</button></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <main>
+                {% block content %}{% endblock %}
+            </main>
         </div>
     </div>
-
-    <!-- Main Content -->
-    <main class="container-fluid py-4">
-        {% block content %}{% endblock %}
-    </main>
 
     <!-- Loading Modal -->
     <div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true">

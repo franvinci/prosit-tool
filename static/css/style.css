@@ -69,9 +69,16 @@
     color: white;
 }
 
-/* Body and layout */
+/* Body and layout — liquid-glass style: animated gradient backdrop so blurred
+   surfaces above pick up real color instead of looking flat. */
 body {
-    background-color: var(--background-light);
+    background:
+        radial-gradient(circle at 12% 18%, rgba(199, 125, 255, 0.32) 0%, transparent 42%),
+        radial-gradient(circle at 88% 82%, rgba(95, 179, 163, 0.30) 0%, transparent 45%),
+        radial-gradient(circle at 92% 12%, rgba(123, 44, 191, 0.18) 0%, transparent 35%),
+        radial-gradient(circle at 8% 92%, rgba(6, 214, 160, 0.18) 0%, transparent 38%),
+        linear-gradient(135deg, #f5edf8 0%, #ecf6ee 100%);
+    background-attachment: fixed;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: var(--text-dark);
 }
@@ -82,43 +89,133 @@ body {
     font-weight: 700 !important;
 }
 
-/* Cards */
+/* Cards — frosted-glass surfaces */
 .card {
-    border: none;
-    border-radius: 10px;
-    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.70);
+    backdrop-filter: blur(22px) saturate(180%);
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    box-shadow:
+        0 10px 32px rgba(123, 44, 191, 0.10),
+        inset 0 1px 0 rgba(255, 255, 255, 0.65);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
 .card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    box-shadow:
+        0 16px 42px rgba(123, 44, 191, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.65) !important;
 }
 
 .card-header {
-    border-radius: 10px 10px 0 0 !important;
-    border-bottom: none;
+    border-radius: 14px 14px 0 0 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.4);
     font-weight: 600;
+    /* Card headers keep their gradient/colored background — but make it
+       blend into the glass with a slight transparency. */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
-/* Form controls */
+/* Form controls — translucent glass surfaces */
 .form-control, .form-select {
-    border-radius: 8px;
-    border: 2px solid var(--border-color);
-    transition: all 0.3s ease;
+    border-radius: 10px;
+    border: 1.5px solid rgba(123, 44, 191, 0.15);
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .form-control:focus, .form-select:focus {
     border-color: var(--primary-purple);
-    box-shadow: 0 0 0 0.2rem rgba(123, 44, 191, 0.25);
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 0 0 0.2rem rgba(123, 44, 191, 0.20);
+}
+
+.form-control:hover:not(:focus), .form-select:hover:not(:focus) {
+    border-color: rgba(123, 44, 191, 0.30);
+}
+
+/* Slider — visible track on the translucent glass background. We restate
+   thumb styles here because Bootstrap's defaults rely on a track color that
+   blends into the new gradient body. */
+.form-range {
+    height: 1.4rem;
+    padding: 0;
+}
+
+.form-range::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(90deg,
+        rgba(123, 44, 191, 0.55) 0%,
+        rgba(6, 214, 160, 0.55) 100%);
+    border: 1px solid rgba(123, 44, 191, 0.18);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.form-range::-moz-range-track {
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(90deg,
+        rgba(123, 44, 191, 0.55) 0%,
+        rgba(6, 214, 160, 0.55) 100%);
+    border: 1px solid rgba(123, 44, 191, 0.18);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 .form-range::-webkit-slider-thumb {
-    background-color: var(--primary-purple);
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    margin-top: -7px; /* center over the 6px track */
+    border-radius: 50%;
+    background: var(--primary-purple);
+    border: 2px solid white;
+    box-shadow: 0 2px 6px rgba(123, 44, 191, 0.4);
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.form-range::-webkit-slider-thumb:hover,
+.form-range::-webkit-slider-thumb:active {
+    transform: scale(1.15);
+    box-shadow: 0 3px 10px rgba(123, 44, 191, 0.55);
 }
 
 .form-range::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
     background-color: var(--primary-purple);
-    border: none;
+    border: 2px solid white;
+    box-shadow: 0 2px 6px rgba(123, 44, 191, 0.4);
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.form-range::-moz-range-thumb:hover,
+.form-range::-moz-range-thumb:active {
+    transform: scale(1.15);
+    box-shadow: 0 3px 10px rgba(123, 44, 191, 0.55);
+}
+
+.form-range:focus {
+    outline: none;
+}
+
+.form-range:focus::-webkit-slider-thumb {
+    box-shadow: 0 0 0 4px rgba(123, 44, 191, 0.20),
+                0 2px 6px rgba(123, 44, 191, 0.4);
+}
+
+.form-range:focus::-moz-range-thumb {
+    box-shadow: 0 0 0 4px rgba(123, 44, 191, 0.20),
+                0 2px 6px rgba(123, 44, 191, 0.4);
 }
 
 /* Buttons */
@@ -312,16 +409,21 @@ body {
     border-radius: 4px;
 }
 
-/* Modal customization */
+/* Modal customization — frosted glass */
 .modal-content {
-    border: none;
-    border-radius: 15px;
-    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    box-shadow:
+        0 24px 60px rgba(123, 44, 191, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .modal-header {
-    border-bottom: 2px solid var(--border-color);
-    border-radius: 15px 15px 0 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.45);
+    border-radius: 18px 18px 0 0;
 }
 
 /* Calendar styling for resource and arrival time calendars */
@@ -740,17 +842,588 @@ h1 [data-feather], h2 [data-feather], h3 [data-feather] {
     opacity: 1;
 }
 
-/* Sticky Run Simulation toolbar */
+/* Sticky Run Simulation toolbar — frosted glass */
 .sticky-run-bar {
     position: sticky;
     top: 0;
     z-index: 1020;
-    background: rgba(255, 255, 255, 0.97);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border-bottom: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.6);
     padding: 0.5rem 0;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 18px rgba(123, 44, 191, 0.08);
+}
+
+/* ==========================================================================
+   App shell — collapsible left sidebar + main content area
+   ========================================================================== */
+
+:root {
+    --sidebar-width: 280px;
+    --sidebar-collapsed-width: 56px;
+    --sidebar-bg: #1f1430;
+    --sidebar-bg-hover: #2c1d44;
+    --sidebar-text: #e9e1f5;
+    --sidebar-text-muted: #b9aacf;
+    --sidebar-accent: #c77dff;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+}
+
+.app-shell {
+    display: flex;
+    align-items: stretch;
+    min-height: 100vh;
+}
+
+.app-sidebar {
+    flex-shrink: 0;
+    width: var(--sidebar-width);
+    background: rgba(31, 20, 48, 0.78);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    color: var(--sidebar-text);
+    display: flex;
+    flex-direction: column;
+    transition: width 0.25s ease;
+    border-right: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: 0 8px 32px rgba(31, 20, 48, 0.18);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    z-index: 1030;
+}
+
+.app-sidebar.collapsed {
+    width: var(--sidebar-collapsed-width);
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 0.85rem;
+    gap: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    min-height: 56px;
+}
+
+/* Collapsed: only the toggle button is shown, centered. The brand collapses
+   away so we don't end up with two icons fighting in 56 px. */
+.app-sidebar.collapsed .sidebar-header {
+    justify-content: center;
+    padding: 0.75rem 0;
+}
+.app-sidebar.collapsed .sidebar-brand {
+    display: none;
+}
+
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--sidebar-text);
+    font-weight: 700;
+    font-size: 1.05rem;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.sidebar-brand:hover {
+    color: var(--sidebar-accent);
+}
+
+.sidebar-brand .brand-text {
+    transition: opacity 0.15s ease;
+}
+
+.app-sidebar.collapsed .sidebar-brand .brand-text,
+.app-sidebar.collapsed .sidebar-section-title,
+.app-sidebar.collapsed .sidebar-new-discovery .label,
+.app-sidebar.collapsed .recent-session-main,
+.app-sidebar.collapsed .recent-session-delete,
+.app-sidebar.collapsed .session-status-badge,
+.app-sidebar.collapsed .sidebar-empty {
+    opacity: 0;
+    pointer-events: none;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    display: none;
+}
+
+.sidebar-toggle {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    color: var(--sidebar-text);
+    border-radius: 8px;
+    padding: 6px 8px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.sidebar-toggle:hover {
+    background: rgba(199, 125, 255, 0.20);
+    color: white;
+    transform: scale(1.05);
+}
+
+.sidebar-toggle [data-feather], .sidebar-toggle svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Collapsed-state toggle: a bit taller so it's the obvious affordance. */
+.app-sidebar.collapsed .sidebar-toggle {
+    padding: 8px 10px;
+}
+
+.sidebar-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: 0.75rem 0.5rem;
+    gap: 0.75rem;
+}
+
+.sidebar-new-discovery {
+    background: linear-gradient(135deg, #28a745 0%, #20a039 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.6rem 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.sidebar-new-discovery:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(40, 167, 69, 0.35);
+    color: white;
+}
+
+.app-sidebar.collapsed .sidebar-new-discovery {
+    padding: 0.55rem 0;
+    aspect-ratio: 1;
+    width: 40px;
+    margin: 0 auto;
+}
+
+.app-sidebar.collapsed .sidebar-body {
+    padding: 0.75rem 0.25rem;
+    align-items: center;
+}
+
+.sidebar-section-title {
+    color: var(--sidebar-text-muted);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.5rem 0.5rem 0.25rem;
+    font-weight: 600;
+}
+
+.sidebar-sessions {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    margin: 0 -0.25rem;
+    padding: 0 0.25rem;
+}
+
+.sidebar-sessions::-webkit-scrollbar {
+    width: 6px;
+}
+.sidebar-sessions::-webkit-scrollbar-track {
+    background: transparent;
+}
+.sidebar-sessions::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 3px;
+}
+
+.sidebar-sessions .recent-session-item {
+    background: transparent;
+    border: none !important;
+    border-radius: 8px;
+    padding: 0.5rem 0.6rem;
+    margin-bottom: 0.15rem;
+    color: var(--sidebar-text);
+    transition: background 0.15s ease;
+    display: flex;
+}
+
+.sidebar-sessions .recent-session-item:hover {
+    background: var(--sidebar-bg-hover);
+    transform: none;
+}
+
+.sidebar-sessions .recent-session-item.active {
+    background: rgba(199, 125, 255, 0.18);
+    border-left: 3px solid var(--sidebar-accent) !important;
+    padding-left: calc(0.6rem - 3px);
+}
+
+.sidebar-sessions .recent-session-main h6 {
+    color: var(--sidebar-text);
+    font-size: 0.88rem;
+    margin-bottom: 0.1rem;
+    font-weight: 500;
+}
+
+.sidebar-sessions .recent-session-main small {
+    color: var(--sidebar-text-muted) !important;
+    font-size: 0.72rem;
+}
+
+.sidebar-sessions .session-status-badge {
+    font-size: 0.62rem;
+    padding: 0.18em 0.45em;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.sidebar-sessions .recent-session-delete {
+    color: var(--sidebar-text-muted) !important;
+}
+
+.sidebar-sessions .recent-session-delete:hover {
+    color: #ff6b6b !important;
+}
+
+.sidebar-empty {
+    color: var(--sidebar-text-muted);
+    font-size: 0.82rem;
+    text-align: center;
+    padding: 1rem 0.5rem;
+}
+
+.app-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Mobile: sidebar becomes an overlay, doesn't squeeze the main content. */
+.sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 1029;
+}
+
+@media (max-width: 768px) {
+    .app-sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        height: 100vh;
+        transform: translateX(0);
+        transition: transform 0.25s ease, width 0.25s ease;
+    }
+    .app-sidebar.collapsed {
+        width: var(--sidebar-width);
+        transform: translateX(-100%);
+    }
+    .app-sidebar.collapsed .sidebar-brand .brand-text,
+    .app-sidebar.collapsed .sidebar-section-title,
+    .app-sidebar.collapsed .sidebar-new-discovery .label,
+    .app-sidebar.collapsed .recent-session-main,
+    .app-sidebar.collapsed .recent-session-delete,
+    .app-sidebar.collapsed .session-status-badge,
+    .app-sidebar.collapsed .sidebar-empty {
+        opacity: 1;
+        pointer-events: auto;
+        width: auto;
+        height: auto;
+        display: block;
+    }
+    .sidebar-backdrop.visible {
+        display: block;
+    }
+}
+
+/* ==========================================================================
+   Home view — centered Claude-style hero with horizontal upload panel
+   ========================================================================== */
+
+.home-view {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.5rem 4rem;
+    min-height: calc(100vh - 0px);
+}
+
+.home-hero {
+    width: 100%;
+    max-width: 1100px;
+    text-align: center;
+}
+
+.home-hero-title {
+    font-size: clamp(3rem, 8vw, 5.5rem);
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(45deg, var(--primary-purple), var(--primary-green));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.02em;
+}
+
+.home-hero-subtitle {
+    color: #6c757d;
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+}
+
+/* Liquid-glass upload card — frosted, semi-transparent, picks up body tint. */
+.home-upload-card {
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border-radius: 22px;
+    padding: 1.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    box-shadow:
+        0 24px 60px rgba(123, 44, 191, 0.14),
+        inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    text-align: left;
+}
+
+.home-upload-card .form-section-label {
+    font-weight: 600;
+    color: var(--text-dark);
+    font-size: 0.85rem;
+    margin-bottom: 0.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+/* Numbered-step layout for the home form. Step 1 is full-width (file input
+   stretches across), step 2 splits into 3 balanced cells. */
+.home-step {
+    margin-bottom: 1.4rem;
+}
+.home-step + .home-step {
+    padding-top: 1.25rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.45);
+}
+
+.home-step-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+}
+
+.home-step-num {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-purple), var(--primary-green));
+    color: white;
+    font-weight: 700;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(123, 44, 191, 0.30);
+}
+
+.home-step-title {
+    font-weight: 700;
+    font-size: 1.02rem;
+    color: var(--text-dark);
+    line-height: 1.2;
+}
+
+.home-step-sub {
+    font-size: 0.78rem;
+    color: #6c757d;
+    line-height: 1.3;
+}
+
+.home-step-file {
+    padding: 0.7rem !important;
+    background: rgba(255, 255, 255, 0.7) !important;
+    border: 2px dashed rgba(123, 44, 191, 0.25) !important;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+.home-step-file:focus,
+.home-step-file:hover {
+    border-color: rgba(123, 44, 191, 0.55) !important;
+    background: rgba(255, 255, 255, 0.85) !important;
+}
+
+.home-csv-mapping {
+    margin-top: 0.85rem;
+    padding: 0.85rem;
+    border-radius: 12px;
+    background: rgba(199, 125, 255, 0.08);
+    border: 1px solid rgba(199, 125, 255, 0.18);
+}
+
+/* Custom 5-column grid for the CSV mapping selects so they fit on one row on lg+ */
+@media (min-width: 992px) {
+    .col-lg-2-5 {
+        flex: 0 0 auto;
+        width: 20%;
+    }
+}
+
+.home-config-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+}
+
+@media (max-width: 992px) {
+    .home-config-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .home-config-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.home-config-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.home-upload-source {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.home-upload-source .form-check {
+    border: 1.5px solid rgba(123, 44, 191, 0.18);
+    border-radius: 10px;
+    padding: 0.55rem 0.6rem 0.55rem 2rem;
+    margin: 0;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.55);
+}
+
+.home-upload-source .form-check:hover {
+    background: rgba(255, 255, 255, 0.75);
+}
+
+.home-upload-source .form-check:has(input:checked) {
+    border-color: var(--primary-purple);
+    background: rgba(123, 44, 191, 0.10);
+    box-shadow: 0 2px 10px rgba(123, 44, 191, 0.12);
+}
+
+.home-upload-source .form-check-input {
+    margin-top: 0.2rem;
+    margin-left: -1.4rem;
+}
+
+.home-upload-source label {
+    cursor: pointer;
+    font-size: 0.82rem;
+    line-height: 1.25;
+}
+
+.home-upload-submit {
+    margin-top: 0.5rem;
+    padding: 0.85rem 1.5rem;
+    font-size: 1.02rem;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #28a745 0%, #20a039 100%);
+    border: none;
+    color: white;
+    font-weight: 600;
+    transition: transform 0.15s ease, box-shadow 0.2s ease;
+    width: 100%;
+    box-shadow:
+        0 8px 22px rgba(40, 167, 69, 0.30),
+        inset 0 1px 0 rgba(255, 255, 255, 0.30);
+}
+
+.home-upload-submit:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 14px 32px rgba(40, 167, 69, 0.42),
+        inset 0 1px 0 rgba(255, 255, 255, 0.30);
+    color: white;
+}
+
+.home-feature-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    color: #6c757d;
+    font-size: 0.82rem;
+}
+
+@media (max-width: 768px) {
+    .home-feature-strip {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.home-feature-strip .feature {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
+/* ==========================================================================
+   Working view — adapt main content to full available width
+   ========================================================================== */
+
+.working-view {
+    padding: 1.25rem 1.5rem;
+}
+
+.working-view .card {
+    border-radius: 12px;
+}
+
+@media (max-width: 768px) {
+    .working-view {
+        padding: 0.75rem;
+    }
+    .home-view {
+        padding: 1.5rem 0.75rem;
+    }
 }
 .sticky-run-bar .sticky-run-btn {
     background: linear-gradient(135deg, #28a745 0%, #20a039 100%);
