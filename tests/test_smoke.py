@@ -91,22 +91,6 @@ def test_discover_with_pnml(client, small_xes_path, small_pnml_path):
     assert body.get("prosit_metrics") is not None
 
 
-def test_export_parameters_returns_json_body(client, small_xes_path):
-    """Regression for B2: export must stream JSON without leaking /tmp files."""
-    upload = _upload_xes(client, small_xes_path).get_json()
-    sid = upload["session_id"]
-
-    discover = client.post(f"/api/discover/{sid}")
-    assert discover.status_code == 200, discover.data
-
-    resp = client.get(f"/api/export_parameters/{sid}")
-    assert resp.status_code == 200, resp.data
-    assert resp.mimetype == "application/json"
-    body = json.loads(resp.data)
-    assert isinstance(body, dict)
-    assert body, "exported parameters JSON should not be empty"
-
-
 def test_full_pipeline(client, small_xes_path):
     upload = _upload_xes(client, small_xes_path).get_json()
     sid = upload["session_id"]
@@ -127,6 +111,83 @@ def test_full_pipeline(client, small_xes_path):
     download = client.get(f"/api/download/{out_filename}")
     assert download.status_code == 200
     assert len(download.data) > 0
+
+
+def test_whatif_lifecycle(client, small_xes_path):
+    """Discovery seeds an As-Is run; what-ifs can be created, simulated, deleted."""
+    upload = _upload_xes(client, small_xes_path).get_json()
+    sid = upload["session_id"]
+    client.post(f"/api/discover/{sid}")
+
+    # The baseline run must exist after discovery.
+    runs = client.get(f"/api/sessions/{sid}/runs").get_json()
+    assert runs["success"] and len(runs["runs"]) == 1
+    baseline = runs["runs"][0]
+    assert baseline["is_baseline"] is True
+    assert baseline["name"] == "As-Is"
+
+    # Reserved name is rejected.
+    bad = client.post(
+        f"/api/sessions/{sid}/runs",
+        data=json.dumps({"name": "As-Is"}),
+        content_type="application/json",
+    )
+    assert bad.status_code == 400
+
+    # Create a what-if scenario branched off the baseline.
+    create = client.post(
+        f"/api/sessions/{sid}/runs",
+        data=json.dumps({"name": "Half capacity"}),
+        content_type="application/json",
+    ).get_json()
+    assert create["success"]
+    new_run_id = create["run"]["id"]
+
+    # Run sim against the what-if and verify the output is recorded on it.
+    simulate = client.post(
+        f"/api/runs/{new_run_id}/simulate",
+        data=json.dumps({"num_instances": 5}),
+        content_type="application/json",
+    )
+    assert simulate.status_code == 200, simulate.data
+    sim_body = simulate.get_json()
+    assert sim_body["num_events"] > 0
+    assert sim_body["run"]["id"] == new_run_id
+    assert sim_body["run"]["has_simulation"] is True
+
+    # Baseline must remain untouched.
+    baseline_after = client.get(f"/api/runs/{baseline['id']}").get_json()
+    assert baseline_after["run"]["has_simulation"] is False
+
+    # Cannot delete the baseline.
+    deny = client.delete(f"/api/runs/{baseline['id']}")
+    assert deny.status_code == 400
+
+    # Delete the what-if and confirm only the baseline remains.
+    ok = client.delete(f"/api/runs/{new_run_id}")
+    assert ok.status_code == 200
+    runs_after = client.get(f"/api/sessions/{sid}/runs").get_json()
+    assert [r["name"] for r in runs_after["runs"]] == ["As-Is"]
+
+
+def test_session_rename_and_delete(client, small_xes_path):
+    """Session display label can be overridden; deletion cascades to runs."""
+    upload = _upload_xes(client, small_xes_path).get_json()
+    sid = upload["session_id"]
+    client.post(f"/api/discover/{sid}")
+
+    rename = client.patch(
+        f"/api/sessions/{sid}",
+        data=json.dumps({"display_name": "My pilot run"}),
+        content_type="application/json",
+    ).get_json()
+    assert rename["success"] and rename["display_label"] == "My pilot run"
+
+    # Delete cascades: runs vanish along with their parent session.
+    delete = client.delete(f"/api/sessions/{sid}")
+    assert delete.status_code == 200
+    gone = client.get(f"/api/sessions/{sid}/runs")
+    assert gone.status_code == 404
 
 
 def test_discover_decision_tree_mode_with_data_attribute(client):

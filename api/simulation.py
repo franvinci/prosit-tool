@@ -1,8 +1,7 @@
-"""Simulation, download, and parameter-export endpoints."""
+"""Simulation and download endpoints."""
 
 import io
 import os
-import json
 import logging
 import tempfile
 from datetime import datetime
@@ -12,7 +11,7 @@ import pm4py
 from flask import Blueprint, request, jsonify, send_file, send_from_directory
 
 from app import app, db
-from models import SimulationSession
+from models import SimulationRun, SimulationSession
 from validators import validate_num_instances
 
 from ._decorators import handle_api_errors
@@ -22,75 +21,142 @@ logger = logging.getLogger(__name__)
 bp = Blueprint('simulation', __name__)
 
 
+def _resolve_run(session, run_id):
+    """Pick the SimulationRun to simulate against.
+
+    Honors an explicit run_id from the request when given (must belong to the
+    session); otherwise falls back to the baseline run.
+    """
+    if run_id is not None:
+        run = SimulationRun.query.filter_by(id=int(run_id), session_id=session.id).first()
+        if run is None:
+            return None, ('Run not found in this session', 404)
+        return run, None
+    baseline = session.get_baseline_run()
+    if baseline is None:
+        return None, ('Session has no runs yet — discover parameters first', 400)
+    return baseline, None
+
+
+def _do_simulate(session, run, num_instances, start_timestamp):
+    """Run the ProSiT simulator for ``run``, save the CSV, update the row."""
+    json_filepath = os.path.join(app.config['UPLOAD_FOLDER'], run.parameters_filename)
+    if not os.path.exists(json_filepath):
+        return None, ('Stored parameter file not found', 404)
+
+    logger.info(
+        "Simulating session %s run %s (%s) using %s",
+        session.id, run.id, run.name, run.parameters_filename,
+    )
+    prosit = load_session_prosit(session)
+    prosit.load_parameters_from_json_file(json_filepath)
+    result_df = prosit.run_simulation(n_traces=num_instances, start_timestamp=start_timestamp)
+
+    timestamp = int(datetime.now().timestamp())
+    output_filename = f'simulation_{timestamp}_s{session.id}_r{run.id}.csv'
+    output_path = os.path.join(app.config.get('SIMULATION_FOLDER', 'simulations'), output_filename)
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    result_df.to_csv(output_path, index=False)
+
+    run.simulation_df_filename = output_filename
+    run.num_instances = num_instances
+    run.last_run_at = datetime.utcnow()
+    return result_df, None
+
+
+def _parse_start_timestamp(raw):
+    if not raw:
+        return datetime.now()
+    ts = datetime.fromisoformat(raw.replace('Z', '+00:00'))
+    if ts.tzinfo is not None:
+        ts = ts.replace(tzinfo=None)
+    return ts
+
+
+def _simulate_session_run(session, request_data, run_id_override=None):
+    """Shared simulate logic used by both endpoints.
+
+    Returns a Flask response tuple (json, status_code).
+    """
+    num_instances, err = validate_num_instances(request_data.get('num_instances'))
+    if err:
+        return jsonify({'error': err}), 400
+
+    run_id = run_id_override if run_id_override is not None else request_data.get('run_id')
+    run, err = _resolve_run(session, run_id)
+    if err:
+        msg, code = err
+        return jsonify({'error': msg}), code
+
+    session.status = 'simulating'
+    session.touch()
+    db.session.commit()
+
+    start_timestamp = _parse_start_timestamp(request_data.get('start_timestamp'))
+    result_df, err = _do_simulate(session, run, num_instances, start_timestamp)
+    if err:
+        msg, code = err
+        session.status = 'ready'
+        db.session.commit()
+        return jsonify({'error': msg}), code
+
+    session.status = 'completed'
+    session.touch()
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'sim_output_filename': run.simulation_df_filename,
+        'num_events': len(result_df),
+        'run': run.to_summary(),
+        'message': f'Simulation completed with {num_instances} instances, generated {len(result_df)} events',
+    })
+
+
 @bp.route('/api/simulate/<int:session_id>', methods=['POST'])
 def simulate(session_id):
-    """Generate a simulated event log for a session."""
+    """Simulate a session's run.
+
+    Body (JSON):
+        num_instances: required, positive int
+        start_timestamp: optional ISO-8601 string
+        run_id: optional, target a specific what-if scenario; defaults to baseline
+    """
+    session = None
     try:
         session = SimulationSession.query.get_or_404(session_id)
-        parameters = session.get_parameters()
-        if not parameters:
-            return jsonify({'error': 'No parameters found'}), 404
-
-        request_data = request.get_json() or {}
-        num_instances, err = validate_num_instances(request_data.get('num_instances'))
-        if err:
-            return jsonify({'error': err}), 400
-
-        session.status = 'simulating'
-        db.session.commit()
-
-        start_timestamp_str = request_data.get('start_timestamp')
-        if start_timestamp_str:
-            start_timestamp = datetime.fromisoformat(start_timestamp_str.replace('Z', '+00:00'))
-            if start_timestamp.tzinfo is not None:
-                # Simulator works with naive datetimes; drop tzinfo to match.
-                start_timestamp = start_timestamp.replace(tzinfo=None)
-        else:
-            start_timestamp = datetime.now()
-
-        logger.info(f"Starting simulation for session {session_id} with {num_instances} instances")
-
-        session_metadata = session.get_parameters()
-        json_filename = session_metadata.get('json_filename')
-        if not json_filename:
-            return jsonify({'error': 'No stored parameters found for this session'}), 400
-
-        json_filepath = os.path.join(app.config['UPLOAD_FOLDER'], json_filename)
-        if not os.path.exists(json_filepath):
-            return jsonify({'error': 'Stored parameter file not found'}), 404
-
-        logger.info(f"Using stored modified parameters from {json_filename}")
-        prosit = load_session_prosit(session)
-        prosit.load_parameters_from_json_file(json_filepath)
-        result_df = prosit.run_simulation(n_traces=num_instances, start_timestamp=start_timestamp)
-
-        timestamp = int(datetime.now().timestamp())
-        output_filename = f'simulation_{timestamp}_{session_id}.csv'
-        output_path = os.path.join(app.config.get('SIMULATION_FOLDER', 'simulations'), output_filename)
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        result_df.to_csv(output_path, index=False)
-
-        session.status = 'completed'
-        session.simulation_df_filename = output_filename
-        db.session.commit()
-
-        return jsonify({
-            'success': True,
-            'sim_output_filename': output_filename,
-            'num_events': len(result_df),
-            'message': f'Simulation completed with {num_instances} instances, generated {len(result_df)} events',
-        })
-
+        return _simulate_session_run(session, request.get_json() or {})
     except Exception:
         logger.exception("Simulation error")
         db.session.rollback()
         try:
-            session = SimulationSession.query.get(session_id)
+            if session is None:
+                session = SimulationSession.query.get(session_id)
             if session:
                 session.status = 'error'
                 db.session.commit()
         except Exception:
             db.session.rollback()
+        return jsonify({'error': 'Simulation failed'}), 500
+
+
+@bp.route('/api/runs/<int:run_id>/simulate', methods=['POST'])
+def simulate_run(run_id):
+    """Simulate a specific what-if run. Same semantics as /api/simulate."""
+    session = None
+    try:
+        run = SimulationRun.query.get_or_404(run_id)
+        session = run.session
+        return _simulate_session_run(session, request.get_json() or {}, run_id_override=run.id)
+    except Exception:
+        logger.exception("Simulation error")
+        db.session.rollback()
+        if session is not None:
+            try:
+                session.status = 'error'
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
         return jsonify({'error': 'Simulation failed'}), 500
 
 
@@ -140,30 +206,3 @@ def download_xes(filename):
             os.unlink(tmp_path)
 
 
-@bp.route('/api/export_parameters/<int:session_id>')
-@handle_api_errors('Failed to export parameters')
-def export_parameters(session_id):
-    """Export the current ProSiT JSON parameter file for a session."""
-    session = SimulationSession.query.get_or_404(session_id)
-    session_metadata = session.get_parameters()
-    if not session_metadata:
-        return jsonify({'error': 'No parameters found'}), 404
-
-    json_filename = session_metadata.get('json_filename')
-    if not json_filename:
-        return jsonify({'error': 'No ProSiT JSON file associated with this session'}), 400
-
-    json_filepath = os.path.join(app.config['UPLOAD_FOLDER'], json_filename)
-    if not os.path.exists(json_filepath):
-        return jsonify({'error': 'ProSiT parameter file not found'}), 404
-
-    with open(json_filepath, 'r') as f:
-        prosit_json = json.load(f)
-
-    buf = io.BytesIO(json.dumps(prosit_json, indent=4).encode('utf-8'))
-    return send_file(
-        buf,
-        as_attachment=True,
-        download_name=f'prosit_parameters_{session_id}.json',
-        mimetype='application/json',
-    )

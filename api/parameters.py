@@ -1,4 +1,9 @@
-"""Parameters endpoint: GET (load) and PUT (update) discovered parameters."""
+"""Parameters endpoint: GET (load) and PUT (update) parameters for a session.
+
+Both endpoints operate on the session's baseline (As-Is) run by default. The
+``/api/runs/<run_id>`` endpoints are the preferred way to address a specific
+what-if scenario.
+"""
 
 import os
 import json
@@ -6,7 +11,7 @@ import logging
 
 from flask import Blueprint, request, jsonify
 
-from app import app
+from app import app, db
 from models import SimulationSession
 from format_converters import app_entry_to_prosit, transform_distribution_tree
 
@@ -41,58 +46,75 @@ def _default_calendar():
 @bp.route('/api/parameters/<int:session_id>')
 @handle_api_errors('Failed to load parameters')
 def get_parameters(session_id):
-    """Return parameters (and process_model metadata) for a session."""
+    """Return baseline parameters + a summary of all runs for a session."""
     session = SimulationSession.query.get_or_404(session_id)
     session_metadata = session.get_parameters()
     if not session_metadata:
         return jsonify({'error': 'No session metadata found'}), 404
 
-    json_filename = session_metadata.get('json_filename')
-    if json_filename:
-        json_filepath = os.path.join(app.config['UPLOAD_FOLDER'], json_filename)
-        if os.path.exists(json_filepath):
-            prosit = load_session_prosit(session)
-            parameters = prosit.load_parameters_from_json_file(json_filepath)
-            if 'process_model' in session_metadata:
-                parameters['process_model'].update(session_metadata['process_model'])
-            if 'prosit_metrics' in session_metadata:
-                # ``parameters`` may already carry ``prosit_metrics: None`` from
-                # _convert_prosit_to_app_format, so don't rely on setdefault here.
-                merged = parameters.get('prosit_metrics') or {}
-                merged.update(session_metadata.get('prosit_metrics') or {})
-                parameters['prosit_metrics'] = merged
+    baseline = session.get_baseline_run()
+    if baseline and baseline.parameters_filename:
+        json_filename = baseline.parameters_filename
+    else:
+        # Legacy fallback: very old sessions kept the JSON name in
+        # ``session.parameters['json_filename']`` and never got a baseline
+        # run created for them.
+        json_filename = session_metadata.get('json_filename')
+    if not json_filename:
+        return jsonify({'error': 'No parameter file found for this session'}), 404
 
-            return jsonify({
-                'success': True,
-                'parameters': parameters,
-                'status': session.status,
-                'json_filename': json_filename,
-            })
+    json_filepath = os.path.join(app.config['UPLOAD_FOLDER'], json_filename)
+    if not os.path.exists(json_filepath):
+        return jsonify({'error': 'Parameter JSON file not found'}), 404
 
-    # Fallback to stored parameters (legacy sessions without a JSON file).
+    prosit = load_session_prosit(session)
+    parameters = prosit.load_parameters_from_json_file(json_filepath)
+    if 'process_model' in session_metadata:
+        parameters['process_model'].update(session_metadata['process_model'])
+    if 'prosit_metrics' in session_metadata:
+        merged = parameters.get('prosit_metrics') or {}
+        merged.update(session_metadata.get('prosit_metrics') or {})
+        parameters['prosit_metrics'] = merged
+
+    runs = sorted(session.runs, key=lambda r: (not r.is_baseline, r.created_at))
+    session.touch()
+    db.session.commit()
+
     return jsonify({
         'success': True,
-        'parameters': session_metadata,
+        'parameters': parameters,
         'status': session.status,
+        'json_filename': json_filename,
+        'runs': [r.to_summary() for r in runs],
+        'active_run_id': baseline.id if baseline else None,
+        'simulation_df_filename': baseline.simulation_df_filename if baseline else None,
+        'session': {
+            'id': session.id,
+            'display_label': session.display_label(),
+            'display_name': session.display_name,
+            'filename': session.filename,
+        },
     })
 
 
 @bp.route('/api/parameters/<int:session_id>', methods=['PUT'])
 @handle_api_errors('Failed to update parameters')
 def update_parameters(session_id):
-    """Apply UI-format parameter edits back into the session's ProSiT JSON."""
+    """Backward-compat: applies UI-format edits to the baseline run.
+
+    Prefer ``PUT /api/runs/<run_id>`` for writing to a specific scenario.
+    """
     session = SimulationSession.query.get_or_404(session_id)
-    session_metadata = session.get_parameters()
 
     new_parameters = request.get_json()
     if not new_parameters:
         return jsonify({'error': 'No parameters provided'}), 400
 
-    json_filename = session_metadata.get('json_filename')
-    if not json_filename:
-        return jsonify({'error': 'No JSON file associated with this session'}), 400
+    baseline = session.get_baseline_run()
+    if not baseline or not baseline.parameters_filename:
+        return jsonify({'error': 'No baseline parameters for this session'}), 400
 
-    json_filepath = os.path.join(app.config['UPLOAD_FOLDER'], json_filename)
+    json_filepath = os.path.join(app.config['UPLOAD_FOLDER'], baseline.parameters_filename)
     if not os.path.exists(json_filepath):
         return jsonify({'error': 'Parameter JSON file not found'}), 404
 
@@ -104,7 +126,9 @@ def update_parameters(session_id):
     with open(json_filepath, 'w') as f:
         json.dump(prosit_json, f, indent=4)
 
-    logger.info(f"Parameters updated for session {session_id} and saved to {json_filename}")
+    session.touch()
+    db.session.commit()
+    logger.info(f"Parameters updated for session {session_id} (baseline run {baseline.id})")
     return jsonify({'success': True, 'message': 'Parameters updated successfully'})
 
 
@@ -197,8 +221,6 @@ def convert_app_to_prosit_format(app_params, prosit_json):
             prosit_data = {}
             for attr, params in (app_data_attrs.get('distribution_data_attributes') or {}).items():
                 if attr in categorical:
-                    # Always persist categoricals as {type, values} so a later
-                    # GET → UI render finds the values dict where it expects it.
                     if isinstance(params, dict) and 'values' in params:
                         values = params.get('values') or {}
                     elif isinstance(params, dict):
@@ -208,8 +230,6 @@ def convert_app_to_prosit_format(app_params, prosit_json):
                     prosit_data[attr] = {'type': 'categorical', 'values': values}
                     continue
                 entry = app_entry_to_prosit(params)
-                # prosit-pm 1.0.2 uses short keys (dist/min/max/mean) under the
-                # wrapped {mode, data} envelope; translate from our flat shape.
                 prosit_data[attr] = {
                     'type': 'continuous',
                     'dist': entry.get('dist_name'),
@@ -218,8 +238,6 @@ def convert_app_to_prosit_format(app_params, prosit_json):
                     'max': entry.get('max_value'),
                     'mean': entry.get('mean_value'),
                 }
-            # Preserve the discovery-time mode (distribution vs empirical) so
-            # round-tripping the JSON via the UI doesn't silently downgrade it.
             existing = prosit_json.get('data_attribute_params', {}).get('distribution_data_attributes', {})
             existing_mode = existing.get('mode') if isinstance(existing, dict) else None
             prosit_json.setdefault('data_attribute_params', {})['distribution_data_attributes'] = {

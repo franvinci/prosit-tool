@@ -20,11 +20,12 @@ env/
 htmlcov/
 .cache
 
-# IDE
+# IDE / agents
 .vscode/
 .idea/
 *.swp
 .DS_Store
+.claude/
 
 # Application data (do not commit user-uploaded data and generated outputs)
 uploads/

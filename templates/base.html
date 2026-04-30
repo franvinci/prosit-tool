@@ -33,6 +33,41 @@
         </div>
     </nav>
 
+    <!-- Sticky Run Simulation toolbar (visible only when a session is active) -->
+    <div id="stickyRunBar" class="sticky-run-bar" style="display: none;">
+        <div class="container-fluid d-flex flex-wrap align-items-center justify-content-end gap-2 px-3">
+            <div class="input-group input-group-sm" style="width: auto;">
+                <span class="input-group-text">Instances</span>
+                <input type="number" id="stickyNumInstances" class="form-control" style="max-width: 90px;"
+                       min="1" max="10000" value="100">
+            </div>
+            <div class="input-group input-group-sm" style="width: auto;">
+                <span class="input-group-text">Start</span>
+                <input type="datetime-local" id="stickyStartTimestamp" class="form-control" style="max-width: 200px;">
+            </div>
+            <button type="button" class="btn btn-sm sticky-run-btn"
+                    id="stickyRunBtn"
+                    onclick="runSimulationFromSticky()">
+                <i data-feather="play" class="me-1" style="width: 14px; height: 14px;"></i>
+                <span id="stickyRunBtnLabel">Run Simulation</span>
+            </button>
+            <div class="dropdown">
+                <button type="button"
+                        id="stickyDownloadBtn"
+                        class="btn btn-sm btn-outline-success dropdown-toggle"
+                        data-bs-toggle="dropdown" aria-expanded="false"
+                        disabled>
+                    <i data-feather="download" class="me-1" style="width: 14px; height: 14px;"></i>
+                    Download
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><button type="button" class="dropdown-item" onclick="downloadSimulation('csv')">CSV</button></li>
+                    <li><button type="button" class="dropdown-item" onclick="downloadSimulation('xes')">XES</button></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
     <!-- Main Content -->
     <main class="container-fluid py-4">
         {% block content %}{% endblock %}
@@ -61,8 +96,10 @@
             integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
             crossorigin="anonymous"></script>
 
-    <!-- Chart.js -->
+    <!-- Chart.js + matrix plugin (used by the resource utilization heatmap) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@2.0.1/dist/chartjs-chart-matrix.min.js"
             crossorigin="anonymous"></script>
 
     <!-- Custom JS -->

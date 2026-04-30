@@ -56,7 +56,7 @@ db.init_app(app)
 
 with app.app_context():
     # Import models and create database tables
-    import models
+    import models  # noqa: F401
     db.create_all()
 
 # Wire up the HTTP API

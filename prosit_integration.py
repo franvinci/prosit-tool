@@ -8,7 +8,7 @@ from pm4py.algo.evaluation.replay_fitness import algorithm as fitness_evaluator
 from pm4py.algo.evaluation.precision import algorithm as precision_evaluator
 
 from prosit.simulator import SimulatorParameters, SimulatorEngine
-from evaluation import evaluate
+from evaluation import evaluate, compute_log_kpis, compute_log_charts
 from format_converters import distribution_from_prosit
 
 logger = logging.getLogger(__name__)
@@ -266,6 +266,11 @@ class ProSiTIntegration:
             'time': {'ctd': metrics['ctd'], 'car': metrics['car']},
             'resource-flow': {'r2gd': metrics['r2gd'], 'r3gd': metrics['r3gd']},
             'generalization': {'ctd_entropy': metrics['ctd_entropy'], 'etd_entropy': metrics['etd_entropy']},
+            'kpi_comparison': {
+                'real': compute_log_kpis(df_event_log),
+                'simulated': compute_log_kpis(simulated_event_log),
+                'charts': compute_log_charts(df_event_log, simulated_event_log),
+            },
         }
         return self.prosit_metrics
 

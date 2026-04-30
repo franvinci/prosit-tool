@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Setup global event handlers
     setupGlobalHandlers();
     
-    console.log('ProSiT initialized successfully');
 });
 
 function initializeBootstrap() {
@@ -55,29 +54,25 @@ function handleFileInputChange(input) {
     const file = input.files[0];
     if (!file) return;
 
-    const discoverNet = document.getElementById('discoverNet');
-    const importNet = document.getElementById('importNet');
+    // Only validate the two file inputs we know about; ignore other file
+    // pickers (e.g., per-form uploads added by individual screens).
+    if (input.id !== 'xesFile' && input.id !== 'pnmlFile') return;
 
-    let valid = false;
-    let requiredExtension = '';
-
-    if (discoverNet.checked && file.name.toLowerCase().endsWith('.xes')) {
-        valid = true;
-        requiredExtension = 'XES';
-    } else if (importNet.checked && file.name.toLowerCase().endsWith('.pnml')) {
-        valid = true;
-        requiredExtension = 'PNML';
-    } else {
-        if (discoverNet.checked) {
-            requiredExtension = 'XES';
-        } else if (importNet.checked) {
-            requiredExtension = 'PNML';
+    const lower = file.name.toLowerCase();
+    if (input.id === 'xesFile') {
+        if (!lower.endsWith('.xes') && !lower.endsWith('.csv')) {
+            showAlert('Please select a valid XES or CSV file', 'warning');
+            input.value = '';
+            return;
         }
-        showAlert(`Please select a valid ${requiredExtension} file`, 'warning');
-        input.value = '';
-        return;
+    } else if (input.id === 'pnmlFile') {
+        if (!lower.endsWith('.pnml')) {
+            showAlert('Please select a valid PNML file', 'warning');
+            input.value = '';
+            return;
+        }
     }
-    
+
     // Check file size (max 100MB)
     if (file.size > 100 * 1024 * 1024) {
         showAlert('File size too large. Maximum size is 100MB', 'warning');

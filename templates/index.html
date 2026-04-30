@@ -13,16 +13,35 @@
             <div class="card-body">
                 <form id="uploadForm" enctype="multipart/form-data">
                     <div class="mb-3">
-                        <label for="xesFile" class="form-label fw-bold">
-                            XES Event Log File
-                            <i data-feather="info" class="ms-1" 
-                               data-bs-toggle="tooltip" 
-                               data-bs-placement="top" 
-                               title="The XES event log must contain the following required attributes: 'case:concept:name', 'concept:name', 'start:timestamp', 'time:timestamp', 'org:resource'. All other attributes are treated as trace attributes."
-                               style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
-                        </label>
-                        <input type="file" class="form-control" id="xesFile" name="xes_file" accept=".xes" required>
-                        <div class="form-text">Upload your XES event log file for parameter discovery</div>
+                        <label for="xesFile" class="form-label fw-bold">Event Log File (XES or CSV)</label>
+                        <input type="file" class="form-control" id="xesFile" name="xes_file" accept=".xes,.csv" required>
+                        <div class="form-text">Upload an XES or CSV event log; map columns below.</div>
+                    </div>
+
+                    <div id="csvColumnMapping" class="mb-3" style="display: none;">
+                        <div class="alert alert-info py-2 small mb-2">Map your event-log columns to the required fields.</div>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label for="csvCaseIdCol" class="form-label small mb-1">Case ID</label>
+                                <select class="form-select form-select-sm" id="csvCaseIdCol" name="case_id_col"></select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="csvActivityCol" class="form-label small mb-1">Activity</label>
+                                <select class="form-select form-select-sm" id="csvActivityCol" name="activity_col"></select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="csvEndTsCol" class="form-label small mb-1">End timestamp</label>
+                                <select class="form-select form-select-sm" id="csvEndTsCol" name="end_ts_col"></select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="csvStartTsCol" class="form-label small mb-1">Start timestamp</label>
+                                <select class="form-select form-select-sm" id="csvStartTsCol" name="start_ts_col"></select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="csvResourceCol" class="form-label small mb-1">Resource</label>
+                                <select class="form-select form-select-sm" id="csvResourceCol" name="resource_col"></select>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="mb-4">
@@ -112,7 +131,7 @@
                                 </div>
                                 <div class="form-text">Disabled when depth is 0.</div>
                             </div>
-                            <div class="col-md-6" id="gracePeriodSection" style="display: none;">
+                            <div class="col-md-6" id="gracePeriodSection">
                                 <label class="form-label fw-bold mb-1">
                                     Grace Period
                                     <i data-feather="info" class="ms-1"
@@ -138,7 +157,7 @@
                                     <input class="form-check-input" type="checkbox" id="enableMultitaskingToggle">
                                 </div>
                             </div>
-                            <div class="col-md-6" id="multitaskingThrSection" style="display: none;">
+                            <div class="col-md-6" id="multitaskingThrSection">
                                 <label for="multitaskingThr" class="form-label fw-bold mb-1">
                                     Multitasking Threshold: <span id="multitaskingThrValue">0.05</span>
                                 </label>
@@ -221,17 +240,30 @@
             <div class="card-body p-0">
                 <div class="list-group list-group-flush" id="sessionsList">
                     {% for session in sessions %}
-                    <div class="list-group-item list-group-item-action cursor-pointer" 
-                         onclick="loadSession({{ session.id }})">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="mb-1">{{ session.filename }}</h6>
-                                <small class="text-muted">{{ session.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                    {% set badge_class = 'success' if session.status in ('ready', 'completed') else 'warning' if session.status == 'uploaded' else ('danger' if session.status == 'error' else 'info') %}
+                    <div class="list-group-item recent-session-item" data-session-id="{{ session.id }}">
+                        <div class="d-flex justify-content-between align-items-start gap-2">
+                            <div class="recent-session-main flex-grow-1 cursor-pointer" onclick="loadSession({{ session.id }})">
+                                <h6 class="mb-1 text-truncate" title="{{ session._display_label }}">{{ session._display_label }}</h6>
+                                <small class="text-muted d-block">
+                                    {{ (session.last_used_at or session.created_at).strftime('%Y-%m-%d %H:%M') }}
+                                    {% if session._run_count > 0 %}· {{ session._run_count }} run{{ '' if session._run_count == 1 else 's' }}{% endif %}
+                                </small>
                             </div>
-                            <span class="badge bg-{{ 'success' if session.status == 'ready' else 'warning' if session.status == 'uploaded' else 'info' }}">
-                                {{ session.status }}
-                            </span>
+                            <div class="d-flex flex-column align-items-end gap-1">
+                                <span class="badge bg-{{ badge_class }}">{{ session.status }}</span>
+                                <button type="button"
+                                        class="btn btn-sm btn-link text-danger p-0 recent-session-delete"
+                                        title="Delete session"
+                                        onclick="event.stopPropagation(); deleteSession({{ session.id }}, '{{ session._display_label|replace("'", "\\'") }}')">
+                                    <i data-feather="trash-2" style="width: 14px; height: 14px;"></i>
+                                </button>
+                            </div>
                         </div>
+                    </div>
+                    {% else %}
+                    <div class="list-group-item text-center text-muted py-3">
+                        <small>No sessions yet — upload a log to get started.</small>
                     </div>
                     {% endfor %}
                 </div>
@@ -289,18 +321,42 @@
             </div>
         </div>
 
+        <!-- What-If Analysis Navigator -->
+        <div class="card shadow-sm mb-4" id="whatIfCard" style="display: none;">
+            <div class="card-header text-white d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #6f42c1 0%, #5a32a0 100%);">
+                <h5 class="card-title mb-0">
+                    <i data-feather="layers" class="me-2"></i>
+                    What-If Scenarios
+                </h5>
+                <button class="btn btn-light btn-sm" onclick="showCreateWhatIfModal()">
+                    <i data-feather="plus" class="me-1"></i>
+                    New Scenario
+                </button>
+            </div>
+            <div class="card-body py-2">
+                <div class="d-flex flex-wrap gap-2 align-items-center" id="whatIfList">
+                    <span class="text-muted small">Loading scenarios...</span>
+                </div>
+                <div id="whatIfDirtyHint" class="form-text mt-2 text-warning" style="display: none;">
+                    <i data-feather="edit-3" style="width: 14px; height: 14px;"></i>
+                    Parameters edited. Click "Run Simulation" to save them — the baseline auto-forks into a new what-if; existing what-ifs are updated in place.
+                </div>
+            </div>
+        </div>
+
         <div class="card shadow-sm mb-4" id="parametersCard" style="display: none;">
-            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h5 class="card-title mb-0">
                     <i data-feather="settings" class="me-2"></i>
                     Simulation Parameters
+                    <span class="badge bg-light text-success ms-2" id="activeRunBadge" style="display: none;">As-Is</span>
                 </h5>
-                <div>
-                    <button class="btn btn-outline-light btn-sm me-2" onclick="exportParameters()">
-                        <i data-feather="download" class="me-1"></i>
-                        Export JSON
-                    </button>
-                    <button class="btn btn-light btn-sm" onclick="saveParameters()">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="small text-white-50" id="parametersDirtyHeader" style="display: none;">
+                        <i data-feather="edit-3" style="width: 14px; height: 14px;"></i>
+                        Unsaved edits
+                    </span>
+                    <button class="btn btn-light btn-sm" onclick="saveParameters()" id="saveParametersBtn" style="display: none;">
                         <i data-feather="save" class="me-1"></i>
                         Save Changes
                     </button>
@@ -308,15 +364,25 @@
             </div>
             <div class="card-body">
                 <div class="mb-4">
-                    <h6 class="mb-3">
-                        <i data-feather="share-2" class="me-2"></i>
-                        Discovered Process Model
-                    </h6>
-                    <div id="petriNetContainer" class="border rounded p-3" style="min-height: 300px; background-color: #f8f9fa;">
-                        <div class="d-flex justify-content-center align-items-center h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">
+                            <i data-feather="share-2" class="me-2"></i>
+                            Discovered Process Model
+                        </h6>
+                        <div id="petriNetZoomGroup" class="d-flex align-items-center gap-2" style="display: none;">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="petriNetZoomBy(-0.2)" title="Zoom out">−</button>
+                            <input type="range" id="petriNetZoom" min="0.3" max="5" step="0.05" value="1" style="width: 140px;" oninput="setPetriNetZoom(this.value)">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="petriNetZoomBy(0.2)" title="Zoom in">+</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="resetPetriNetView()" title="Fit to view">Fit</button>
+                        </div>
+                    </div>
+                    <div id="petriNetContainer" class="border rounded" style="height: 280px; background-color: #f8f9fa; overflow: hidden; position: relative; cursor: grab;">
+                        <div id="petriNetViewport" style="position: absolute; top: 0; left: 0; transform-origin: 0 0; user-select: none;"></div>
+                        <div id="petriNetEmptyState" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; pointer-events: none;">
                             <span class="text-muted">Process model will be displayed here after discovery</span>
                         </div>
                     </div>
+                    <div id="petriNetStats" class="mt-2"></div>
                 </div>
 
                 <ul class="nav nav-tabs nav-fill mb-3" id="parameterTabs" role="tablist">
@@ -471,11 +537,21 @@
                         </h6>
                         <p class="mb-2" id="simulationResultText">Your simulated event log has been generated successfully.</p>
                         <div class="d-flex gap-2">
-                            <button class="btn btn-success btn-sm" id="downloadSimulationBtn">
+                            <div class="dropdown">
+                                <button class="btn btn-success btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i data-feather="download" class="me-1"></i>
+                                    Download
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><button type="button" class="dropdown-item" onclick="downloadSimulation('csv')">CSV</button></li>
+                                    <li><button type="button" class="dropdown-item" onclick="downloadSimulation('xes')">XES</button></li>
+                                </ul>
+                            </div>
+                            <button class="btn btn-success btn-sm" id="downloadSimulationBtn" style="display:none;">
                                 <i data-feather="download" class="me-1"></i>
                                 Download CSV File
                             </button>
-                            <button class="btn btn-outline-success btn-sm" id="downloadSimulationXesBtn">
+                            <button class="btn btn-outline-success btn-sm" id="downloadSimulationXesBtn" style="display:none;">
                                 <i data-feather="download" class="me-1"></i>
                                 Download XES File
                             </button>
@@ -495,20 +571,11 @@
 <div class="row my-4">
     <div class="col-lg-12">
         <div class="card shadow-sm" id="simulationResultsCard" style="display: none;">
-            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+            <div class="card-header bg-info text-white">
                 <h5 class="card-title mb-0">
                     <i data-feather="pie-chart" class="me-2"></i>
                     Simulation Results
                 </h5>
-                <div class="d-flex align-items-center gap-2">
-                    <label for="resultsTimeUnit" class="small mb-0 text-white">Time unit</label>
-                    <select id="resultsTimeUnit" class="form-select form-select-sm" style="width: auto;">
-                        <option value="sec">Seconds</option>
-                        <option value="min" selected>Minutes</option>
-                        <option value="hour">Hours</option>
-                        <option value="day">Days</option>
-                    </select>
-                </div>
             </div>
             <div class="card-body">
                 <ul class="nav nav-tabs nav-fill mb-3" id="simulationResultsTabs" role="tablist">
@@ -559,6 +626,17 @@
                         </div>
                     </div>
                     <div class="tab-pane fade" id="case-duration-pane" role="tabpanel">
+                        <div class="row mb-3 align-items-end">
+                            <div class="col-md-4">
+                                <label for="caseDurationUnit" class="form-label small mb-1">Time unit</label>
+                                <select class="form-select form-select-sm" id="caseDurationUnit" data-unit-target="case_duration">
+                                    <option value="sec">Seconds</option>
+                                    <option value="min" selected>Minutes</option>
+                                    <option value="hour">Hours</option>
+                                    <option value="day">Days</option>
+                                </select>
+                            </div>
+                        </div>
                         <div class="row">
                             <div id="caseDurationDist" class="border rounded p-3" style="min-height: 300px; background-color: #f8f9fa;">
                                 <div class="d-flex justify-content-center align-items-center h-100">
@@ -583,10 +661,19 @@
                         </div>
                     </div>
                     <div class="tab-pane fade" id="activity-duration-pane" role="tabpanel">
-                        <div class="row mb-3">
+                        <div class="row mb-3 align-items-end">
                             <div class="col-md-6">
-                                <label for="activitySelect" class="form-label">Select Activity</label>
-                                <select class="form-select" id="activitySelect" onchange="renderActivityDurationBoxplot(this.value)"></select>
+                                <label for="activitySelect" class="form-label small mb-1">Select Activity</label>
+                                <select class="form-select form-select-sm" id="activitySelect" onchange="renderActivityDurationBoxplot(this.value)"></select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="activityDurationUnit" class="form-label small mb-1">Time unit</label>
+                                <select class="form-select form-select-sm" id="activityDurationUnit" data-unit-target="activity_duration">
+                                    <option value="sec">Seconds</option>
+                                    <option value="min" selected>Minutes</option>
+                                    <option value="hour">Hours</option>
+                                    <option value="day">Days</option>
+                                </select>
                             </div>
                         </div>
                         <div id="activityDurationBoxplotContainer" class="border rounded p-3" style="min-height: 300px; background-color: #f8f9fa;">
@@ -596,14 +683,23 @@
                         </div>
                     </div>
                     <div class="tab-pane fade" id="waiting-time-pane" role="tabpanel">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="waitingTimeSelect_res" class="form-label">Select Resource</label>
-                                <select class="form-select" id="waitingTimeSelect_res" onchange="updateWaitingTimeVisualization()"></select>
+                        <div class="row mb-3 align-items-end">
+                            <div class="col-md-4">
+                                <label for="waitingTimeSelect_res" class="form-label small mb-1">Select Resource</label>
+                                <select class="form-select form-select-sm" id="waitingTimeSelect_res" onchange="updateWaitingTimeVisualization()"></select>
                             </div>
-                            <div class="col-md-6">
-                                <label for="waitingTimeSelect_act" class="form-label">Select Activity</label>
-                                <select class="form-select" id="waitingTimeSelect_act" onchange="updateWaitingTimeVisualization()"></select>
+                            <div class="col-md-4">
+                                <label for="waitingTimeSelect_act" class="form-label small mb-1">Select Activity</label>
+                                <select class="form-select form-select-sm" id="waitingTimeSelect_act" onchange="updateWaitingTimeVisualization()"></select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="waitingTimeUnit" class="form-label small mb-1">Time unit</label>
+                                <select class="form-select form-select-sm" id="waitingTimeUnit" data-unit-target="waiting_time">
+                                    <option value="sec">Seconds</option>
+                                    <option value="min" selected>Minutes</option>
+                                    <option value="hour">Hours</option>
+                                    <option value="day">Days</option>
+                                </select>
                             </div>
                         </div>
                         <div id="waitingTimeVisualizationContainer" class="border rounded p-3" style="min-height: 300px; background-color: #f8f9fa;">
@@ -625,6 +721,360 @@ let currentSessionId = null;
 let currentParameters = null;
 let originalVisualization = null;
 let simulatedLogData = null;
+
+// What-if scenario state. ``currentRuns`` is the list returned by the
+// /api/sessions/<id>/runs endpoint; ``activeRunId`` is the run whose
+// parameters are currently shown in the editor; ``parametersDirty`` flips on
+// any user edit and resets when we save / load.
+let currentRuns = [];
+let activeRunId = null;
+let parametersDirty = false;
+const BASELINE_RUN_NAME = 'As-Is';
+
+function activeRun() {
+    if (activeRunId == null) return null;
+    return currentRuns.find(r => r.id === activeRunId) || null;
+}
+
+function isBaselineActive() {
+    const run = activeRun();
+    return !!(run && run.is_baseline);
+}
+
+function markParametersDirty() {
+    if (parametersDirty) return;
+    parametersDirty = true;
+    const hint = document.getElementById('whatIfDirtyHint');
+    if (hint) hint.style.display = 'flex';
+    const headerHint = document.getElementById('parametersDirtyHeader');
+    if (headerHint) headerHint.style.display = 'inline-flex';
+}
+
+function clearParametersDirty() {
+    parametersDirty = false;
+    const hint = document.getElementById('whatIfDirtyHint');
+    if (hint) hint.style.display = 'none';
+    const headerHint = document.getElementById('parametersDirtyHeader');
+    if (headerHint) headerHint.style.display = 'none';
+}
+
+function _escapeHtmlAttr(s) {
+    return String(s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// Renders the chip-style scenario picker. Each run becomes a clickable chip;
+// the active one is highlighted, and non-baseline chips expose inline rename
+// / delete buttons that surface on hover.
+function renderWhatIfList() {
+    const container = document.getElementById('whatIfList');
+    const badge = document.getElementById('activeRunBadge');
+    if (!container) return;
+
+    if (!currentRuns.length) {
+        container.innerHTML = '<span class="text-muted small">No scenarios yet.</span>';
+        if (badge) badge.style.display = 'none';
+        return;
+    }
+
+    const sorted = [...currentRuns].sort((a, b) => {
+        if (a.is_baseline !== b.is_baseline) return a.is_baseline ? -1 : 1;
+        return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+    });
+
+    container.innerHTML = sorted.map(run => {
+        const active = run.id === activeRunId;
+        const cls = `whatif-chip ${active ? 'active' : ''} ${run.is_baseline ? 'baseline' : ''}`;
+        const label = _escapeHtmlAttr(run.name);
+        const sub = run.has_simulation
+            ? `<span class="whatif-chip-sub" title="${run.num_instances || ''} instances">✓ simulated</span>`
+            : '<span class="whatif-chip-sub text-muted">not run</span>';
+        const actions = run.is_baseline ? '' : `
+            <div class="whatif-chip-actions">
+                <button type="button" class="whatif-chip-action whatif-chip-rename" title="Rename"
+                        onclick="event.stopPropagation(); renameWhatIf(${run.id})">
+                    <i data-feather="edit-2" style="width:13px;height:13px;"></i>
+                </button>
+                <button type="button" class="whatif-chip-action whatif-chip-delete" title="Delete scenario"
+                        onclick="event.stopPropagation(); deleteWhatIf(${run.id})">
+                    <i data-feather="x" style="width:13px;height:13px;"></i>
+                </button>
+            </div>`;
+        return `
+            <div class="${cls}" data-run-id="${run.id}" onclick="switchToWhatIf(${run.id})" title="${run.is_baseline ? 'Baseline (read-only)' : 'Click to load'}">
+                <div class="whatif-chip-name">${label}</div>
+                <div class="whatif-chip-meta">${sub}</div>
+                ${actions}
+            </div>`;
+    }).join('');
+
+    // Update the badge in the parameters card header.
+    if (badge) {
+        const run = activeRun();
+        if (run) {
+            badge.textContent = run.name;
+            badge.style.display = 'inline-block';
+            badge.classList.toggle('bg-light', run.is_baseline);
+            badge.classList.toggle('text-success', run.is_baseline);
+            badge.classList.toggle('bg-warning', !run.is_baseline);
+            badge.classList.toggle('text-dark', !run.is_baseline);
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    // Save Changes is for editing the active what-if in place. The baseline
+    // is read-only — edits there auto-fork on Run, no save button needed.
+    const saveBtn = document.getElementById('saveParametersBtn');
+    if (saveBtn) {
+        saveBtn.style.display = (activeRun() && !isBaselineActive()) ? '' : 'none';
+    }
+
+    feather.replace();
+}
+
+async function refreshWhatIfList() {
+    if (!currentSessionId) return;
+    try {
+        const resp = await fetch(`/api/sessions/${currentSessionId}/runs`);
+        const body = await resp.json();
+        if (body.success) {
+            currentRuns = body.runs || [];
+            renderWhatIfList();
+        }
+    } catch (err) {
+        console.warn('Failed to refresh runs:', err);
+    }
+}
+
+async function switchToWhatIf(runId) {
+    if (runId === activeRunId) return;
+    if (parametersDirty) {
+        if (!confirm('You have unsaved parameter edits. Switch scenarios anyway? Your edits will be discarded.')) {
+            return;
+        }
+    }
+
+    // Show a brief inline indicator on the chip — no blocking modal. The
+    // backend round-trip is fast (~40ms); modal flicker added perceived
+    // latency without giving useful feedback.
+    const chip = document.querySelector(`.whatif-chip[data-run-id="${runId}"]`);
+    if (chip) chip.classList.add('loading');
+
+    try {
+        const resp = await fetch(`/api/runs/${runId}`);
+        const body = await resp.json();
+        if (!body.success) throw new Error(body.error || 'Failed to load scenario');
+
+        activeRunId = runId;
+        currentParameters = body.parameters;
+        originalVisualization = body.parameters.process_model.visualization;
+        clearParametersDirty();
+        renderParameters(body.parameters);
+        renderWhatIfList();
+        feather.replace();
+
+        const run = activeRun();
+        _setSimOutputFilename(run && run.simulation_df_filename ? run.simulation_df_filename : null);
+
+        if (run && run.simulation_df_filename) {
+            // Show the results card immediately; per-tab spinners cover the
+            // visualization fetches without blocking the parameter editor.
+            document.getElementById('simulationResultsCard').style.display = 'block';
+            document.getElementById('simulationResults').style.display = 'block';
+            const resultText = document.getElementById('simulationResultText');
+            if (resultText && run.num_instances) {
+                resultText.textContent = `Last run: ${run.num_instances} instance${run.num_instances === 1 ? '' : 's'} (${run.name}).`;
+            }
+            loadAllVisualizations(currentSessionId, runId);  // intentionally not awaited
+        } else {
+            document.getElementById('simulationResultsCard').style.display = 'none';
+            document.getElementById('simulationResults').style.display = 'none';
+        }
+    } catch (err) {
+        showAlert(`Failed to load scenario: ${err.message}`, 'danger');
+    } finally {
+        if (chip) chip.classList.remove('loading');
+    }
+}
+
+function showCreateWhatIfModal(prefilledName = '') {
+    if (!currentSessionId) {
+        showAlert('Open a session first', 'warning');
+        return;
+    }
+    const existing = document.getElementById('createWhatIfModal');
+    if (existing) existing.remove();
+
+    const sourceLabel = (activeRun() && activeRun().name) || BASELINE_RUN_NAME;
+    const modalHtml = `
+        <div class="modal fade" id="createWhatIfModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">New What-If Scenario</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Scenario name</label>
+                            <input type="text" class="form-control" id="newWhatIfName" maxlength="100" placeholder="e.g. Reduce loan officers" value="${_escapeHtmlAttr(prefilledName)}">
+                            <div class="form-text">Pick a short, descriptive name. "${BASELINE_RUN_NAME}" is reserved.</div>
+                        </div>
+                        <div class="alert alert-info py-2 small mb-0">
+                            The new scenario will be a copy of <strong>${_escapeHtmlAttr(sourceLabel)}</strong>${parametersDirty ? ' with your current unsaved edits applied' : ''}.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="createWhatIfFromModal()">Create</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modal = new bootstrap.Modal(document.getElementById('createWhatIfModal'));
+    modal.show();
+    setTimeout(() => {
+        const input = document.getElementById('newWhatIfName');
+        if (input) input.focus();
+    }, 250);
+}
+
+async function createWhatIfFromModal() {
+    const nameInput = document.getElementById('newWhatIfName');
+    const name = (nameInput.value || '').trim();
+    if (!name) {
+        showAlert('Please enter a name', 'warning');
+        return;
+    }
+    const body = { name };
+    // Always include the current (possibly edited) parameters — there's no
+    // reason to ever throw away unsaved edits when forking.
+    if (currentParameters) body.parameters = currentParameters;
+    if (activeRunId != null) body.from_run_id = activeRunId;
+
+    try {
+        const resp = await fetch(`/api/sessions/${currentSessionId}/runs`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+        const result = await resp.json();
+        if (!resp.ok || !result.success) throw new Error(result.error || 'Failed to create scenario');
+
+        const modal = bootstrap.Modal.getInstance(document.getElementById('createWhatIfModal'));
+        if (modal) modal.hide();
+        await refreshWhatIfList();
+        await switchToWhatIf(result.run.id);
+        showAlert(`Created scenario "${result.run.name}"`, 'success');
+    } catch (err) {
+        showAlert(`Failed to create scenario: ${err.message}`, 'danger');
+    }
+}
+
+async function renameWhatIf(runId) {
+    const run = currentRuns.find(r => r.id === runId);
+    if (!run) return;
+    const next = prompt('New scenario name:', run.name);
+    if (next == null) return;
+    const trimmed = next.trim();
+    if (!trimmed || trimmed === run.name) return;
+
+    try {
+        const resp = await fetch(`/api/runs/${runId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: trimmed }),
+        });
+        const body = await resp.json();
+        if (!resp.ok || !body.success) throw new Error(body.error || 'Rename failed');
+        await refreshWhatIfList();
+    } catch (err) {
+        showAlert(`Rename failed: ${err.message}`, 'danger');
+    }
+}
+
+async function duplicateWhatIf(runId) {
+    const run = currentRuns.find(r => r.id === runId);
+    if (!run) return;
+    const next = prompt('Name for the duplicate scenario:', `${run.name} (copy)`);
+    if (next == null) return;
+    const trimmed = next.trim();
+    if (!trimmed) return;
+
+    try {
+        const resp = await fetch(`/api/sessions/${currentSessionId}/runs`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: trimmed, from_run_id: runId }),
+        });
+        const body = await resp.json();
+        if (!resp.ok || !body.success) throw new Error(body.error || 'Duplicate failed');
+        await refreshWhatIfList();
+        await switchToWhatIf(body.run.id);
+    } catch (err) {
+        showAlert(`Duplicate failed: ${err.message}`, 'danger');
+    }
+}
+
+async function deleteWhatIf(runId) {
+    const run = currentRuns.find(r => r.id === runId);
+    if (!run || run.is_baseline) return;
+    if (!confirm(`Delete scenario "${run.name}"? This will remove its parameters and any simulation result.`)) return;
+
+    try {
+        const resp = await fetch(`/api/runs/${runId}`, { method: 'DELETE' });
+        const body = await resp.json();
+        if (!resp.ok || !body.success) throw new Error(body.error || 'Delete failed');
+
+        // If we deleted the active scenario, fall back to the baseline.
+        if (runId === activeRunId) {
+            const baseline = currentRuns.find(r => r.is_baseline);
+            if (baseline) {
+                await refreshWhatIfList();
+                await switchToWhatIf(baseline.id);
+            } else {
+                activeRunId = null;
+                await refreshWhatIfList();
+            }
+        } else {
+            await refreshWhatIfList();
+        }
+        showAlert('Scenario deleted', 'info', 2500);
+    } catch (err) {
+        showAlert(`Delete failed: ${err.message}`, 'danger');
+    }
+}
+
+async function deleteSession(sessionId, label) {
+    if (!confirm(`Delete session "${label}"? All scenarios and simulation results will be removed.`)) return;
+    try {
+        const resp = await fetch(`/api/sessions/${sessionId}`, { method: 'DELETE' });
+        const body = await resp.json();
+        if (!resp.ok || !body.success) throw new Error(body.error || 'Delete failed');
+        const item = document.querySelector(`.recent-session-item[data-session-id="${sessionId}"]`);
+        if (item) item.remove();
+        if (sessionId === currentSessionId) {
+            currentSessionId = null;
+            currentParameters = null;
+            currentRuns = [];
+            activeRunId = null;
+            document.getElementById('parametersCard').style.display = 'none';
+            document.getElementById('simulationCard').style.display = 'none';
+            document.getElementById('whatIfCard').style.display = 'none';
+            document.getElementById('accuracyCard').style.display = 'none';
+            document.getElementById('simulationResultsCard').style.display = 'none';
+            document.getElementById('welcomeMessage').style.display = 'block';
+            document.getElementById('stickyRunBar').style.display = 'none';
+            _setSimOutputFilename(null);
+        }
+        showAlert('Session deleted', 'info', 2500);
+    } catch (err) {
+        showAlert(`Delete failed: ${err.message}`, 'danger');
+    }
+}
 
 // Wrap feather.replace so one bad icon (or a node detached mid-iteration) does
 // not break the entire page. Falls back to per-icon replacement and logs the
@@ -711,50 +1161,50 @@ document.addEventListener('DOMContentLoaded', function() {
         togglePetriNetSections();
     }
 
-    // Setup incremental discovery toggle behavior
+    // Setup incremental discovery toggle behavior. Sections always remain in
+    // the layout — we only toggle disabled state to avoid shifting siblings.
     const maxDepthSelect = document.getElementById('maxDepthTree');
     const incToggle = document.getElementById('incrementalDiscoveryToggle');
     const gracePeriodSection = document.getElementById('gracePeriodSection');
+    const gracePeriodInput = document.getElementById('gracePeriod');
+
+    function setSectionEnabled(section, input, enabled) {
+        if (input) input.disabled = !enabled;
+        if (section) {
+            section.style.opacity = enabled ? '' : '0.5';
+            section.style.pointerEvents = enabled ? '' : 'none';
+        }
+    }
+
     function syncIncrementalToggle() {
         const depth = parseInt(maxDepthSelect.value || '0');
         if (depth === 0) {
             incToggle.checked = false;
             incToggle.disabled = true;
-            gracePeriodSection.style.display = 'none';
         } else {
             incToggle.disabled = false;
-            // Show grace period section only if incremental discovery is enabled
-            if (incToggle.checked) {
-                gracePeriodSection.style.display = 'block';
-            } else {
-                gracePeriodSection.style.display = 'none';
-            }
         }
+        const active = incToggle.checked && depth > 0;
+        setSectionEnabled(gracePeriodSection, gracePeriodInput, active);
     }
-    
-    // Handle incremental discovery toggle change
-    function handleIncrementalToggle() {
-        if (incToggle.checked && parseInt(maxDepthSelect.value || '0') > 0) {
-            gracePeriodSection.style.display = 'block';
-        } else {
-            gracePeriodSection.style.display = 'none';
-        }
-    }
+
     if (maxDepthSelect && incToggle) {
         maxDepthSelect.addEventListener('change', syncIncrementalToggle);
-        incToggle.addEventListener('change', handleIncrementalToggle);
+        incToggle.addEventListener('change', syncIncrementalToggle);
         syncIncrementalToggle();
     }
 
-    // Multitasking discovery toggle: show threshold slider only when enabled
+    // Multitasking discovery toggle: enable threshold slider only when on.
     const multitaskingToggle = document.getElementById('enableMultitaskingToggle');
     const multitaskingThrSection = document.getElementById('multitaskingThrSection');
     const multitaskingThr = document.getElementById('multitaskingThr');
     const multitaskingThrValue = document.getElementById('multitaskingThrValue');
+    function syncMultitaskingToggle() {
+        setSectionEnabled(multitaskingThrSection, multitaskingThr, !!(multitaskingToggle && multitaskingToggle.checked));
+    }
     if (multitaskingToggle && multitaskingThrSection) {
-        multitaskingToggle.addEventListener('change', () => {
-            multitaskingThrSection.style.display = multitaskingToggle.checked ? 'block' : 'none';
-        });
+        multitaskingToggle.addEventListener('change', syncMultitaskingToggle);
+        syncMultitaskingToggle();
     }
     if (multitaskingThr && multitaskingThrValue) {
         multitaskingThr.addEventListener('input', () => {
@@ -769,15 +1219,24 @@ document.addEventListener('DOMContentLoaded', function() {
     feather.replace();
     
     // Initialize tooltips
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
+    initTooltipsIn(document);
     
     // Force cache refresh by adding timestamp to any AJAX requests
     const timestamp = Date.now();
-    console.log('Page loaded with timestamp:', timestamp);
 });
+
+// Initialize Bootstrap tooltips inside a container, disposing any existing
+// instances first so re-renders don't leak duplicate tooltips.
+function initTooltipsIn(rootEl) {
+    if (!window.bootstrap) return;
+    const root = rootEl || document;
+    const triggers = root.querySelectorAll('[data-bs-toggle="tooltip"]');
+    triggers.forEach(function (el) {
+        const existing = bootstrap.Tooltip.getInstance(el);
+        if (existing) existing.dispose();
+        new bootstrap.Tooltip(el);
+    });
+}
 
 function setupFormHandlers() {
     // Upload form
@@ -785,8 +1244,151 @@ function setupFormHandlers() {
     if (uploadForm) {
         uploadForm.addEventListener('submit', handleUpload);
     }
-    
+
+    // CSV column mapping: react to file selection
+    const fileInput = document.getElementById('xesFile');
+    if (fileInput) {
+        fileInput.addEventListener('change', handleEventLogFileChange);
+    }
+
     // The simulation form logic was removed as it was unused
+}
+
+const CSV_MAPPING_SELECTS = {
+    case_id: 'csvCaseIdCol',
+    activity: 'csvActivityCol',
+    end_ts: 'csvEndTsCol',
+    start_ts: 'csvStartTsCol',
+    resource: 'csvResourceCol',
+};
+
+function handleEventLogFileChange(event) {
+    const file = event.target.files && event.target.files[0];
+    const mappingDiv = document.getElementById('csvColumnMapping');
+    if (!mappingDiv) return;
+
+    const lowerName = file ? file.name.toLowerCase() : '';
+    if (!file || !(lowerName.endsWith('.csv') || lowerName.endsWith('.xes'))) {
+        mappingDiv.style.display = 'none';
+        Object.values(CSV_MAPPING_SELECTS).forEach(id => {
+            const sel = document.getElementById(id);
+            if (sel) sel.innerHTML = '';
+        });
+        return;
+    }
+
+    const isCsv = lowerName.endsWith('.csv');
+    // Read enough of the file to extract headers / XES keys.
+    const slice = file.slice(0, isCsv ? 64 * 1024 : 256 * 1024);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const text = String(e.target.result || '');
+        let headers;
+        if (isCsv) {
+            const firstLine = text.split(/\r?\n/, 1)[0];
+            if (!firstLine) {
+                showAlert('Could not read CSV header', 'warning');
+                return;
+            }
+            headers = parseCsvHeaderLine(firstLine);
+        } else {
+            headers = extractXesColumns(text);
+            if (headers.length === 0) {
+                showAlert('Could not extract columns from XES file', 'warning');
+                return;
+            }
+        }
+        populateCsvMapping(headers);
+        mappingDiv.style.display = 'block';
+    };
+    reader.onerror = () => showAlert('Failed to read event log file', 'danger');
+    reader.readAsText(slice);
+}
+
+// Extract column names from an XES file fragment. Trace-level keys become
+// `case:<key>` to match pm4py's DataFrame conventions; event-level keys are
+// kept as-is.
+function extractXesColumns(text) {
+    const out = new Set();
+    const keyRe = /<(?:string|date|int|float|boolean|id)\b[^>]*\bkey="([^"]+)"/g;
+
+    // First <trace> body up to its first <event>.
+    const traceMatch = text.match(/<trace[^>]*>([\s\S]*?)(?:<event\b|<\/trace>)/);
+    if (traceMatch) {
+        let m;
+        while ((m = keyRe.exec(traceMatch[1])) !== null) {
+            out.add('case:' + m[1]);
+        }
+    }
+    keyRe.lastIndex = 0;
+
+    // First <event> ... </event>.
+    const eventMatch = text.match(/<event\b[^>]*>([\s\S]*?)<\/event>/);
+    if (eventMatch) {
+        let m;
+        while ((m = keyRe.exec(eventMatch[1])) !== null) {
+            out.add(m[1]);
+        }
+    }
+    return Array.from(out);
+}
+
+// Minimal CSV header parser: handles double-quoted fields with embedded commas.
+function parseCsvHeaderLine(line) {
+    const out = [];
+    let cur = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (inQuotes) {
+            if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; }
+            else if (ch === '"') { inQuotes = false; }
+            else { cur += ch; }
+        } else {
+            if (ch === ',') { out.push(cur.trim()); cur = ''; }
+            else if (ch === '"' && cur === '') { inQuotes = true; }
+            else { cur += ch; }
+        }
+    }
+    out.push(cur.trim());
+    return out.filter(h => h.length > 0);
+}
+
+function populateCsvMapping(headers) {
+    const lower = headers.map(h => h.toLowerCase());
+
+    function findFirst(patterns) {
+        for (const p of patterns) {
+            const idx = lower.findIndex(h => p.test(h));
+            if (idx >= 0) return headers[idx];
+        }
+        return '';
+    }
+
+    // Anchored exact-match patterns first so e.g. "concept:name" wins for
+    // activity even when "case:concept:name" is also present in the headers.
+    const guesses = {
+        case_id: findFirst([/^case:concept:name$/, /^case[_ ]?id$/, /^case$/, /^trace[_ ]?id$/, /caseid/]),
+        activity: findFirst([/^concept:name$/, /^activity$/, /^task$/, /^event$/, /activityname/]),
+        end_ts: findFirst([/^time:timestamp$/, /^end[_ ]?(time|ts|timestamp)$/, /complete[_ ]?time/, /^timestamp$/]),
+        start_ts: findFirst([/^start:timestamp$/, /^start[_ ]?(time|ts|timestamp)$/]),
+        resource: findFirst([/^org:resource$/, /^resource$/, /^user$/, /^worker$/]),
+    };
+
+    Object.entries(CSV_MAPPING_SELECTS).forEach(([key, selId]) => {
+        const sel = document.getElementById(selId);
+        if (!sel) return;
+        sel.innerHTML = '';
+        headers.forEach(h => {
+            const opt = document.createElement('option');
+            opt.value = h;
+            opt.textContent = h;
+            sel.appendChild(opt);
+        });
+        if (guesses[key]) {
+            sel.value = guesses[key];
+        }
+    });
 }
 
 async function handleUpload(e) {
@@ -859,7 +1461,10 @@ async function handleUpload(e) {
         // computation so renderAccuracyResults can keep the card hidden when off.
         const computeEvalToggle = document.getElementById('computeEvaluationToggle');
         const computeEval = !!(computeEvalToggle && computeEvalToggle.checked);
-        loadSessionData(uploadResult.session_id, discoverResult.parameters, computeEval);
+        // Reset run state so loadSessionData fetches the baseline run.
+        currentRuns = [];
+        activeRunId = null;
+        await loadSessionData(uploadResult.session_id, discoverResult.parameters, computeEval);
 
     } catch (error) {
         hideLoading();
@@ -889,44 +1494,128 @@ function stopDiscoveryProgressPolling(handle) {
 }
 
 async function loadSession(sessionId) {
-    
     try {
         const response = await fetch(`/api/parameters/${sessionId}`);
         const result = await response.json();
-        
+
         if (!result.success) {
             throw new Error(result.error);
         }
-        
-        loadSessionData(sessionId, result.parameters);
-        
+
+        // The /api/parameters payload returns the baseline run alongside the
+        // full list of what-if scenarios. Pre-seed currentRuns/activeRunId so
+        // loadSessionData doesn't need a second round-trip.
+        currentRuns = result.runs || [];
+        const initialActive = result.active_run_id ?? (currentRuns.find(r => r.is_baseline) || currentRuns[0] || {}).id;
+        activeRunId = initialActive ?? null;
+
+        await loadSessionData(sessionId, result.parameters, false);
+        _setSimOutputFilename(result.simulation_df_filename || null);
+
+        // If the loaded run already has a simulation, restore the visualizations
+        // so the user doesn't see an empty results panel after reopening.
+        if (result.simulation_df_filename) {
+            document.getElementById('simulationResultsCard').style.display = 'block';
+            document.getElementById('simulationResults').style.display = 'block';
+            const resultText = document.getElementById('simulationResultText');
+            if (resultText) {
+                const run = activeRun();
+                resultText.textContent = run && run.num_instances
+                    ? `Last run: ${run.num_instances} instance${run.num_instances === 1 ? '' : 's'} (${run.name}).`
+                    : 'Previous simulation results restored.';
+            }
+            loadAllVisualizations(currentSessionId, activeRunId);  // not awaited
+        } else {
+            document.getElementById('simulationResultsCard').style.display = 'none';
+            document.getElementById('simulationResults').style.display = 'none';
+        }
     } catch (error) {
         showAlert(`Error loading session: ${error.message}`, 'danger');
     }
 }
 
-function loadSessionData(sessionId, parameters, computeEval) {
+async function loadSessionData(sessionId, parameters, computeEval) {
     currentSessionId = sessionId;
     currentParameters = parameters;
-    originalVisualization = parameters.process_model.visualization
+    originalVisualization = parameters.process_model.visualization;
 
-    // Track whether the user opted into metrics so we can decide between hiding
-    // the card vs auto-firing the async computation when metrics are missing.
     currentParameters._compute_evaluation_requested = !!computeEval;
 
-    // Hide welcome message
-    document.getElementById('welcomeMessage').style.display = 'none';
+    // Reset sticky-bar download / "Run Again" state; loadSession() restores it
+    // immediately afterwards if the session has a saved simulation log.
+    _setSimOutputFilename(null);
+    clearParametersDirty();
 
-    // Show parameter and simulation cards
+    document.getElementById('welcomeMessage').style.display = 'none';
     document.getElementById('parametersCard').style.display = 'block';
     document.getElementById('simulationCard').style.display = 'block';
+    document.getElementById('whatIfCard').style.display = 'block';
 
-    // Render parameters
+    const stickyBar = document.getElementById('stickyRunBar');
+    if (stickyBar) stickyBar.style.display = 'block';
+
     renderParameters(parameters);
 
-    // Re-initialize feather icons
+    // The post-upload+discover path doesn't pre-load runs, so do that here.
+    // For loadSession (clicking a Recent Session) currentRuns is already
+    // populated from /api/parameters and this is a no-op.
+    if (!currentRuns.length || activeRunId == null) {
+        await refreshWhatIfList();
+        if (activeRunId == null) {
+            const baseline = currentRuns.find(r => r.is_baseline);
+            activeRunId = baseline ? baseline.id : (currentRuns[0] ? currentRuns[0].id : null);
+        }
+    }
+    renderWhatIfList();
     feather.replace();
 }
+
+// Track the latest simulated log filename so the sticky bar and the main card
+// share a single source of truth for downloads / "Run Again".
+let _lastSimOutputFilename = null;
+
+function _setSimOutputFilename(name) {
+    _lastSimOutputFilename = name || null;
+    const stickyBtn = document.getElementById('stickyDownloadBtn');
+    if (stickyBtn) stickyBtn.disabled = !_lastSimOutputFilename;
+    const stickyLabel = document.getElementById('stickyRunBtnLabel');
+    if (stickyLabel) stickyLabel.textContent = _lastSimOutputFilename ? 'Run Again' : 'Run Simulation';
+}
+
+function downloadSimulation(format) {
+    if (!_lastSimOutputFilename) return;
+    const url = (format === 'xes')
+        ? `/api/download_xes/${_lastSimOutputFilename}`
+        : `/api/download/${_lastSimOutputFilename}`;
+    window.location.href = url;
+}
+
+function runSimulationFromSticky() {
+    const main = document.getElementById('numInstances');
+    const stickyN = document.getElementById('stickyNumInstances');
+    if (stickyN && main && stickyN.value) main.value = stickyN.value;
+    const mainTs = document.getElementById('startTimestamp');
+    const stickyTs = document.getElementById('stickyStartTimestamp');
+    if (stickyTs && mainTs) mainTs.value = stickyTs.value || '';
+    runSimulation();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const main = document.getElementById('numInstances');
+    const sticky = document.getElementById('stickyNumInstances');
+    if (main && sticky) {
+        sticky.value = main.value || sticky.value;
+        main.addEventListener('input', () => { sticky.value = main.value; });
+        sticky.addEventListener('input', () => { main.value = sticky.value; });
+    }
+    const mainTs = document.getElementById('startTimestamp');
+    const stickyTs = document.getElementById('stickyStartTimestamp');
+    if (mainTs && stickyTs) {
+        stickyTs.value = mainTs.value || '';
+        mainTs.addEventListener('input', () => { stickyTs.value = mainTs.value; });
+        stickyTs.addEventListener('input', () => { mainTs.value = stickyTs.value; });
+    }
+});
 
 function renderParameters(parameters) {
     // Render Petri net visualization
@@ -993,9 +1682,7 @@ function renderTransitionParameters(transitionParams) {
     
     // Initialize tooltips for the new content
     const tooltipTriggerList = [].slice.call(container.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    console.log('Found tooltip elements:', tooltipTriggerList.length);
     tooltipTriggerList.map(function (tooltipTriggerEl) {
-        console.log('Initializing tooltip for:', tooltipTriggerEl);
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
 }
@@ -1070,6 +1757,7 @@ function renderDecisionTreeEditor(treeData, mountEl, treeType = 'transition') {
                     if (v < 0) v = 0;
                     if (v > 1) v = 1;
                     treeData[id].value = v;
+                    markParametersDirty();
                     if (numberInput && numberInput.value !== String(v)) numberInput.value = v;
                     if (rangeInput && rangeInput.value !== String(v)) rangeInput.value = v;
                 };
@@ -1089,6 +1777,7 @@ function renderDecisionTreeEditor(treeData, mountEl, treeType = 'transition') {
             const splitDisplay = isCategorical ?
                 `${escapeHtml(node.feature)}` :
                 `${escapeHtml(node.feature)} ≤ ${escapeHtml(node.threshold)}`;
+            const featureTooltip = escapeHtml(getFeatureTooltip(node.feature));
 
             title.innerHTML = `
                 <div class="d-flex align-items-center gap-2">
@@ -1096,7 +1785,7 @@ function renderDecisionTreeEditor(treeData, mountEl, treeType = 'transition') {
                         <i data-feather="chevron-down" class="tree-icon"></i>
                     </button>
                     <span class="badge bg-primary">Split</span>
-                    <span>${splitDisplay}</span>
+                    <span data-bs-toggle="tooltip" data-bs-placement="top" title="${featureTooltip}" style="cursor: help; border-bottom: 1px dotted #adb5bd;">${splitDisplay}</span>
                     <button class="btn btn-sm btn-outline-danger" onclick="removeSplitFromNode('${id}', '${treeType}')" title="Remove split">
                         <i data-feather="trash-2" class="me-1"></i>Remove
                     </button>
@@ -1105,8 +1794,12 @@ function renderDecisionTreeEditor(treeData, mountEl, treeType = 'transition') {
             wrapper.appendChild(childrenContainer);
 
             if (node.children) {
-                const trueId = node.children.true;
-                const falseId = node.children.false;
+                // ProSiT's discovered trees use "true"/"false" string keys
+                // when fresh in memory but switch to "1"/"0" after a JSON
+                // round trip. Accept either so re-loading a saved scenario
+                // doesn't render every split as "Unknown node format".
+                const trueId = node.children.true ?? node.children['1'] ?? node.children.True;
+                const falseId = node.children.false ?? node.children['0'] ?? node.children.False;
                 const trueBlock = document.createElement('div');
                 trueBlock.innerHTML = '<em>true</em>';
                 childrenContainer.appendChild(trueBlock);
@@ -1172,7 +1865,10 @@ function renderDecisionTreeEditor(treeData, mountEl, treeType = 'transition') {
     });
     
     // Initialize feather icons for the control buttons
-    setTimeout(() => feather.replace(), 0);
+    setTimeout(() => {
+        feather.replace();
+        initTooltipsIn(mountEl);
+    }, 0);
 }
 
 // Renders a decision tree whose leaf nodes contain a distribution with parameters
@@ -1204,20 +1900,21 @@ function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType = 'dis
             node.dist = { dist_name: 'expon', params: { mean: 15 }, min_value: 0, max_value: 100 };
         }
 
-        // Two-column layout: distribution controls + small PDF preview canvas.
+        // Two-column layout: distribution controls + PDF preview canvas.
         const row = document.createElement('div');
         row.className = 'row mt-2';
         const colControls = document.createElement('div');
-        colControls.className = 'col-md-7';
+        colControls.className = 'col-md-6';
         const colChart = document.createElement('div');
-        colChart.className = 'col-md-5 d-flex align-items-center justify-content-center';
+        colChart.className = 'col-md-6 d-flex align-items-center justify-content-center';
         const chartWrap = document.createElement('div');
-        chartWrap.style.width = '160px';
-        chartWrap.style.height = '160px';
+        chartWrap.style.width = '100%';
+        chartWrap.style.maxWidth = '320px';
+        chartWrap.style.height = '220px';
         const chartCanvas = document.createElement('canvas');
         chartCanvas.className = 'leaf-distribution-chart';
-        chartCanvas.width = 160;
-        chartCanvas.height = 160;
+        chartCanvas.style.width = '100%';
+        chartCanvas.style.height = '100%';
         chartWrap.appendChild(chartCanvas);
         colChart.appendChild(chartWrap);
         row.appendChild(colControls);
@@ -1343,6 +2040,7 @@ function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType = 'dis
                             node.dist.min_value = val;
                             node.dist.max_value = val;
                         }
+                        markParametersDirty();
                         updateLeafChart();
                     }
                 });
@@ -1421,6 +2119,7 @@ function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType = 'dis
                 if (next.std == null) next.std = 5;
             }
             node.dist.params = next;
+            markParametersDirty();
             renderParams();
             updateLeafChart();
         });
@@ -1454,6 +2153,7 @@ function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType = 'dis
             const splitDisplay = isCategorical ?
                 `${escapeHtml(node.feature)}` :
                 `${escapeHtml(node.feature)} ≤ ${escapeHtml(node.threshold)}`;
+            const featureTooltip = escapeHtml(getFeatureTooltip(node.feature));
 
             title.innerHTML = `
                 <div class="d-flex align-items-center gap-2">
@@ -1461,7 +2161,7 @@ function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType = 'dis
                         <i data-feather="chevron-down" class="tree-icon"></i>
                     </button>
                     <span class="badge bg-primary">Split</span>
-                    <span>${splitDisplay}</span>
+                    <span data-bs-toggle="tooltip" data-bs-placement="top" title="${featureTooltip}" style="cursor: help; border-bottom: 1px dotted #adb5bd;">${splitDisplay}</span>
                     <button class="btn btn-sm btn-outline-danger" onclick="removeSplitFromNode('${id}', '${treeType}')" title="Remove split">
                         <i data-feather="trash-2" class="me-1"></i>Remove
                     </button>
@@ -1470,8 +2170,8 @@ function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType = 'dis
             wrapper.appendChild(childrenContainer);
 
             if (node.children) {
-                const trueId = node.children.true ?? node.children.True;
-                const falseId = node.children.false ?? node.children.False;
+                const trueId = node.children.true ?? node.children['1'] ?? node.children.True;
+                const falseId = node.children.false ?? node.children['0'] ?? node.children.False;
                 const trueBlock = document.createElement('div');
                 trueBlock.innerHTML = '<em>true</em>';
                 childrenContainer.appendChild(trueBlock);
@@ -1550,7 +2250,10 @@ function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType = 'dis
     });
     
     // Initialize feather icons for the control buttons
-    setTimeout(() => feather.replace(), 0);
+    setTimeout(() => {
+        feather.replace();
+        initTooltipsIn(mountEl);
+    }, 0);
 }
 
 function highlightTransitionVisualization(transitionNames, newColor="#c77dff") {
@@ -1645,9 +2348,7 @@ function renderResourceParameters(resourceParams) {
     
     // Initialize tooltips for the new content
     const tooltipTriggerList = [].slice.call(container.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    console.log('Found tooltip elements in resource params:', tooltipTriggerList.length);
     tooltipTriggerList.map(function (tooltipTriggerEl) {
-        console.log('Initializing tooltip for resource param:', tooltipTriggerEl);
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
 }
@@ -2438,11 +3139,11 @@ function renderLeafDistributionChart(canvas, distName, params) {
             }]
         },
         options: {
-            responsive: false,
+            responsive: true,
             maintainAspectRatio: false,
             plugins: { legend: { display: false }, tooltip: { enabled: false } },
             scales: {
-                x: { ticks: { maxTicksLimit: 4, font: { size: 9 } }, grid: { display: false } },
+                x: { ticks: { maxTicksLimit: 5, font: { size: 10 } }, grid: { display: false } },
                 y: { ticks: { display: false }, grid: { display: false } }
             }
         }
@@ -2546,7 +3247,8 @@ function updateTransitionWeight(transition, value) {
         currentParameters.transition_params.transition_weights = {};
     }
     currentParameters.transition_params.transition_weights[transition] = parseFloat(value);
-    
+    markParametersDirty();
+
     // Update corresponding range/number input
     const inputs = document.querySelectorAll(`input[onchange*="${transition}"]`);
     inputs.forEach(input => {
@@ -2561,6 +3263,7 @@ function updateResourceWeight(resource, value) {
         currentParameters.resource_params.resource_weights = {};
     }
     currentParameters.resource_params.resource_weights[resource] = parseFloat(value);
+    markParametersDirty();
 }
 
 function updateMaxConcurrency(resource, value) {
@@ -2572,28 +3275,31 @@ function updateMaxConcurrency(resource, value) {
         n = 1;
     }
     currentParameters.resource_params.max_concurrency[resource] = n;
+    markParametersDirty();
 }
 
 function updateActivityResource(activity, resource, isAssigned) {
     if (!currentParameters.resource_params.act_to_resources) {
         currentParameters.resource_params.act_to_resources = {};
     }
-    
+
     if (!currentParameters.resource_params.act_to_resources[activity]) {
         currentParameters.resource_params.act_to_resources[activity] = [];
     }
-    
+
     const resources = currentParameters.resource_params.act_to_resources[activity];
     const index = resources.indexOf(resource);
-    
+
     if (isAssigned && index === -1) {
         resources.push(resource);
     } else if (!isAssigned && index !== -1) {
         resources.splice(index, 1);
     }
+    markParametersDirty();
 }
 
 function updateExecutionParam(activity, param, value) {
+    markParametersDirty();
     if (!currentParameters.execution_time_params.activity_durations[activity]) {
         currentParameters.execution_time_params.activity_durations[activity] = {};
     }
@@ -2613,7 +3319,6 @@ function updateExecutionParam(activity, param, value) {
         } else if (value === 'gamma') {
             currentParameters.execution_time_params.activity_durations[activity].parameters = { mean: 60, std: 30, min: 0, max: 600 };
         }
-        console.log(`Updated execution distribution for ${activity}:`, currentParameters.execution_time_params.activity_durations[activity]);
     } else {
         if (!currentParameters.execution_time_params.activity_durations[activity].parameters) {
             currentParameters.execution_time_params.activity_durations[activity].parameters = {};
@@ -2626,7 +3331,6 @@ function updateExecutionParam(activity, param, value) {
             currentParameters.execution_time_params.activity_durations[activity].parameters.max = value;
         }
         
-        console.log(`Updated execution param ${param} for ${activity}:`, currentParameters.execution_time_params.activity_durations[activity].parameters);
     }
 }
 
@@ -2648,6 +3352,7 @@ function updateResourceWaitingParam(resource, param, value) {
 }
 
 function updateWaitingParam(resource, param, value) {
+    markParametersDirty();
     if (!currentParameters.waiting_time_params.resource_waiting_times) {
         currentParameters.waiting_time_params.resource_waiting_times = {};
     }
@@ -2670,7 +3375,6 @@ function updateWaitingParam(resource, param, value) {
         } else if (value === 'gamma') {
             currentParameters.waiting_time_params.resource_waiting_times[resource].parameters = { mean: 60, std: 30, min: 0, max: 600 };
         }
-        console.log(`Updated waiting distribution for ${resource}:`, currentParameters.waiting_time_params.resource_waiting_times[resource]);
     } else {
         if (!currentParameters.waiting_time_params.resource_waiting_times[resource].parameters) {
             currentParameters.waiting_time_params.resource_waiting_times[resource].parameters = {};
@@ -2683,7 +3387,6 @@ function updateWaitingParam(resource, param, value) {
             currentParameters.waiting_time_params.resource_waiting_times[resource].parameters.max = value;
         }
         
-        console.log(`Updated waiting param ${param} for ${resource}:`, currentParameters.waiting_time_params.resource_waiting_times[resource].parameters);
     }
 }
 
@@ -2732,6 +3435,7 @@ function mergeDistParams(oldParams, newDist) {
 }
 
 function updateDataAttributeParam(attribute, isCategorical, param, value, category = null) {
+    markParametersDirty();
     if (!currentParameters.data_attribute_params) {
         currentParameters.data_attribute_params = {};
     }
@@ -2763,7 +3467,6 @@ function updateDataAttributeParam(attribute, isCategorical, param, value, catego
         const oldParams = targetObject.parameters || {};
         targetObject.distribution = value;
         targetObject.parameters = mergeDistParams(oldParams, value);
-        console.log(`Updated data attribute distribution for ${attribute}:`, targetObject);
     } else {
         if (!targetObject.parameters) {
             targetObject.parameters = {};
@@ -2776,7 +3479,6 @@ function updateDataAttributeParam(attribute, isCategorical, param, value, catego
             targetObject.parameters.max = value;
         }
 
-        console.log(`Updated data attribute param ${param} for ${attribute}:`, targetObject.parameters);
     }
 
     renderDataAttributeParameters(currentParameters.data_attribute_params);
@@ -2789,60 +3491,34 @@ async function saveParameters() {
         showAlert('No parameters to save', 'warning');
         return;
     }
-    
+    if (isBaselineActive()) {
+        // The baseline is intentionally read-only. To persist edits the user
+        // either runs (auto-forks into a What-If N) or explicitly creates a
+        // new scenario via the "+ New Scenario" button.
+        showAlert('The As-Is baseline is read-only. Click Run, or "+ New Scenario", to save your edits as a what-if.', 'warning', 4500);
+        return;
+    }
+    if (activeRunId == null) {
+        showAlert('No active scenario', 'warning');
+        return;
+    }
+
     try {
-        // Debug: Log the parameters being sent
-        console.log('Saving parameters:', JSON.stringify(currentParameters, null, 2));
-        
-        const response = await fetch(`/api/parameters/${currentSessionId}`, {
+        const response = await fetch(`/api/runs/${activeRunId}`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(currentParameters)
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ parameters: currentParameters }),
         });
-        
         const result = await response.json();
-        
+
         if (result.success) {
-            showAlert('Parameters saved successfully', 'success');
+            clearParametersDirty();
+            showAlert('Scenario parameters saved', 'success');
         } else {
             throw new Error(result.error);
         }
-        
     } catch (error) {
         showAlert(`Error saving parameters: ${error.message}`, 'danger');
-    }
-}
-
-async function exportParameters() {
-    if (!currentSessionId) {
-        showAlert('No session to export', 'warning');
-        return;
-    }
-    
-    try {
-        const response = await fetch(`/api/export_parameters/${currentSessionId}`);
-        
-        if (response.ok) {
-            // Create blob and download
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `parameters_${currentSessionId}.json`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-            
-            showAlert('Parameters exported successfully', 'success');
-        } else {
-            throw new Error('Export failed');
-        }
-        
-    } catch (error) {
-        showAlert(`Error exporting parameters: ${error.message}`, 'danger');
     }
 }
 
@@ -2851,82 +3527,119 @@ async function runSimulation() {
         showAlert('No session available for simulation', 'warning');
         return;
     }
-    
-    // Automatically save parameters before simulation
-    await saveParameters();
+
+    // Self-heal if activeRunId got out of sync (e.g. user clicked Run while
+    // the runs list was still loading): refresh and pick the baseline.
+    if (activeRunId == null) {
+        await refreshWhatIfList();
+        const baseline = currentRuns.find(r => r.is_baseline);
+        if (baseline) activeRunId = baseline.id;
+        renderWhatIfList();
+    }
+
+    // The active scenario decides where edits land. Editing the read-only
+    // baseline auto-creates a "What-If N" scenario and runs against that;
+    // editing inside an existing what-if just saves in place before running.
+    if (parametersDirty && isBaselineActive()) {
+        const created = await autoCreateWhatIfForRun();
+        if (!created) return;
+    } else if (parametersDirty) {
+        await saveParameters();
+        if (parametersDirty) return;  // save failed — abort run
+    }
+
+    const runId = activeRunId;
+    if (runId == null) {
+        showAlert('No active scenario — try reloading the session.', 'warning');
+        return;
+    }
 
     const numInstances = parseInt(document.getElementById('numInstances').value);
     const startTimestamp = document.getElementById('startTimestamp').value;
-    
-    // Hide previous results
+
     document.getElementById('simulationResults').style.display = 'none';
-    
-    // Show progress
     document.getElementById('simulationProgress').style.display = 'block';
-    
+
     try {
-        const requestBody = {
-            num_instances: numInstances
-        };
-        
-        if (startTimestamp) {
-            requestBody.start_timestamp = startTimestamp;
-        }
-        
+        const requestBody = { num_instances: numInstances, run_id: runId };
+        if (startTimestamp) requestBody.start_timestamp = startTimestamp;
+
         const response = await fetch(`/api/simulate/${currentSessionId}`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(requestBody)
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody),
         });
-        
         const result = await response.json();
-        
-        // Hide progress
+
         document.getElementById('simulationProgress').style.display = 'none';
-        
+
         if (result.success) {
-            // Update result text
             const resultText = document.getElementById('simulationResultText');
-            resultText.textContent = `Generated ${result.num_events} events in ${numInstances} process instances.`;
-            
-            // Setup download buttons
+            const runName = (result.run && result.run.name) || activeRun()?.name || 'scenario';
+            resultText.textContent = `${runName}: generated ${result.num_events} events in ${numInstances} instances.`;
+
+            _setSimOutputFilename(result.sim_output_filename);
             const downloadBtn = document.getElementById('downloadSimulationBtn');
-            downloadBtn.onclick = () => {
-                window.location.href = `/api/download/${result.sim_output_filename}`;
-            };
+            if (downloadBtn) downloadBtn.onclick = () => downloadSimulation('csv');
             const downloadXesBtn = document.getElementById('downloadSimulationXesBtn');
-            downloadXesBtn.onclick = () => {
-                window.location.href = `/api/download_xes/${result.sim_output_filename}`;
-            };
-            
-            // Show the results
-            document.getElementById('simulationProgress').style.display = 'none';
+            if (downloadXesBtn) downloadXesBtn.onclick = () => downloadSimulation('xes');
+
             document.getElementById('simulationResults').style.display = 'block';
             document.getElementById('simulationResultsCard').style.display = 'block';
 
-            // Load all visualizations
-            await loadAllVisualizations(currentSessionId);
-            
-            // Update feather icons
+            await loadAllVisualizations(currentSessionId, runId);
+            await refreshWhatIfList();
+
             feather.replace();
-            
             showAlert(result.message, 'success');
-            
         } else {
             throw new Error(result.error);
         }
-        
     } catch (error) {
-        // Hide progress
         document.getElementById('simulationProgress').style.display = 'none';
         showAlert(`Simulation error: ${error.message}`, 'danger');
     }
 }
 
+// When the user edits the read-only baseline and hits Run, fork a fresh
+// what-if with an auto-numbered "What-If N" name. No prompt — the user can
+// rename via the chip's inline rename button afterwards.
+function _nextDefaultWhatIfName() {
+    const re = /^What-If\s+(\d+)$/i;
+    let max = 0;
+    currentRuns.forEach(r => {
+        const m = (r.name || '').match(re);
+        if (m) {
+            const n = parseInt(m[1], 10);
+            if (Number.isFinite(n) && n > max) max = n;
+        }
+    });
+    return `What-If ${max + 1}`;
+}
+
+async function autoCreateWhatIfForRun() {
+    const name = _nextDefaultWhatIfName();
+    try {
+        const resp = await fetch(`/api/sessions/${currentSessionId}/runs`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, parameters: currentParameters, from_run_id: activeRunId }),
+        });
+        const body = await resp.json();
+        if (!resp.ok || !body.success) throw new Error(body.error || 'Failed to create scenario');
+
+        activeRunId = body.run.id;
+        await refreshWhatIfList();
+        clearParametersDirty();
+        showAlert(`Saved edits as "${body.run.name}"`, 'info', 3000);
+        return true;
+    } catch (err) {
+        showAlert(`Failed to create scenario: ${err.message}`, 'danger');
+        return false;
+    }
+}
+
 function renderResourceCalendars(calendars, container) {
-    console.log('renderResourceCalendars called with calendars:', calendars);
     
     let html = '<div class="mb-3">';
     html += '<label class="form-label">Select Resource:</label>';
@@ -2935,7 +3648,6 @@ function renderResourceCalendars(calendars, container) {
     
     // Add all available resources to dropdown
     const resourceNames = Object.keys(calendars);
-    console.log('Available resources for calendars:', resourceNames);
     
     resourceNames.forEach(resource => {
         html += `<option value="${resource}">${resource}</option>`;
@@ -2997,6 +3709,7 @@ function showResourceCalendar(resourceName) {
 }
 
 function toggleResourceHour(resourceName, day, hour, isAvailable) {
+    markParametersDirty();
     if (!currentParameters.resource_params.calendars) {
         currentParameters.resource_params.calendars = {};
     }
@@ -3079,6 +3792,7 @@ function renderInterArrivalTimeParameters(waitingParams) {
 }
 
 function updateInterArrivalParam(param, value) {
+    markParametersDirty();
     if (!currentParameters.inter_arrival_params) {
         currentParameters.inter_arrival_params = {};
     }
@@ -3101,7 +3815,6 @@ function updateInterArrivalParam(param, value) {
         } else if (value === 'gamma') {
             currentParameters.inter_arrival_params.inter_arrival_time.parameters = { mean: 60, std: 30, min: 0, max: 600 };
         }
-        console.log(`Updated inter-arrival distribution:`, currentParameters.inter_arrival_params.inter_arrival_time);
     } else {
         if (!currentParameters.inter_arrival_params.inter_arrival_time.parameters) {
             currentParameters.inter_arrival_params.inter_arrival_time.parameters = {};
@@ -3114,7 +3827,6 @@ function updateInterArrivalParam(param, value) {
             currentParameters.inter_arrival_params.inter_arrival_time.parameters.max = value;
         }
         
-        console.log(`Updated inter-arrival param ${param}:`, currentParameters.inter_arrival_params.inter_arrival_time.parameters);
     }
 }
 
@@ -3340,145 +4052,237 @@ function renderArrivalCalendar(calendar) {
     return html;
 }
 
-function renderPetriNet(processModel) {
-    console.log('renderPetriNet called with processModel:', processModel);
-    const container = document.getElementById('petriNetContainer');
-    
-    if (!processModel) {
-        container.innerHTML = `
-            <div class="d-flex justify-content-center align-items-center h-100">
-                <span class="text-muted">No process model data available</span>
-            </div>
-        `;
+// Pan + zoom state for the discovered process model. The SVG is held in a
+// viewport `<div>` inside a fixed-height container; transform translates +
+// scales it, while the container clips overflow so the model never bleeds into
+// the layout below.
+const _petriPan = {
+    scale: 1, tx: 0, ty: 0,
+    dragging: false, startX: 0, startY: 0, startTx: 0, startTy: 0,
+    naturalW: 0, naturalH: 0,
+};
+
+function _applyPetriTransform() {
+    const v = document.getElementById('petriNetViewport');
+    if (!v) return;
+    v.style.transform = `translate(${_petriPan.tx}px, ${_petriPan.ty}px) scale(${_petriPan.scale})`;
+    const slider = document.getElementById('petriNetZoom');
+    if (slider) slider.value = _petriPan.scale;
+}
+
+function setPetriNetZoom(value) {
+    const target = Math.max(0.3, Math.min(5, parseFloat(value) || 1));
+    const c = document.getElementById('petriNetContainer');
+    if (!c) { _petriPan.scale = target; _applyPetriTransform(); return; }
+    // Zoom toward the centre of the viewport, keeping that point fixed.
+    const cx = c.clientWidth / 2;
+    const cy = c.clientHeight / 2;
+    _petriPan.tx = cx - (cx - _petriPan.tx) * (target / _petriPan.scale);
+    _petriPan.ty = cy - (cy - _petriPan.ty) * (target / _petriPan.scale);
+    _petriPan.scale = target;
+    _applyPetriTransform();
+}
+
+function petriNetZoomBy(delta) {
+    setPetriNetZoom(_petriPan.scale + delta);
+}
+
+// Resize the container so its height matches the SVG's aspect ratio at the
+// current container width. Clamped to keep tiny / huge graphs sensible.
+function _autoSizePetriContainer() {
+    const c = document.getElementById('petriNetContainer');
+    if (!c) return;
+    const w = _petriPan.naturalW, h = _petriPan.naturalH;
+    if (!w || !h) return;
+    const cw = c.clientWidth;
+    if (!cw) return;
+    const aspectH = cw * (h / w);
+    const target = Math.max(160, Math.min(500, aspectH + 20));
+    c.style.height = target + 'px';
+}
+
+function resetPetriNetView() {
+    const c = document.getElementById('petriNetContainer');
+    const v = document.getElementById('petriNetViewport');
+    if (!c || !v) return;
+    _autoSizePetriContainer();
+    const w = _petriPan.naturalW || v.scrollWidth || 800;
+    const h = _petriPan.naturalH || v.scrollHeight || 500;
+    if (w <= 0 || h <= 0) {
+        _petriPan.scale = 1; _petriPan.tx = 0; _petriPan.ty = 0;
+        _applyPetriTransform();
         return;
     }
-    
-    // Check if we have PM4Py visualization
+    const padding = 16;
+    const fitScale = Math.min(
+        (c.clientWidth - padding * 2) / w,
+        (c.clientHeight - padding * 2) / h,
+        1
+    );
+    _petriPan.scale = Math.max(0.3, fitScale);
+    _petriPan.tx = (c.clientWidth - w * _petriPan.scale) / 2;
+    _petriPan.ty = (c.clientHeight - h * _petriPan.scale) / 2;
+    _applyPetriTransform();
+}
+
+function _bindPetriPanHandlers() {
+    const c = document.getElementById('petriNetContainer');
+    if (!c || c.dataset.panBound) return;
+    c.dataset.panBound = '1';
+
+    c.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        _petriPan.dragging = true;
+        _petriPan.startX = e.clientX;
+        _petriPan.startY = e.clientY;
+        _petriPan.startTx = _petriPan.tx;
+        _petriPan.startTy = _petriPan.ty;
+        c.style.cursor = 'grabbing';
+        e.preventDefault();
+    });
+    window.addEventListener('mousemove', (e) => {
+        if (!_petriPan.dragging) return;
+        _petriPan.tx = _petriPan.startTx + (e.clientX - _petriPan.startX);
+        _petriPan.ty = _petriPan.startTy + (e.clientY - _petriPan.startY);
+        _applyPetriTransform();
+    });
+    const endDrag = () => {
+        if (!_petriPan.dragging) return;
+        _petriPan.dragging = false;
+        c.style.cursor = 'grab';
+    };
+    window.addEventListener('mouseup', endDrag);
+    c.addEventListener('mouseleave', () => { /* keep dragging on window mouseup */ });
+
+    c.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const rect = c.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+        const newScale = Math.max(0.3, Math.min(5, _petriPan.scale * factor));
+        _petriPan.tx = mx - (mx - _petriPan.tx) * (newScale / _petriPan.scale);
+        _petriPan.ty = my - (my - _petriPan.ty) * (newScale / _petriPan.scale);
+        _petriPan.scale = newScale;
+        _applyPetriTransform();
+    }, { passive: false });
+}
+
+function renderPetriNet(processModel) {
+    const container = document.getElementById('petriNetContainer');
+    const viewport = document.getElementById('petriNetViewport');
+    const empty = document.getElementById('petriNetEmptyState');
+    const zoomGroup = document.getElementById('petriNetZoomGroup');
+    const statsEl = document.getElementById('petriNetStats');
+
+    if (zoomGroup) zoomGroup.style.display = 'none';
+    if (statsEl) statsEl.innerHTML = '';
+
+    // Reset state
+    _petriPan.scale = 1; _petriPan.tx = 0; _petriPan.ty = 0;
+    _petriPan.dragging = false;
+    _petriPan.naturalW = 0; _petriPan.naturalH = 0;
+
+    if (viewport) viewport.innerHTML = '';
+    if (empty) empty.style.display = 'flex';
+
+    if (!processModel) return;
+
     if (processModel.visualization) {
-        // Check if it's SVG content or base64 image
         if (processModel.visualization.includes('<svg')) {
-            console.log('Rendering SVG visualization');
-            // Direct SVG content - embed it
-            container.innerHTML = `
-                <div class="text-center">
-                    <div class="petri-net-svg-container" style="border: 1px solid #dee2e6; border-radius: 8px; background: white; padding: 10px; margin-bottom: 15px;">
-                        ${processModel.visualization}
-                    </div>
-                    <div class="alert alert-info small">
-                        <i data-feather="info" class="me-1"></i>
-                        Process model discovered using inductive miner algorithm
-                    </div>
-                </div>
-                <div class="mt-3">
-                    <div class="row text-center">
-                        <div class="col-md-4">
-                            <div class="text-muted">Activities</div>
-                            <div class="text-muted">${processModel.activities ? processModel.activities.length : 0}</div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="text-muted">Transitions</div>
-                            <div class="text-muted">${processModel.transitions ? processModel.transitions.length : 0}</div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="text-muted">Places</div>
-                            <div class="text-muted">${processModel.places ? processModel.places.length : 0}</div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="fw-bold text-success">Fitness</div>
-                            <div class="fw-bold text-success">${processModel.fitness ? processModel.fitness.toFixed(2) : 0}</div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="fw-bold text-warning">Precision</div>
-                            <div class="fw-bold text-warning">${processModel.precision ? processModel.precision.toFixed(2) : 0}</div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="fw-bold text-info">F-Measure</div>
-                            <div class="fw-bold text-info">${processModel.f_measure ? processModel.f_measure.toFixed(2) : 0}</div>
-                        </div>
-                    </div>
-                </div>
-            `;
+            // Keep graphviz's native width/height (in pt) so the SVG has a
+            // measurable size; we just present it in our own wrap.
+            const wrap = document.createElement('div');
+            wrap.style.background = 'white';
+            wrap.style.borderRadius = '8px';
+            wrap.style.padding = '10px';
+            wrap.style.border = '1px solid #dee2e6';
+            wrap.style.display = 'inline-block';
+            wrap.innerHTML = processModel.visualization;
+            const svg = wrap.querySelector('svg');
+            if (svg) svg.style.display = 'block';
+            if (viewport) viewport.appendChild(wrap);
+            if (empty) empty.style.display = 'none';
+            if (zoomGroup) zoomGroup.style.display = 'flex';
+            _bindPetriPanHandlers();
+
+            // Read the wrap's natural size (forces layout) and fit it
+            // synchronously so the SVG appears centred + scaled on the first
+            // paint instead of flashing at top-left at full size.
+            _petriPan.naturalW = wrap.offsetWidth || 800;
+            _petriPan.naturalH = wrap.offsetHeight || 500;
+            resetPetriNetView();
+            // Re-fit once on next frame in case the container's clientWidth
+            // wasn't yet computed at the time of this render (e.g. after a
+            // display: none → block transition).
+            requestAnimationFrame(() => resetPetriNetView());
+
+            _renderPetriNetStats(processModel);
         } else {
-            // Base64 image - display as img
-            container.innerHTML = `
-                <div class="text-center">
-                    <img src="${processModel.visualization}" class="img-fluid" alt="Petri Net Visualization" style="max-height: 400px; border-radius: 8px;">
-                </div>
-                <div class="mt-3">
-                    <div class="row text-center">
-                        <div class="col-md-4">
-                            <div class="small text-muted">Activities</div>
-                            <div class="fw-bold text-primary">${processModel.activities ? processModel.activities.length : 0}</div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="small text-muted">Transitions</div>
-                            <div class="fw-bold text-success">${processModel.transitions ? processModel.transitions.length : 0}</div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="small text-muted">Places</div>
-                            <div class="fw-bold text-info">${processModel.places ? processModel.places.length : 0}</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            // Add interactive functionality to the SVG after it's rendered
-            setTimeout(function() {
-                setupSVGInteractivity();
-            }, 500);
+            // Base64 image fallback (rarely used).
+            if (viewport) {
+                viewport.innerHTML = `<img src="${processModel.visualization}" alt="Petri Net" style="max-width: 100%; max-height: 100%;">`;
+            }
+            if (empty) empty.style.display = 'none';
+            _renderPetriNetStats(processModel);
         }
         return;
     }
-    
-    // Fallback: show activity list if no visualization available
+
     const activities = processModel.activities || [];
-    
-    if (activities.length === 0) {
-        container.innerHTML = `
-            <div class="d-flex justify-content-center align-items-center h-100">
-                <span class="text-muted">No activities discovered in process model</span>
-            </div>
-        `;
-        return;
+    if (empty) {
+        empty.style.display = 'flex';
+        empty.querySelector('span').textContent = activities.length
+            ? 'Visualization not available — see activity list below'
+            : 'No process model data available';
     }
-    
-    let activityList = '<div class="alert alert-info"><i data-feather="info" class="me-2"></i>PM4Py visualization not available. Showing discovered activities:</div>';
-    activityList += '<div class="row">';
-    
-    activities.forEach((activity, index) => {
-        activityList += `
-            <div class="col-md-6 mb-2">
-                <div class="d-flex align-items-center">
-                    <span class="badge bg-primary me-2">${index + 1}</span>
-                    <span class="small">${activity}</span>
-                </div>
+    if (activities.length && viewport) {
+        const list = document.createElement('div');
+        list.style.padding = '12px';
+        let html = '<div class="row">';
+        activities.forEach((a, i) => {
+            html += `<div class="col-md-6 mb-2"><span class="badge bg-primary me-2">${i + 1}</span>${a}</div>`;
+        });
+        html += '</div>';
+        list.innerHTML = html;
+        viewport.appendChild(list);
+    }
+}
+
+function _renderPetriNetStats(processModel) {
+    const statsEl = document.getElementById('petriNetStats');
+    if (!statsEl) return;
+    const fitness = processModel.fitness ? processModel.fitness.toFixed(2) : '0';
+    const precision = processModel.precision ? processModel.precision.toFixed(2) : '0';
+    const fmeasure = processModel.f_measure ? processModel.f_measure.toFixed(2) : '0';
+    statsEl.innerHTML = `
+        <div class="row text-center">
+            <div class="col-md-4">
+                <div class="text-muted">Activities</div>
+                <div class="text-muted">${processModel.activities ? processModel.activities.length : 0}</div>
             </div>
-        `;
-    });
-    
-    activityList += '</div>';
-    
-    // Add process info
-    activityList += `
-        <div class="mt-3">
-            <div class="row text-center">
-                <div class="col-md-4">
-                    <div class="small text-muted">Activities</div>
-                    <div class="fw-bold text-primary">${activities.length}</div>
-                </div>
-                <div class="col-md-4">
-                    <div class="small text-muted">Transitions</div>
-                    <div class="fw-bold text-success">${processModel.transitions ? processModel.transitions.length : activities.length}</div>
-                </div>
-                <div class="col-md-4">
-                    <div class="small text-muted">Places</div>
-                    <div class="fw-bold text-info">${processModel.places ? processModel.places.length : activities.length + 1}</div>
-                </div>
+            <div class="col-md-4">
+                <div class="text-muted">Transitions</div>
+                <div class="text-muted">${processModel.transitions ? processModel.transitions.length : 0}</div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-muted">Places</div>
+                <div class="text-muted">${processModel.places ? processModel.places.length : 0}</div>
+            </div>
+            <div class="col-md-4">
+                <div class="fw-bold text-success">Fitness</div>
+                <div class="fw-bold text-success">${fitness}</div>
+            </div>
+            <div class="col-md-4">
+                <div class="fw-bold text-warning">Precision</div>
+                <div class="fw-bold text-warning">${precision}</div>
+            </div>
+            <div class="col-md-4">
+                <div class="fw-bold text-info">F-Measure</div>
+                <div class="fw-bold text-info">${fmeasure}</div>
             </div>
         </div>
     `;
-    
-    container.innerHTML = activityList;
 }
 
 function metricsAreEmpty(metrics) {
@@ -3601,16 +4405,247 @@ function renderAccuracyResults(metrics, sessionId, autoCompute) {
     }
 
     html += '</div>';
+
+    if (metrics.kpi_comparison && metrics.kpi_comparison.real && metrics.kpi_comparison.simulated) {
+        html += renderKpiComparisonHtml(metrics.kpi_comparison);
+    }
+
     container.innerHTML = html;
-    
+
     // Initialize Feather icons for the new content
     feather.replace();
-    
+
     // Initialize tooltips after adding the HTML
-    const tooltipTriggerList = [].slice.call(container.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
+    initTooltipsIn(container);
+
+    // Build the KPI comparison Chart.js charts (no-op if data missing).
+    if (metrics.kpi_comparison) initKpiCharts(metrics.kpi_comparison);
+}
+
+let _lastKpiComparison = null;
+
+function renderKpiComparisonHtml(kpi) {
+    _lastKpiComparison = kpi;
+    const unit = getResultsTimeUnit('kpiUnit');
+    const unitLabel = TIME_UNIT_LABELS[unit] || 'min';
+    const unitFactor = { sec: 1, min: 60, hour: 3600, day: 86400 }[unit] || 60;
+
+    const escape = (s) => String(s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+
+    const fmtInt = (v) => Number.isFinite(v) ? Math.round(v).toLocaleString() : '—';
+    const fmtFloat = (v, digits = 2) => Number.isFinite(v) ? v.toFixed(digits) : '—';
+    const fmtTime = (sec) => Number.isFinite(sec) ? (sec / unitFactor).toFixed(2) : '—';
+    const real = kpi.real;
+    const sim = kpi.simulated;
+
+    const rows = [
+        { label: '# Cases', tip: 'Total number of cases in the log.', real: fmtInt(real.num_cases), sim: fmtInt(sim.num_cases) },
+        { label: '# Events', tip: 'Total number of events in the log.', real: fmtInt(real.num_events), sim: fmtInt(sim.num_events) },
+        { label: '# Activities', tip: 'Number of distinct activities in the log.', real: fmtInt(real.num_activities), sim: fmtInt(sim.num_activities) },
+        { label: '# Resources', tip: 'Number of distinct resources in the log.', real: fmtInt(real.num_resources), sim: fmtInt(sim.num_resources) },
+        { label: `Cycle time mean (${unitLabel})`, tip: 'Average case duration (first start to last end).', real: fmtTime(real.cycle_time_mean_sec), sim: fmtTime(sim.cycle_time_mean_sec) },
+        { label: `Cycle time median (${unitLabel})`, tip: 'Median case duration.', real: fmtTime(real.cycle_time_median_sec), sim: fmtTime(sim.cycle_time_median_sec) },
+        { label: 'Throughput (cases/day)', tip: 'Cases completed per day across the full time span of the log.', real: fmtFloat(real.throughput_cases_per_day, 2), sim: fmtFloat(sim.throughput_cases_per_day, 2) },
+    ];
+
+    let bodyHtml = '';
+    rows.forEach(r => {
+        bodyHtml += `
+            <tr>
+                <td class="fw-semibold">
+                    ${escape(r.label)}
+                    <i data-feather="info" class="ms-1"
+                       data-bs-toggle="tooltip"
+                       data-bs-placement="top"
+                       title="${escape(r.tip)}"
+                       style="cursor: help; width: 14px; height: 14px; color: var(--light-green);"></i>
+                </td>
+                <td>${r.real}</td>
+                <td>${r.sim}</td>
+            </tr>`;
     });
+
+    const chartsHtml = kpi.charts ? `
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="small fw-semibold text-muted mb-1">Cycle time distribution (${unitLabel})</div>
+                    <div style="position: relative; height: 220px;">
+                        <canvas id="kpiCycleTimeChart"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="small fw-semibold text-muted mb-1">Case arrivals per day</div>
+                    <div style="position: relative; height: 220px;">
+                        <canvas id="kpiArrivalsChart"></canvas>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="small fw-semibold text-muted mb-1">Resource event counts (top 15)</div>
+                    <div style="position: relative; height: 280px;">
+                        <canvas id="kpiResourcesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>` : '';
+
+    return `
+        <div class="row mt-2">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                        <h6 class="card-title mb-0">KPI Comparison — Real vs Simulated</h6>
+                        <div class="d-flex align-items-center gap-2">
+                            <label for="kpiUnit" class="small mb-0 text-white">Time unit</label>
+                            <select id="kpiUnit" class="form-select form-select-sm" style="width: auto;" onchange="rerenderKpiComparison()">
+                                <option value="sec" ${unit === 'sec' ? 'selected' : ''}>Seconds</option>
+                                <option value="min" ${unit === 'min' ? 'selected' : ''}>Minutes</option>
+                                <option value="hour" ${unit === 'hour' ? 'selected' : ''}>Hours</option>
+                                <option value="day" ${unit === 'day' ? 'selected' : ''}>Days</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-sm mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="w-50">Metric</th>
+                                        <th class="w-25">Real Log</th>
+                                        <th class="w-25">Simulated Log</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${bodyHtml}</tbody>
+                            </table>
+                        </div>
+                    </div>
+                    ${chartsHtml}
+                </div>
+            </div>
+        </div>`;
+}
+
+const _KPI_CHART_INSTANCES = {};
+
+function initKpiCharts(kpi) {
+    if (!kpi || !kpi.charts || !window.Chart) return;
+    const unit = getResultsTimeUnit('kpiUnit');
+    const unitLabel = TIME_UNIT_LABELS[unit] || 'min';
+    const unitFactor = { sec: 1, min: 60, hour: 3600, day: 86400 }[unit] || 60;
+
+    Object.values(_KPI_CHART_INSTANCES).forEach(c => { try { c.destroy(); } catch (e) {} });
+    _KPI_CHART_INSTANCES.cycleTime = null;
+    _KPI_CHART_INSTANCES.arrivals = null;
+    _KPI_CHART_INSTANCES.resources = null;
+
+    const overlay = (realData, simData, label) => ({
+        labels: label,
+        datasets: [
+            {
+                label: 'Real', data: realData,
+                backgroundColor: 'rgba(123, 44, 191, 0.5)',
+                borderColor: '#7b2cbf', borderWidth: 1,
+            },
+            {
+                label: 'Simulated', data: simData,
+                backgroundColor: 'rgba(40, 167, 69, 0.45)',
+                borderColor: '#28a745', borderWidth: 1,
+            },
+        ],
+    });
+    const baseOpts = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } } },
+    };
+
+    const ct = kpi.charts.cycle_time;
+    const ctCanvas = document.getElementById('kpiCycleTimeChart');
+    if (ct && ctCanvas) {
+        const labels = ct.bin_centers_sec.map(s => (s / unitFactor).toFixed(1));
+        _KPI_CHART_INSTANCES.cycleTime = new Chart(ctCanvas, {
+            type: 'bar',
+            data: overlay(ct.real_counts, ct.simulated_counts, labels),
+            options: {
+                ...baseOpts,
+                scales: {
+                    x: { title: { display: true, text: `Cycle time (${unitLabel})`, font: { size: 11 } }, ticks: { maxTicksLimit: 8, font: { size: 10 } } },
+                    y: { title: { display: true, text: 'Cases', font: { size: 11 } }, beginAtZero: true },
+                },
+            },
+        });
+    }
+
+    const arr = kpi.charts.arrivals_per_day;
+    const arrCanvas = document.getElementById('kpiArrivalsChart');
+    if (arr && arrCanvas) {
+        const labels = arr.days.map(d => d.slice(0, 10));
+        _KPI_CHART_INSTANCES.arrivals = new Chart(arrCanvas, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: 'Real', data: arr.real,
+                        borderColor: '#7b2cbf', backgroundColor: 'rgba(123, 44, 191, 0.15)',
+                        fill: false, tension: 0.2, pointRadius: 1,
+                    },
+                    {
+                        label: 'Simulated', data: arr.simulated,
+                        borderColor: '#28a745', backgroundColor: 'rgba(40, 167, 69, 0.15)',
+                        fill: false, tension: 0.2, pointRadius: 1,
+                    },
+                ],
+            },
+            options: {
+                ...baseOpts,
+                scales: {
+                    x: { ticks: { maxTicksLimit: 8, font: { size: 10 } } },
+                    y: { title: { display: true, text: 'Cases', font: { size: 11 } }, beginAtZero: true },
+                },
+            },
+        });
+    }
+
+    const rc = kpi.charts.resource_counts;
+    const rcCanvas = document.getElementById('kpiResourcesChart');
+    if (rc && rcCanvas) {
+        _KPI_CHART_INSTANCES.resources = new Chart(rcCanvas, {
+            type: 'bar',
+            data: overlay(rc.real, rc.simulated, rc.resources),
+            options: {
+                ...baseOpts,
+                indexAxis: 'y',
+                scales: {
+                    x: { title: { display: true, text: 'Events', font: { size: 11 } }, beginAtZero: true },
+                    y: { ticks: { font: { size: 10 } } },
+                },
+            },
+        });
+    }
+}
+
+function rerenderKpiComparison() {
+    if (!_lastKpiComparison) return;
+    // Only re-render the KPI subsection: find the wrapping row and replace it.
+    const container = document.getElementById('accuracyResultsContainer');
+    if (!container) return;
+    // Locate the existing KPI card row (the most recently added .row with the
+    // KPI header) and swap its outer HTML.
+    const cardHeaders = container.querySelectorAll('.card-header');
+    let kpiRow = null;
+    cardHeaders.forEach(h => {
+        if (h.textContent.includes('KPI Comparison')) {
+            kpiRow = h.closest('.row');
+        }
+    });
+    if (!kpiRow) return;
+    kpiRow.outerHTML = renderKpiComparisonHtml(_lastKpiComparison);
+    feather.replace();
+    initTooltipsIn(container);
+    initKpiCharts(_lastKpiComparison);
 }
 
 async function fetchAndRenderMetrics(sessionId) {
@@ -3650,6 +4685,7 @@ async function fetchAndRenderMetrics(sessionId) {
  * The original function was modifying 'waiting_time_params' instead of 'inter_arrival_params'.
  */
 function toggleArrivalHour(day, hour, isActive) {
+    markParametersDirty();
     if (!currentParameters.inter_arrival_params) {
         currentParameters.inter_arrival_params = {};
     }
@@ -3841,14 +4877,16 @@ function addNewResource() {
         wt[resourceName] = { distribution: 'expon', parameters: { mean: 15 } };
     }
     
+    markParametersDirty();
+
     // Refresh the UI
     renderResourceParameters(currentParameters.resource_params);
     renderWaitingTimeParameters(currentParameters.waiting_time_params);
-    
+
     // Close modal
     const modal = bootstrap.Modal.getInstance(document.getElementById('addResourceModal'));
     modal.hide();
-    
+
     feather.replace();
 }
 
@@ -3940,11 +4978,12 @@ function removeResource(resourceName) {
     if (currentParameters.waiting_time_params && currentParameters.waiting_time_params.resource_waiting_times) {
         delete currentParameters.waiting_time_params.resource_waiting_times[resourceName];
     }
-    
+    markParametersDirty();
+
     // Refresh the UI
     renderResourceParameters(currentParameters.resource_params);
     renderWaitingTimeParameters(currentParameters.waiting_time_params);
-    
+
     feather.replace();
 }
 
@@ -3963,20 +5002,35 @@ function returnActivitiesPerResource(resource) {
     return activitiesForResource;
 }
 
-function getResultsTimeUnit() {
-    const sel = document.getElementById('resultsTimeUnit');
-    return (sel && sel.value) || 'min';
+function getResultsTimeUnit(elementId) {
+    if (elementId) {
+        const sel = document.getElementById(elementId);
+        if (sel && sel.value) return sel.value;
+    }
+    return 'min';
 }
 
 const TIME_UNIT_LABELS = { sec: 'sec', min: 'min', hour: 'hr', day: 'd' };
 
+// All visualization fetches share a single helper so the active run id is
+// transparently appended to every request URL. ``activeRunId`` may be null
+// when the session has no runs yet — the backend then falls back to the
+// most recently simulated run.
+function _withRunId(url) {
+    if (activeRunId == null) return url;
+    return url + (url.includes('?') ? '&' : '?') + 'run_id=' + encodeURIComponent(activeRunId);
+}
+
 async function loadProcessMap(sessionId, aggregation = 'median') {
-    const response_process_map = await fetch(`/api/get_visualization/${sessionId}/process_map?aggregation=${encodeURIComponent(aggregation)}`);
+    const response_process_map = await fetch(_withRunId(
+        `/api/get_visualization/${sessionId}/process_map?aggregation=${encodeURIComponent(aggregation)}`
+    ));
     const result_process_map = await response_process_map.json();
     renderProcessMap(result_process_map.visualization);
 }
 
-async function loadAllVisualizations(sessionId) {
+async function loadAllVisualizations(sessionId, runId) {
+    if (runId !== undefined && runId !== null) activeRunId = runId;
 
     const aggSelect = document.getElementById('processMapAggregation');
     const aggControls = document.getElementById('processMapControls');
@@ -3991,20 +5045,75 @@ async function loadAllVisualizations(sessionId) {
 
     await loadCaseDuration(sessionId);
 
-    // Resource heatmap will be loaded when a resource is selected from the dropdown
+    // Populate dropdowns first; the lazy-load below uses their values.
+    await fetchAndPopulateDropdowns(sessionId);
 
-    fetchAndPopulateDropdowns(sessionId);
+    bindPerTabUnitSelectors();
+    bindLazyTabLoaders();
+}
 
-    const unitSelect = document.getElementById('resultsTimeUnit');
-    if (unitSelect && !unitSelect.dataset.bound) {
-        unitSelect.addEventListener('change', () => reloadTimeBasedVisualizations(sessionId));
-        unitSelect.dataset.bound = '1';
+// Each Simulation Results tab loads its visualization the first time it
+// becomes active per simulation, so we don't pay for charts the user never
+// opens. Loaded state resets on every new simulation run. Handlers read the
+// current dropdown values + global session id at fire time.
+function bindLazyTabLoaders() {
+    const lazyHandlers = {
+        'resource-utilization-tab': () => {
+            const sel = document.getElementById('resourceHeatmapSelect');
+            renderResourceHeatmap(sel ? sel.value : '');
+        },
+        'activity-duration-tab': () => {
+            const sel = document.getElementById('activitySelect');
+            renderActivityDurationBoxplot(sel ? sel.value : '');
+        },
+        'waiting-time-tab': () => {
+            const aSel = document.getElementById('waitingTimeSelect_act');
+            const rSel = document.getElementById('waitingTimeSelect_res');
+            renderWaitingTimeVisualization(aSel ? aSel.value : '', rSel ? rSel.value : '');
+        },
+    };
+    Object.entries(lazyHandlers).forEach(([tabId, handler]) => {
+        const tab = document.getElementById(tabId);
+        if (!tab) return;
+        // Reset loaded state for every new simulation run.
+        delete tab.dataset.loaded;
+        if (tab.dataset.lazyBound) return;
+        tab.addEventListener('shown.bs.tab', () => {
+            if (!tab.dataset.loaded) {
+                handler();
+                tab.dataset.loaded = '1';
+            }
+        });
+        tab.dataset.lazyBound = '1';
+    });
+}
+
+function bindPerTabUnitSelectors() {
+    const cdSel = document.getElementById('caseDurationUnit');
+    if (cdSel && !cdSel.dataset.bound) {
+        cdSel.addEventListener('change', () => loadCaseDuration(currentSessionId));
+        cdSel.dataset.bound = '1';
+    }
+    const adSel = document.getElementById('activityDurationUnit');
+    if (adSel && !adSel.dataset.bound) {
+        adSel.addEventListener('change', () => {
+            const actSel = document.getElementById('activitySelect');
+            renderActivityDurationBoxplot(actSel ? actSel.value : '');
+        });
+        adSel.dataset.bound = '1';
+    }
+    const wtSel = document.getElementById('waitingTimeUnit');
+    if (wtSel && !wtSel.dataset.bound) {
+        wtSel.addEventListener('change', () => updateWaitingTimeVisualization());
+        wtSel.dataset.bound = '1';
     }
 }
 
 async function loadCaseDuration(sessionId) {
-    const unit = getResultsTimeUnit();
-    const response = await fetch(`/api/get_visualization/${sessionId}/case_duration_dist?unit=${encodeURIComponent(unit)}`);
+    const unit = getResultsTimeUnit('caseDurationUnit');
+    const response = await fetch(_withRunId(
+        `/api/get_visualization/${sessionId}/case_duration_dist?unit=${encodeURIComponent(unit)}`
+    ));
     const result = await response.json();
     renderCaseDuration(result);
 }
@@ -4024,7 +5133,7 @@ async function reloadTimeBasedVisualizations(sessionId) {
 
 async function fetchAndPopulateDropdowns(sessionId) {
     try {
-        const response = await fetch(`/api/get_activities_and_resources/${sessionId}`);
+        const response = await fetch(_withRunId(`/api/get_activities_and_resources/${sessionId}`));
         const result = await response.json();
         
         if (!result.success) {
@@ -4073,7 +5182,6 @@ function renderProcessMap(processMap) {
         return;
     }
     
-    console.log('Rendering SVG visualization');
     // Direct SVG content - embed it
     container.innerHTML = `
         <div class="text-center">
@@ -4085,111 +5193,271 @@ function renderProcessMap(processMap) {
     return;
 }
 
-function renderCaseDuration(caseDurationDist) {
+// Chart instances for the Simulation Results tabs, keyed by canvas id.
+const _RESULT_CHART_INSTANCES = {};
+const _CHART_PURPLE = '#7b2cbf';
+const _CHART_PURPLE_BG = 'rgba(123, 44, 191, 0.45)';
 
-    const container_dist = document.getElementById('caseDurationDist');
-    console.log('Rendering SVG visualization');
-    const unitLabel = TIME_UNIT_LABELS[caseDurationDist.unit || getResultsTimeUnit()] || 'min';
-    // Direct SVG content - embed it
-    container_dist.innerHTML = `
-        <div class="text-center">
-            <div class="case-duration-svg-container" style="border: 1px solid #dee2e6; border-radius: 8px; background: white; padding: 10px; margin-bottom: 15px;">
-                ${caseDurationDist.visualization}
+function _destroyResultChart(canvasId) {
+    const existing = _RESULT_CHART_INSTANCES[canvasId];
+    if (existing) { try { existing.destroy(); } catch (e) {} }
+    _RESULT_CHART_INSTANCES[canvasId] = null;
+}
+
+function _renderHistogramChart(canvasId, binCenters, counts, xLabel, title) {
+    _destroyResultChart(canvasId);
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const labels = binCenters.map(v => Number(v).toFixed(1));
+    _RESULT_CHART_INSTANCES[canvasId] = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: title || 'Frequency',
+                data: counts,
+                backgroundColor: _CHART_PURPLE_BG,
+                borderColor: _CHART_PURPLE,
+                borderWidth: 1,
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false }, title: title ? { display: true, text: title, font: { size: 12 } } : { display: false } },
+            scales: {
+                x: { title: { display: true, text: xLabel, font: { size: 11 } }, ticks: { maxTicksLimit: 10, font: { size: 10 } } },
+                y: { title: { display: true, text: 'Frequency', font: { size: 11 } }, beginAtZero: true },
+            },
+        },
+    });
+}
+
+function _renderMetricsRow(metrics, unitLabel) {
+    return `
+        <div class="row text-center mt-3">
+            <div class="col-md-3">
+                <div class="fw-bold text-success">Mean</div>
+                <div class="text-muted">${Number(metrics.mean).toFixed(2)} ${unitLabel}</div>
             </div>
-        </div>
-        <div class="mt-3">
-            <div class="row text-center">
-                <div class="col-md-3">
-                    <div class="fw-bold text-success">Mean</div>
-                    <div class="text-muted">${caseDurationDist.metrics.average_case_duration.toFixed(2)} ${unitLabel}</div>
-                </div>
-                <div class="col-md-3">
-                    <div class="fw-bold text-success">Median</div>
-                    <div class="text-muted">${caseDurationDist.metrics.median_case_duration.toFixed(2)} ${unitLabel}</div>
-                </div>
-                <div class="col-md-3">
-                    <div class="fw-bold text-success">Min</div>
-                    <div class="text-muted">${caseDurationDist.metrics.min_case_duration.toFixed(2)} ${unitLabel}</div>
-                </div>
-                <div class="col-md-3">
-                    <div class="fw-bold text-success">Max</div>
-                    <div class="text-muted">${caseDurationDist.metrics.max_case_duration.toFixed(2)} ${unitLabel}</div>
-                </div>
+            <div class="col-md-3">
+                <div class="fw-bold text-success">Median</div>
+                <div class="text-muted">${Number(metrics.median).toFixed(2)} ${unitLabel}</div>
             </div>
+            <div class="col-md-3">
+                <div class="fw-bold text-success">Min</div>
+                <div class="text-muted">${Number(metrics.min).toFixed(2)} ${unitLabel}</div>
+            </div>
+            <div class="col-md-3">
+                <div class="fw-bold text-success">Max</div>
+                <div class="text-muted">${Number(metrics.max).toFixed(2)} ${unitLabel}</div>
+            </div>
+        </div>`;
+}
+
+function renderCaseDuration(caseDurationDist) {
+    const container = document.getElementById('caseDurationDist');
+    const unit = caseDurationDist.unit || getResultsTimeUnit('caseDurationUnit');
+    const unitLabel = TIME_UNIT_LABELS[unit] || 'min';
+
+    const m = caseDurationDist.metrics || {};
+    const metrics = {
+        mean: m.average_case_duration || 0,
+        median: m.median_case_duration || 0,
+        min: m.min_case_duration || 0,
+        max: m.max_case_duration || 0,
+    };
+
+    container.innerHTML = `
+        <div style="position: relative; height: 320px;">
+            <canvas id="caseDurationCanvas"></canvas>
         </div>
+        ${_renderMetricsRow(metrics, unitLabel)}
     `;
-    return;
+    const hist = caseDurationDist.histogram || { bin_centers: [], counts: [] };
+    _renderHistogramChart('caseDurationCanvas', hist.bin_centers, hist.counts, `Case duration (${unitLabel})`, 'Case Duration Distribution');
 }
 
 async function renderResourceHeatmap(resourceName) {
     const sessionId = currentSessionId;
-    const url = resourceName ? 
-        `/api/get_visualization/${sessionId}/resource_heatmap?resource=${resourceName}` :
-        `/api/get_visualization/${sessionId}/resource_heatmap`;
-    
-    const response = await fetch(url);
-    const result = await response.json();
+    if (!sessionId) return;
+    const params = new URLSearchParams();
+    if (resourceName) params.append('resource', resourceName);
+    const url = _withRunId(params.toString()
+        ? `/api/get_visualization/${sessionId}/resource_heatmap?${params.toString()}`
+        : `/api/get_visualization/${sessionId}/resource_heatmap`);
 
     const container = document.getElementById('resourceHeatmap');
-    console.log('Rendering SVG visualization');
-    // Direct SVG content - embed it
     container.innerHTML = `
-        <div class="text-center">
-            <div class="res-heatmap-svg-container" style="border: 1px solid #dee2e6; border-radius: 8px; background: white; padding: 10px; margin-bottom: 15px;">
-                ${result.visualization}
+        <div class="d-flex justify-content-center align-items-center h-100" style="min-height: 200px;">
+            <div class="spinner-border text-info" role="status"><span class="visually-hidden">Loading...</span></div>
+        </div>`;
+
+    try {
+        const response = await fetch(url);
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            container.innerHTML = `<div class="alert alert-warning mb-0">${result.error || ('HTTP ' + response.status)}</div>`;
+            return;
+        }
+
+        const titleSuffix = result.resource ? ` — ${result.resource}` : ' — All resources';
+        container.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="small fw-semibold text-muted">Events per weekday × hour${titleSuffix}</div>
             </div>
-        </div>
-    `;
-    return;
+            <div style="position: relative; height: 320px;">
+                <canvas id="resourceHeatmapCanvas"></canvas>
+            </div>`;
+        _renderHeatmapChart('resourceHeatmapCanvas', result.matrix, result.weekday_labels, result.hours, result.max_value);
+    } catch (err) {
+        container.innerHTML = `<div class="alert alert-danger mb-0">Failed to load resource heatmap: ${err.message}</div>`;
+    }
+}
+
+function _renderHeatmapChart(canvasId, matrix, weekdayLabels, hours, maxValue) {
+    _destroyResultChart(canvasId);
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const data = [];
+    for (let r = 0; r < (matrix || []).length; r++) {
+        for (let c = 0; c < matrix[r].length; c++) {
+            data.push({ x: hours[c], y: weekdayLabels[r], v: matrix[r][c] });
+        }
+    }
+    const max = Math.max(1, maxValue || 1);
+    function colorFor(v) {
+        // YlGnBu-ish ramp; light at low, dark teal at high.
+        const t = Math.min(1, Math.max(0, v / max));
+        const r = Math.round(255 - 255 * t);
+        const g = Math.round(255 - 90 * t);
+        const b = Math.round(217 - 50 * t);
+        return `rgba(${r},${g},${b},${0.25 + 0.6 * t})`;
+    }
+    _RESULT_CHART_INSTANCES[canvasId] = new Chart(canvas, {
+        type: 'matrix',
+        data: {
+            datasets: [{
+                label: 'Events',
+                data,
+                backgroundColor: ctx => colorFor(ctx.raw.v),
+                borderColor: 'rgba(255,255,255,0.4)',
+                borderWidth: 1,
+                width: ctx => (ctx.chart.chartArea || {}).width / 24 - 1,
+                height: ctx => (ctx.chart.chartArea || {}).height / 7 - 1,
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { title: () => '', label: ctx => `${ctx.raw.y} ${ctx.raw.x}:00 — ${ctx.raw.v} events` } },
+            },
+            scales: {
+                x: {
+                    type: 'linear',
+                    min: -0.5, max: 23.5,
+                    ticks: { stepSize: 1, font: { size: 10 } },
+                    title: { display: true, text: 'Hour of day', font: { size: 11 } },
+                    grid: { display: false },
+                },
+                y: {
+                    type: 'category',
+                    labels: weekdayLabels,
+                    offset: true,
+                    ticks: { font: { size: 11 } },
+                    grid: { display: false },
+                },
+            },
+        },
+    });
 }
 
 async function renderActivityDurationBoxplot(activityName) {
     const sessionId = currentSessionId;
-    const unit = getResultsTimeUnit();
+    if (!sessionId) return;
+    const unit = getResultsTimeUnit('activityDurationUnit');
     const params = new URLSearchParams();
     if (activityName) params.append('activity', activityName);
     params.append('unit', unit);
-    const url = `/api/get_visualization/${sessionId}/activity_duration_boxplot?${params.toString()}`;
-
-    const response = await fetch(url);
-    const result = await response.json();
+    const url = _withRunId(`/api/get_visualization/${sessionId}/activity_duration_boxplot?${params.toString()}`);
 
     const container = document.getElementById('activityDurationBoxplotContainer');
-    console.log('Rendering SVG visualization');
-    const unitLabel = TIME_UNIT_LABELS[result.unit || unit] || 'min';
-    // Direct SVG content - embed it
     container.innerHTML = `
-        <div class="text-center">
-            <div class="act-boxplot-svg-container" style="border: 1px solid #dee2e6; border-radius: 8px; background: white; padding: 10px; margin-bottom: 15px;">
-                ${result.visualization}
-            </div>
-        </div>
-        <div class="mt-3">
-            <div class="row text-center">
-                <div class="col-md-3">
-                    <div class="fw-bold text-success">Mean</div>
-                    <div class="text-muted">${result.metrics.average_duration.toFixed(2)} ${unitLabel}</div>
-                </div>
-                <div class="col-md-3">
-                    <div class="fw-bold text-success">Median</div>
-                    <div class="text-muted">${result.metrics.median_duration.toFixed(2)} ${unitLabel}</div>
-                </div>
-                <div class="col-md-3">
-                    <div class="fw-bold text-success">Min</div>
-                    <div class="text-muted">${result.metrics.min_duration.toFixed(2)} ${unitLabel}</div>
-                </div>
-                <div class="col-md-3">
-                    <div class="fw-bold text-success">Max</div>
-                    <div class="text-muted">${result.metrics.max_duration.toFixed(2)} ${unitLabel}</div>
-                </div>
-            </div>
-        </div>
-    `;
-    return;
+        <div class="d-flex justify-content-center align-items-center" style="min-height: 200px;">
+            <div class="spinner-border text-info" role="status"><span class="visually-hidden">Loading...</span></div>
+        </div>`;
 
+    try {
+        const response = await fetch(url);
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            container.innerHTML = `<div class="alert alert-warning mb-0">${result.error || ('HTTP ' + response.status)}</div>`;
+            return;
+        }
+        const unitLabel = TIME_UNIT_LABELS[result.unit || unit] || 'min';
+        const m = result.metrics || {};
+        const metrics = {
+            mean: m.average_duration || 0,
+            median: m.median_duration || 0,
+            min: m.min_duration || 0,
+            max: m.max_duration || 0,
+        };
+        const title = result.activity ? `Activity Duration — ${result.activity}` : 'Activity Duration — All activities';
+        container.innerHTML = `
+            <div style="position: relative; height: 320px;">
+                <canvas id="activityDurationCanvas"></canvas>
+            </div>
+            ${_renderMetricsRow(metrics, unitLabel)}
+        `;
+        const hist = result.histogram || { bin_centers: [], counts: [] };
+        _renderHistogramChart('activityDurationCanvas', hist.bin_centers, hist.counts, `Duration (${unitLabel})`, title);
+    } catch (err) {
+        container.innerHTML = `<div class="alert alert-danger mb-0">Failed to load activity duration: ${err.message}</div>`;
+    }
 }
 
 // Feature generation functions
+// Returns a human-readable tooltip explaining what a decision-tree feature means.
+// Used by the Add Split modal dropdown and by rendered tree split nodes.
+function getFeatureTooltip(featureValue) {
+    if (featureValue == null || featureValue === '') return '';
+    const v = String(featureValue);
+
+    if (v === 'hour') return 'Hour of the day (0-23) when the event occurs.';
+    if (v === 'weekday') return 'Day of the week (0=Monday, …, 6=Sunday) when the event occurs.';
+    if (v === 'workload') return 'Number of cases active in the system at that moment.';
+
+    if (v.startsWith('resource = ')) {
+        const r = v.slice('resource = '.length);
+        return `True when the executing resource is «${r}».`;
+    }
+
+    if (v.includes(' = ')) {
+        const idx = v.indexOf(' = ');
+        const attr = v.slice(0, idx);
+        const val = v.slice(idx + 3);
+        return `True when the case attribute «${attr}» equals «${val}».`;
+    }
+
+    const activities = (currentParameters && currentParameters.process_model && currentParameters.process_model.activities) || [];
+    const resources = (currentParameters && currentParameters.resource_params && currentParameters.resource_params.resources) || [];
+    const attrs = (currentParameters && currentParameters.data_attribute_params && currentParameters.data_attribute_params.distribution_data_attributes) || {};
+
+    if (activities.includes(v)) {
+        return `Counts how many times the case has gone through activity «${v}». The false branch covers cases that have done so at least (threshold + 1) times.`;
+    }
+    if (resources.includes(v)) {
+        return `Counts how many times resource «${v}» has served the case. The false branch covers cases where this happened at least (threshold + 1) times.`;
+    }
+    if (Object.prototype.hasOwnProperty.call(attrs, v)) {
+        return `Numeric threshold on the case attribute «${v}».`;
+    }
+
+    return `Feature «${v}».`;
+}
+
 function generateFeaturesForTreeType(treeType) {
     const features = [];
     
@@ -4461,10 +5729,8 @@ function expandAllTreeNodes() {
 }
 
 function addSplitToNode(nodeId, treeType) {
-    console.log('addSplitToNode called with:', nodeId, treeType);
     // Generate features based on tree type
     const features = generateFeaturesForTreeType(treeType);
-    console.log('Generated features:', features);
 
     // Group features by their `group` field; preserve insertion order so sticky
     // headers reflect the same ordering as the rendered list.
@@ -4481,9 +5747,10 @@ function addSplitToNode(nodeId, treeType) {
     const escapeAttr = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
     const dropdownItemsHtml = groupOrder.map(g => {
         const header = `<li class="split-feature-group-header">${escapeAttr(g)}</li>`;
-        const items = featureGroups[g].map(f =>
-            `<li><button type="button" class="dropdown-item small" data-value="${escapeAttr(f.value)}">${escapeAttr(f.label)}</button></li>`
-        ).join('');
+        const items = featureGroups[g].map(f => {
+            const tip = escapeAttr(getFeatureTooltip(f.value));
+            return `<li><button type="button" class="dropdown-item small" data-value="${escapeAttr(f.value)}" data-bs-toggle="tooltip" data-bs-placement="right" title="${tip}">${escapeAttr(f.label)}</button></li>`;
+        }).join('');
         return header + items;
     }).join('');
     const firstFeatureValue = features.length ? features[0].value : '';
@@ -4595,8 +5862,10 @@ function addSplitToNode(nodeId, treeType) {
     }
     
     // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('addSplitModal'));
+    const modalEl = document.getElementById('addSplitModal');
+    const modal = new bootstrap.Modal(modalEl);
     modal.show();
+    initTooltipsIn(modalEl);
 }
 
 function setupDistributionControls(containerId, branch, unitSuffix) {
@@ -4605,7 +5874,6 @@ function setupDistributionControls(containerId, branch, unitSuffix) {
         console.error('Container not found:', containerId);
         return;
     }
-    console.log('Setting up distribution controls for:', containerId, branch, unitSuffix);
     container.innerHTML = `
         <div class="row">
             <div class="col-md-6">
@@ -4688,7 +5956,6 @@ function confirmAddSplit(nodeId, treeType) {
     
     // Get the current tree data from the appropriate context
     let treeData;
-    console.log('Getting tree data for treeType:', treeType);
     if (treeType === 'transition') {
         const transitionName = document.getElementById('transitionSelect').value;
         treeData = currentParameters.transition_params.transition_weights[transitionName];
@@ -4803,12 +6070,7 @@ function confirmAddSplit(nodeId, treeType) {
             false: falseId
         }
     };
-    
-    console.log('confirmAddSplit: Created split node with children:', {
-        true: trueId,
-        false: falseId
-    });
-    
+
     // Add new leaf nodes
     if (treeType === 'transition' || treeType === 'resource') {
         treeData[trueId] = { value: trueValue };
@@ -4817,17 +6079,14 @@ function confirmAddSplit(nodeId, treeType) {
         treeData[trueId] = { value: trueValue.value, dist: trueValue.dist };
         treeData[falseId] = { value: falseValue.value, dist: falseValue.dist };
     }
+    markParametersDirty();
     
-    console.log('confirmAddSplit: Tree data after adding nodes:', treeData);
-    console.log('confirmAddSplit: Current parameters after update:', currentParameters);
     
     // Close modal
     const modal = bootstrap.Modal.getInstance(document.getElementById('addSplitModal'));
     modal.hide();
     
     // Refresh the tree display
-    console.log('confirmAddSplit: About to refresh tree display with treeType:', treeType);
-    console.log('confirmAddSplit: Updated tree data:', treeData);
     refreshTreeDisplay(treeType);
 }
 
@@ -5102,20 +6361,27 @@ function confirmRemoveSplit(nodeId, treeType) {
         newValue = getDistributionValue('newLeaf');
     }
     
-    // Remove all child nodes recursively
+    function _branchIds(children) {
+        return [
+            children.true ?? children['1'] ?? children.True,
+            children.false ?? children['0'] ?? children.False,
+        ];
+    }
     function removeSubtree(nodeId) {
         const node = treeData[nodeId];
         if (node && node.children) {
-            removeSubtree(node.children.true);
-            removeSubtree(node.children.false);
+            for (const child of _branchIds(node.children)) {
+                if (child !== undefined && child !== null) removeSubtree(child);
+            }
         }
         delete treeData[nodeId];
     }
-    
+
     const node = treeData[nodeId];
     if (node && node.children) {
-        removeSubtree(node.children.true);
-        removeSubtree(node.children.false);
+        for (const child of _branchIds(node.children)) {
+            if (child !== undefined && child !== null) removeSubtree(child);
+        }
     }
     
     // Convert split node to leaf
@@ -5124,19 +6390,17 @@ function confirmRemoveSplit(nodeId, treeType) {
     } else {
         treeData[nodeId] = { value: newValue.value, dist: newValue.dist };
     }
-    
+    markParametersDirty();
+
     // Close modal
     const modal = bootstrap.Modal.getInstance(document.getElementById('removeSplitModal'));
     modal.hide();
     
     // Refresh the tree display
-    console.log('confirmRemoveSplit: About to refresh tree display with treeType:', treeType);
-    console.log('confirmRemoveSplit: Updated tree data:', treeData);
     refreshTreeDisplay(treeType);
 }
 
 function refreshTreeDisplay(treeType) {
-    console.log('refreshTreeDisplay called with treeType:', treeType);
     if (treeType === 'transition') {
         const transitionName = document.getElementById('transitionSelect').value;
         showTransitionWeights(transitionName);
@@ -5165,48 +6429,50 @@ function updateWaitingTimeVisualization() {
 
 async function renderWaitingTimeVisualization(activity='', resource='') {
     const sessionId = currentSessionId;
-    const unit = getResultsTimeUnit();
+    if (!sessionId) return;
+    const unit = getResultsTimeUnit('waitingTimeUnit');
     const params = new URLSearchParams();
     if (activity) params.append('activity', activity);
     if (resource) params.append('resource', resource);
     params.append('unit', unit);
-
-    const url = `/api/get_visualization/${sessionId}/waiting_time_dist?${params.toString()}`;
-    const response = await fetch(url);
-    const result = await response.json();
+    const url = _withRunId(`/api/get_visualization/${sessionId}/waiting_time_dist?${params.toString()}`);
 
     const container = document.getElementById('waitingTimeVisualizationContainer');
-    console.log('Rendering SVG visualization');
-    const unitLabel = TIME_UNIT_LABELS[result.unit || unit] || 'min';
-    // Direct SVG content - embed it
     container.innerHTML = `
-        <div class="text-center">
-            <div class="waiting-time-svg-container" style="border: 1px solid #dee2e6; border-radius: 8px; background: white; padding: 10px; margin-bottom: 15px;">
-                ${result.visualization}
+        <div class="d-flex justify-content-center align-items-center" style="min-height: 200px;">
+            <div class="spinner-border text-info" role="status"><span class="visually-hidden">Loading...</span></div>
+        </div>`;
+
+    try {
+        const response = await fetch(url);
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            container.innerHTML = `<div class="alert alert-warning mb-0">${result.error || ('HTTP ' + response.status)}</div>`;
+            return;
+        }
+        const unitLabel = TIME_UNIT_LABELS[result.unit || unit] || 'min';
+        const m = result.metrics || {};
+        const metrics = {
+            mean: m.average_duration || 0,
+            median: m.median_duration || 0,
+            min: m.min_duration || 0,
+            max: m.max_duration || 0,
+        };
+        const titleBits = [];
+        titleBits.push(result.resource ? `Resource: ${result.resource}` : 'Resource: Any');
+        titleBits.push(result.activity ? `Activity: ${result.activity}` : 'Activity: Any');
+        const title = `Waiting Time — ${titleBits.join(' · ')}`;
+        container.innerHTML = `
+            <div style="position: relative; height: 320px;">
+                <canvas id="waitingTimeCanvas"></canvas>
             </div>
-        </div>
-        <div class="mt-3">
-            <div class="row text-center">
-                <div class="col-md-3">
-                    <div class="fw-bold text-success">Mean</div>
-                    <div class="text-muted">${result.metrics.average_duration.toFixed(2)} ${unitLabel}</div>
-                </div>
-                <div class="col-md-3">
-                    <div class="fw-bold text-success">Median</div>
-                    <div class="text-muted">${result.metrics.median_duration.toFixed(2)} ${unitLabel}</div>
-                </div>
-                <div class="col-md-3">
-                    <div class="fw-bold text-success">Min</div>
-                    <div class="text-muted">${result.metrics.min_duration.toFixed(2)} ${unitLabel}</div>
-                </div>
-                <div class="col-md-3">
-                    <div class="fw-bold text-success">Max</div>
-                    <div class="text-muted">${result.metrics.max_duration.toFixed(2)} ${unitLabel}</div>
-                </div>
-            </div>
-        </div>
-    `;
-    return;
+            ${_renderMetricsRow(metrics, unitLabel)}
+        `;
+        const hist = result.histogram || { bin_centers: [], counts: [] };
+        _renderHistogramChart('waitingTimeCanvas', hist.bin_centers, hist.counts, `Waiting time (${unitLabel})`, title);
+    } catch (err) {
+        container.innerHTML = `<div class="alert alert-danger mb-0">Failed to load waiting time: ${err.message}</div>`;
+    }
 }
 
 </script>

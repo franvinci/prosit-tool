@@ -1,22 +1,18 @@
 """Visualization endpoints: per-session activity/resource lookup and chart rendering."""
 
-import io
 import os
 import logging
+from collections import OrderedDict
 
 import numpy as np
 import pandas as pd
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import seaborn as sns
 import pm4py
 from pm4py.visualization.dfg.variants import performance as dfg_perf_visualizer
 
 from flask import Blueprint, request, jsonify
 
 from app import app
-from models import SimulationSession
+from models import SimulationRun, SimulationSession
 
 from ._decorators import handle_api_errors
 
@@ -29,6 +25,13 @@ WEEKDAY_LABELS = ('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun')
 _UNIT_FACTORS = {'sec': 1, 'min': 60, 'hour': 3600, 'day': 86400}
 _UNIT_LABELS = {'sec': 'seconds', 'min': 'minutes', 'hour': 'hours', 'day': 'days'}
 
+# In-process caches. Keyed by (filepath, mtime) so a fresh simulation that
+# overwrites/changes the file invalidates the cache automatically.
+_DF_CACHE: "OrderedDict[tuple[str, float], pd.DataFrame]" = OrderedDict()
+_SVG_CACHE: "OrderedDict[tuple, dict]" = OrderedDict()
+_DF_CACHE_MAX = 4
+_SVG_CACHE_MAX = 64
+
 
 def _to_unit(seconds_series, unit):
     """Convert a pandas series of seconds to the requested unit."""
@@ -40,21 +43,26 @@ def _unit_label(unit):
     return _UNIT_LABELS.get(unit, 'minutes')
 
 
-def _figure_to_svg() -> str:
-    """Render the active matplotlib figure to an SVG string and clean up."""
-    buf = io.StringIO()
-    try:
-        plt.savefig(buf, format='svg')
-        buf.seek(0)
-        return buf.getvalue()
-    finally:
-        buf.close()
-        plt.close()
+def _resolve_run_for_session(session, run_id):
+    """Return the SimulationRun whose simulation log to read.
+
+    With no run_id, falls back to the most recently simulated run for the
+    session, or the baseline if none has been simulated yet.
+    """
+    if run_id is not None:
+        run = SimulationRun.query.filter_by(id=int(run_id), session_id=session.id).first()
+        return run
+    runs_with_logs = [r for r in session.runs if r.simulation_df_filename]
+    if runs_with_logs:
+        runs_with_logs.sort(key=lambda r: (r.last_run_at or r.created_at), reverse=True)
+        return runs_with_logs[0]
+    return session.get_baseline_run()
 
 
-def _load_simulation_df(session):
-    """Load the saved simulation CSV for ``session`` and parse timestamp cols."""
-    sim_log_filename = session.simulation_df_filename
+def _load_simulation_df(session, run_id=None):
+    """Load the saved simulation CSV for the requested run (or baseline)."""
+    run = _resolve_run_for_session(session, run_id)
+    sim_log_filename = run.simulation_df_filename if run else None
     if not sim_log_filename:
         return None, ('Simulated log file not found.', 404)
 
@@ -62,11 +70,68 @@ def _load_simulation_df(session):
     if not os.path.exists(sim_log_filepath):
         return None, ('Simulated log file not found on server.', 404)
 
+    mtime = os.path.getmtime(sim_log_filepath)
+    cache_key = (sim_log_filepath, mtime)
+    cached = _DF_CACHE.get(cache_key)
+    if cached is not None:
+        _DF_CACHE.move_to_end(cache_key)
+        return cached, None
+
     df = pd.read_csv(sim_log_filepath)
     for col in ('start:timestamp', 'time:timestamp', 'enabled:timestamp'):
         if col in df.columns:
             df[col] = pd.to_datetime(df[col], utc=True)
+
+    _DF_CACHE[cache_key] = df
+    while len(_DF_CACHE) > _DF_CACHE_MAX:
+        _DF_CACHE.popitem(last=False)
     return df, None
+
+
+def _svg_cache_get(session, viz_type, params, run_id=None):
+    """Return cached visualization payload, or None.
+
+    Cache key includes the simulation file's mtime, so a new simulation
+    automatically invalidates entries for that run.
+    """
+    run = _resolve_run_for_session(session, run_id)
+    sim_log_filename = run.simulation_df_filename if run else None
+    if not sim_log_filename:
+        return None
+    sim_log_filepath = os.path.join(app.config.get('SIMULATION_FOLDER', 'simulations'), sim_log_filename)
+    if not os.path.exists(sim_log_filepath):
+        return None
+    mtime = os.path.getmtime(sim_log_filepath)
+    key = (session.id, run.id if run else None, viz_type, tuple(sorted(params.items())), mtime)
+    payload = _SVG_CACHE.get(key)
+    if payload is not None:
+        _SVG_CACHE.move_to_end(key)
+    return payload
+
+
+def _svg_cache_set(session, viz_type, params, payload, run_id=None):
+    run = _resolve_run_for_session(session, run_id)
+    sim_log_filename = run.simulation_df_filename if run else None
+    if not sim_log_filename:
+        return
+    sim_log_filepath = os.path.join(app.config.get('SIMULATION_FOLDER', 'simulations'), sim_log_filename)
+    if not os.path.exists(sim_log_filepath):
+        return
+    mtime = os.path.getmtime(sim_log_filepath)
+    key = (session.id, run.id if run else None, viz_type, tuple(sorted(params.items())), mtime)
+    _SVG_CACHE[key] = payload
+    while len(_SVG_CACHE) > _SVG_CACHE_MAX:
+        _SVG_CACHE.popitem(last=False)
+
+
+def _read_run_id():
+    raw = request.args.get('run_id')
+    if not raw:
+        return None
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return None
 
 
 @bp.route('/api/get_activities_and_resources/<int:session_id>')
@@ -74,7 +139,7 @@ def _load_simulation_df(session):
 def get_activities_and_resources(session_id):
     """List all activities and resources from the saved simulation log."""
     session = SimulationSession.query.get_or_404(session_id)
-    df, err = _load_simulation_df(session)
+    df, err = _load_simulation_df(session, run_id=_read_run_id())
     if err:
         msg, code = err
         return jsonify({'error': msg}), code
@@ -89,29 +154,49 @@ def get_activities_and_resources(session_id):
 def get_visualization(session_id, visualization_type):
     """Generate and return a specific visualization from the simulated log."""
     session = SimulationSession.query.get_or_404(session_id)
-    df, err = _load_simulation_df(session)
-    if err:
-        msg, code = err
-        return jsonify({'error': msg}), code
-
-    plt.style.use('seaborn-v0_8-whitegrid')
+    run_id = _read_run_id()
 
     unit = request.args.get('unit', 'min')
     if unit not in _UNIT_FACTORS:
         unit = 'min'
+    aggregation = request.args.get('aggregation', 'median')
+    resource_arg = request.args.get('resource') or ''
+    activity_arg = request.args.get('activity') or ''
+
+    cache_params = {
+        'process_map': {'aggregation': aggregation},
+        'case_duration_dist': {'unit': unit},
+        'resource_heatmap': {'resource': resource_arg},
+        'activity_duration_boxplot': {'activity': activity_arg, 'unit': unit},
+        'waiting_time_dist': {'activity': activity_arg, 'resource': resource_arg, 'unit': unit},
+    }.get(visualization_type)
+
+    if cache_params is not None:
+        cached = _svg_cache_get(session, visualization_type, cache_params, run_id=run_id)
+        if cached is not None:
+            return jsonify(cached)
+
+    df, err = _load_simulation_df(session, run_id=run_id)
+    if err:
+        msg, code = err
+        return jsonify({'error': msg}), code
 
     if visualization_type == 'process_map':
-        return _render_process_map(df, request.args.get('aggregation', 'median'))
-    if visualization_type == 'case_duration_dist':
-        return _render_case_duration(df, unit)
-    if visualization_type == 'resource_heatmap':
-        return _render_resource_heatmap(df, request.args.get('resource'))
-    if visualization_type == 'activity_duration_boxplot':
-        return _render_activity_duration(df, request.args.get('activity'), unit)
-    if visualization_type == 'waiting_time_dist':
-        return _render_waiting_time(df, request.args.get('activity'), request.args.get('resource'), unit)
+        payload = _render_process_map(df, aggregation)
+    elif visualization_type == 'case_duration_dist':
+        payload = _render_case_duration(df, unit)
+    elif visualization_type == 'resource_heatmap':
+        payload = _render_resource_heatmap(df, resource_arg)
+    elif visualization_type == 'activity_duration_boxplot':
+        payload = _render_activity_duration(df, activity_arg, unit)
+    elif visualization_type == 'waiting_time_dist':
+        payload = _render_waiting_time(df, activity_arg, resource_arg, unit)
+    else:
+        return jsonify({'error': 'Invalid visualization type.'}), 400
 
-    return jsonify({'error': 'Invalid visualization type.'}), 400
+    if cache_params is not None:
+        _svg_cache_set(session, visualization_type, cache_params, payload, run_id=run_id)
+    return jsonify(payload)
 
 
 # --- per-type renderers -------------------------------------------------------
@@ -123,9 +208,10 @@ _VALID_AGGREGATIONS = {'median', 'mean', 'min', 'max', 'sum', 'stdev'}
 def _render_process_map(df, aggregation='median'):
     if aggregation not in _VALID_AGGREGATIONS:
         aggregation = 'median'
-    log = pm4py.convert_to_event_log(df)
+    # pm4py.discover_performance_dfg accepts a DataFrame directly; skipping
+    # pm4py.convert_to_event_log saves ~1s on a 50k-event log.
     performance_dfg, start_activities, end_activities = pm4py.discover_performance_dfg(
-        log,
+        df,
         case_id_key='case:concept:name',
         activity_key='concept:name',
         timestamp_key='time:timestamp',
@@ -139,7 +225,34 @@ def _render_process_map(df, aggregation='median'):
     gviz = dfg_perf_visualizer.apply(performance_dfg, parameters=parameters)
     svg_content = gviz.pipe(format='svg', encoding='utf-8')
     logger.info("Process Map Plot Generated (aggregation=%s).", aggregation)
-    return jsonify({'success': True, 'visualization': svg_content, 'aggregation': aggregation})
+    return {'success': True, 'visualization': svg_content, 'aggregation': aggregation}
+
+
+def _histogram(values, n_bins=30):
+    """Return histogram-friendly arrays: bin centers + counts. Empty-safe."""
+    arr = np.asarray(values, dtype=float)
+    arr = arr[np.isfinite(arr)]
+    if arr.size == 0:
+        return [], []
+    if arr.size == 1 or arr.max() == arr.min():
+        center = float(arr[0]) if arr.size else 0.0
+        return [center], [int(arr.size)]
+    counts, edges = np.histogram(arr, bins=n_bins)
+    centers = ((edges[:-1] + edges[1:]) / 2.0).tolist()
+    return centers, counts.astype(int).tolist()
+
+
+def _summary_metrics(values, prefix='duration'):
+    arr = pd.Series(values).dropna()
+    if arr.empty:
+        return {f'average_{prefix}': 0.0, f'median_{prefix}': 0.0,
+                f'min_{prefix}': 0.0, f'max_{prefix}': 0.0}
+    return {
+        f'average_{prefix}': float(arr.mean()),
+        f'median_{prefix}': float(arr.median()),
+        f'min_{prefix}': float(arr.min()),
+        f'max_{prefix}': float(arr.max()),
+    }
 
 
 def _render_case_duration(df, unit='min'):
@@ -147,23 +260,15 @@ def _render_case_duration(df, unit='min'):
     case_ends = df.groupby('case:concept:name')['time:timestamp'].max()
     case_durations = _to_unit((case_ends - case_starts).dt.total_seconds(), unit)
 
-    metrics = {
-        'average_case_duration': case_durations.mean(),
-        'median_case_duration': case_durations.median(),
-        'min_case_duration': case_durations.min(),
-        'max_case_duration': case_durations.max(),
+    summary = _summary_metrics(case_durations, prefix='case_duration')
+    centers, counts = _histogram(case_durations)
+    logger.info("Case Duration Distribution generated (unit=%s).", unit)
+    return {
+        'success': True,
+        'metrics': summary,
+        'unit': unit,
+        'histogram': {'bin_centers': centers, 'counts': counts},
     }
-
-    label = _unit_label(unit)
-    plt.figure(figsize=(10, 6))
-    sns.histplot(case_durations, kde=True)
-    plt.title('Case Duration Density Plot')
-    plt.xlabel(f'Duration ({label})')
-    plt.ylabel('Frequency')
-
-    svg_content = _figure_to_svg()
-    logger.info("Case Duration Distribution Plot Generated (unit=%s).", unit)
-    return jsonify({'success': True, 'visualization': svg_content, 'metrics': metrics, 'unit': unit})
 
 
 def _render_resource_heatmap(df, resource_name):
@@ -179,43 +284,32 @@ def _render_resource_heatmap(df, resource_name):
         .reindex(index=np.arange(7), columns=np.arange(24), fill_value=0)
     )
 
-    plt.figure(figsize=(14, 6))
-    sns.heatmap(utilization, cmap="YlGnBu", annot=True, fmt="d", cbar_kws={'label': 'Number of events'})
-
-    title = f"Resource Event Count Heatmap: {resource_name}" if resource_name else "Resource Event Count Heatmap: All Resources"
-    plt.title(title, fontsize=16)
-    plt.xlabel("Hour of Day", fontsize=12)
-    plt.ylabel("Weekday", fontsize=12)
-    plt.yticks(ticks=np.arange(7) + 0.5, labels=list(WEEKDAY_LABELS), rotation=0)
-    plt.tight_layout()
-
-    svg_content = _figure_to_svg()
-    logger.info("Resource Heatmap Plot Generated.")
-    return jsonify({'success': True, 'visualization': svg_content})
+    matrix = utilization.values.astype(int).tolist()
+    logger.info("Resource Heatmap data generated (resource=%s).", resource_name or 'all')
+    return {
+        'success': True,
+        'matrix': matrix,
+        'weekday_labels': list(WEEKDAY_LABELS),
+        'hours': list(range(24)),
+        'max_value': int(utilization.values.max()) if utilization.size else 0,
+        'resource': resource_name or '',
+    }
 
 
 def _render_activity_duration(df, activity_name, unit='min'):
     activity_df = df[df['concept:name'] == activity_name] if activity_name else df
-    activity_df = activity_df.assign(
-        duration=_to_unit((activity_df['time:timestamp'] - activity_df['start:timestamp']).dt.total_seconds(), unit)
-    )
+    durations = _to_unit((activity_df['time:timestamp'] - activity_df['start:timestamp']).dt.total_seconds(), unit)
 
-    metrics = {
-        'average_duration': activity_df['duration'].mean(),
-        'median_duration': activity_df['duration'].median(),
-        'min_duration': activity_df['duration'].min(),
-        'max_duration': activity_df['duration'].max(),
+    summary = _summary_metrics(durations, prefix='duration')
+    centers, counts = _histogram(durations)
+    logger.info("Activity Duration data generated (activity=%s, unit=%s).", activity_name or 'all', unit)
+    return {
+        'success': True,
+        'metrics': summary,
+        'unit': unit,
+        'activity': activity_name or '',
+        'histogram': {'bin_centers': centers, 'counts': counts},
     }
-
-    label = _unit_label(unit)
-    plt.figure(figsize=(10, 6))
-    sns.boxplot(y=activity_df['duration'], showfliers=False)
-    plt.title(f'Activity Duration for "{activity_name}"' if activity_name else 'Activity Duration for All Activities')
-    plt.ylabel(f'Duration ({label})')
-
-    svg_content = _figure_to_svg()
-    logger.info("Activity Duration Plot Generated (unit=%s).", unit)
-    return jsonify({'success': True, 'visualization': svg_content, 'metrics': metrics, 'unit': unit})
 
 
 def _render_waiting_time(df, activity_name, resource_name, unit='min'):
@@ -227,35 +321,17 @@ def _render_waiting_time(df, activity_name, resource_name, unit='min'):
     if resource_name and resource_name in resources:
         df = df[df['org:resource'] == resource_name]
 
-    df = df.assign(
-        waiting_time=_to_unit((df['start:timestamp'] - df['enabled:timestamp']).dt.total_seconds(), unit)
-    )
+    waits = _to_unit((df['start:timestamp'] - df['enabled:timestamp']).dt.total_seconds(), unit)
 
-    metrics = {
-        'average_duration': df['waiting_time'].mean(),
-        'median_duration': df['waiting_time'].median(),
-        'min_duration': df['waiting_time'].min(),
-        'max_duration': df['waiting_time'].max(),
+    summary = _summary_metrics(waits, prefix='duration')
+    centers, counts = _histogram(waits)
+    logger.info("Waiting Time data generated (activity=%s, resource=%s, unit=%s).",
+                activity_name or 'all', resource_name or 'all', unit)
+    return {
+        'success': True,
+        'metrics': summary,
+        'unit': unit,
+        'activity': activity_name or '',
+        'resource': resource_name or '',
+        'histogram': {'bin_centers': centers, 'counts': counts},
     }
-
-    label = _unit_label(unit)
-    plt.figure(figsize=(10, 6))
-    sns.histplot(df['waiting_time'], kde=True)
-
-    title_parts = []
-    if resource_name and resource_name in resources:
-        title_parts.append(f'Resource: {resource_name}')
-    else:
-        title_parts.append('Resource: Any')
-    if activity_name and activity_name in activities:
-        title_parts.append(f'Activity: {activity_name}')
-    else:
-        title_parts.append('Activity: Any')
-
-    plt.title(' -- '.join(title_parts))
-    plt.xlabel(f'Duration ({label})')
-    plt.ylabel('Frequency')
-
-    svg_content = _figure_to_svg()
-    logger.info("Waiting Time Distribution Plot Generated (unit=%s).", unit)
-    return jsonify({'success': True, 'visualization': svg_content, 'metrics': metrics, 'unit': unit})

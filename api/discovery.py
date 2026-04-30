@@ -9,7 +9,7 @@ from pm4py.objects.log.importer.xes import importer as xes_importer
 
 from app import app, db
 from config import Config
-from models import SimulationSession
+from models import BASELINE_RUN_NAME, SimulationRun, SimulationSession
 from prosit_integration import ProSiTIntegration
 from validators import (
     parse_bool,
@@ -140,6 +140,24 @@ def discover_parameters(session_id):
         })
         session.set_parameters(session_metadata)
         session.status = 'ready'
+        session.touch()
+
+        # Create (or refresh) the As-Is baseline run that points at the
+        # discovered JSON. Re-running discovery on a session resets the
+        # baseline; user-created what-if runs are kept untouched.
+        baseline = session.get_baseline_run()
+        if baseline is None:
+            baseline = SimulationRun(
+                session_id=session.id,
+                name=BASELINE_RUN_NAME,
+                is_baseline=True,
+            )
+            db.session.add(baseline)
+        baseline.parameters_filename = json_filename
+        baseline.simulation_df_filename = None  # invalidate any stale sim
+        baseline.num_instances = None
+        baseline.last_run_at = None
+
         db.session.commit()
         _clear_progress(session_id)
 
