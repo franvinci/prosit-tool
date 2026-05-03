@@ -1,289 +1,375 @@
-# 🚀 ProSiT - Process Simulation Tool
+# ProSiT — PROcess SImulation Tool
 
-ProSiT (Process Simulation Tool) is a comprehensive, user-friendly environment for data-driven business process simulation that addresses the limitations of existing solutions in accessibility, configurability, and interpretability. Unlike traditional black-box deep learning approaches, ProSiT integrates state-of-the-art machine learning methods in an explainable, white-box form, empowering service architects and process analysts to experiment with alternative designs and evaluate service-level impacts.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python versions](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/downloads/)
+[![Built on prosit-pm](https://img.shields.io/badge/built%20on-prosit--pm%201.0.3-success.svg)](https://pypi.org/project/prosit-pm/)
 
-ProSiT provides a controlled environment for "what-if" analyses and process optimization by supporting (i) ingestion of event logs and process models, (ii) automated discovery of control-flow, timing, resource, and trace attribute parameters, (iii) interactive configuration of alternative service scenarios, (iv) visualization of accuracy metrics, and (v) generation and statistical analysis of simulated event logs. By combining simulation accuracy with transparency, ProSiT enables organizations to explore optimization opportunities through an intuitive graphical interface.
 
+ProSiT is a web-based tool for **interactive and transparent business process simulation**. Given an event log (XES or CSV) and an optional Petri net process model, it discovers simulation parameters — arrival rates, execution and waiting times, resource assignments, routing probabilities, and case-level attributes — and lets users edit them through a graphical interface before running discrete-event simulations.
 
-## ✨ Features
+The tool is built on top of the [`prosit-pm`](https://pypi.org/project/prosit-pm/) Python library, which provides the underlying rule-aware simulation engine. ProSiT exposes the engine through a Flask web application that adds end-to-end workflow support: data ingestion, parameter discovery, scenario configuration, accuracy assessment against the original log, and visual analytics on the simulated traces.
 
-- **Event Log Processing**: Upload and process XES event logs with support for various attributes
-- **Process Discovery**: Automatic discovery of Petri nets from event logs using PM4Py
-- **Parameter Discovery**: Intelligent discovery of simulation parameters including:
-  - Control flow probabilities
-  - Resource assignments and calendars
-  - Arrival, execution and waiting time distributions
-  - Trace attributes distribution
-- **Process Simulation**: Run discrete-event simulations with realistic parameters
-- **Visualization**: Generate process models, performance metrics, and simulation results
-- **Web Interface**: User-friendly web interface for all operations
-- **Docker Support**: Easy deployment using Docker containers
+Unlike opaque deep-learning simulators, ProSiT keeps every step — the discovered Decision Tree rules, the fitted distributions, the resource calendars — inspectable and editable. The same screen that shows a discovered parameter is the screen where the analyst can override it to design a what-if scenario.
 
-## 💻 System Requirements
+---
 
-### Minimum Requirements
-- **RAM**: 4GB (8GB recommended)
-- **Storage**: 2GB free space
-- **OS**: Windows 10/11, Ubuntu 18.04+, or macOS 10.14+
+## Table of Contents
 
-### For Docker Installation
-- Docker Desktop (Windows/macOS) or Docker Engine (Linux)
-- Docker Compose
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Workflow](#workflow)
+- [Input Format](#input-format)
+- [Architecture](#architecture)
+- [Project Structure](#project-structure)
+- [API Endpoints](#api-endpoints)
+- [Configuration](#configuration)
+- [Troubleshooting](#troubleshooting)
+- [Development](#development)
+- [Citation](#citation)
+- [License](#license)
 
-## 🚀 Quick Start
+---
 
-### Option 1: Docker Installation (Recommended)
+## Installation
 
-#### Windows
-1. Download and install [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-2. Run the setup script:
-   ```cmd
-   installer\windows\setup-windows.bat
-   ```
-3. Start the application:
-   ```cmd
-   installer\windows\run-docker.bat
-   ```
-4. Open your browser and go to `http://localhost:5050`
+**Requirements:** Python >= 3.10. The Docker option does not require Python on the host.
 
-#### Ubuntu/Linux
-1. Run the setup script:
-   ```bash
-   chmod +x installer/ubuntu/setup-ubuntu.sh
-   ./installer/ubuntu/setup-ubuntu.sh
-   ```
-2. Log out and log back in (or restart)
-3. Start the application:
-   ```bash
-   ./installer/ubuntu/run-docker.sh
-   ```
-4. Open your browser and go to `http://localhost:5050`
+### Option 1 — Docker (recommended)
 
-#### macOS
-1. Run the setup script:
-   ```bash
-   chmod +x installer/macos/setup-macos.sh
-   ./installer/macos/setup-macos.sh
-   ```
-2. Follow the instructions to install Docker Desktop
-3. Start Docker Desktop from Applications folder or Spotlight
-4. Start the application:
-   ```bash
-   chmod +x installer/macos/run-docker.sh
-   ./installer/macos/run-docker.sh
-   ```
-5. Open your browser and go to `http://localhost:5050`
+Docker bundles the Python environment, system dependencies (Graphviz), and the application server in a single image.
 
-#### Manual Docker Setup
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd prosit
-   ```
+```bash
+git clone https://github.com/franvinci/prosit-tool
+cd prosit-tool
 
-2. Build and run with Docker Compose:
-   ```bash
-   docker-compose up -d --build
-   ```
+# SESSION_SECRET is required in production. Generate one once and export it.
+export SESSION_SECRET=$(python -c "import secrets; print(secrets.token_hex(32))")
 
-3. Access the application at `http://localhost:5050`
-
-### Option 2: Local Installation
-
-#### Prerequisites
-- Python 3.10+
-- Conda or Miniconda
-
-#### Setup Steps
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd prosit
-   ```
-
-2. Create the conda environment:
-   ```bash
-   conda env create -f environment.yml
-   conda activate prosit-tool
-   ```
-
-3. Run the application:
-   ```bash
-   python main.py
-   ```
-
-4. Access the application at `http://localhost:5050`
-
-## 📖 Usage
-
-ProSiT supports an end-to-end workflow for data-driven process simulation, guiding users through five key phases:
-
-### 1. 📂 Data Ingestion
-- **Event Log Upload**: Upload event logs in XES format through the intuitive web interface
-- **Process Model Import**: Optionally provide your own process models in PNML format
-- **Data Validation**: Ensure your XES file contains the required attributes:
-  - `case:concept:name` (case identifier)
-  - `concept:name` (activity name)
-  - `start:timestamp` (activity start time)
-  - `time:timestamp` (activity end time)
-  - `org:resource` (resource identifier)
-
-### 2. 🔍 Parameter Discovery
-This core functionality uses explainable machine learning models to automatically extract simulation parameters from event logs:
-- **Algorithm Configuration**: Tailor the discovery process by configuring:
-  - Inductive Miner algorithm with specific noise threshold
-  - Probabilistic decision trees with controllable depth
-  - Incremental discovery with customizable grace periods
-- **Comprehensive Discovery Coverage**:
-  - **Control Flow**: Transition weights for decision points
-  - **Resources**: Assignment probabilities, multitasking capabilities, and availability calendars
-  - **Timing**: Arrival, execution, and waiting time distributions per activity
-  - **Trace Attributes**: Distribution patterns for process variables
-
-### 3. 🎯 Interactive Scenario Configuration
-- **Intuitive Interface**: Modify discovered parameters through an intuitive graphical interface
-- **Alternative Scenarios**: Create and compare multiple simulation scenarios
-- **What-If Analysis**: Facilitate comprehensive scenario comparison for decision-making
-
-### 4. 📊 Accuracy Assessment
-The tool evaluates simulation quality by comparing generated logs with original event data:
-- **Control-Flow Similarity**: N-gram distance measures for process structure accuracy
-- **Temporal Accuracy**: Distributional metrics for timing realism
-- **Resource Behavior**: Realism of resource handover patterns
-- **Generalization Capability**: Entropy analysis for model robustness
-
-### 5. 🚀 Simulation Execution
-- **Configuration**: Define desired number of traces and starting timestamp
-- **Execution**: Launch the simulation with real-time progress monitoring
-- **Visual Analytics**: Access comprehensive results including:
-  - Process maps annotated with performance data
-  - Cycle time distributions and bottleneck analysis
-  - Resource utilization heatmaps
-  - Detailed activity execution and waiting time analyses
-- **Export**: Download simulated event logs and analytics in multiple formats
-
-## 🏗️ Project Structure
-
-```
-prosit/
-├── 📱 app.py                 # Flask application configuration
-├── 🚀 main.py                # Application entry point
-├── 🗃️ models.py              # Database models and schemas
-├── ⚙️ config.py              # Centralized configuration constants
-├── ✅ validators.py          # Request input validators
-├── 🔌 api/                   # Flask blueprints (HTTP API endpoints)
-│   ├── upload.py             # File upload endpoint
-│   ├── discovery.py          # Process discovery endpoint
-│   ├── parameters.py         # Parameter get/update endpoints
-│   ├── simulation.py         # Simulation, download, export endpoints
-│   ├── visualization.py      # Visualization renderers
-│   ├── errors.py             # 404/500 JSON error handlers
-│   ├── _shared.py            # Helpers shared across blueprints
-│   └── _decorators.py        # @handle_api_errors decorator
-├── 🔧 prosit_integration.py  # Core ProSiT integration layer
-├── 🔄 format_converters.py   # UI ↔ ProSiT distribution conversions
-├── 📊 evaluation.py          # Simulation accuracy metrics
-├── 🎨 templates/             # HTML templates and UI components
-├── 🎭 static/                # CSS, JavaScript, and static assets
-├── 🔧 installer/             # Platform-specific setup scripts
-│   ├── ubuntu/               # Linux installation scripts
-│   ├── windows/              # Windows installation scripts
-│   └── macos/                # macOS installation scripts
-├── 📋 example_data/          # Sample XES files for testing
-├── 🧪 tests/                 # Pytest suite (smoke, security, units)
-├── 🐳 docker-compose.yml     # Docker Compose configuration
-├── 🐳 Dockerfile             # Docker image definition
-├── 📦 environment.yml        # Conda environment specification
-├── 📄 LICENSE                # MIT License
-└── 📖 README.md              # This documentation
+docker-compose up -d --build
 ```
 
-## 🏛️ System Architecture Diagram
+The application is then available at `http://localhost:5050`.
+
+Platform-specific helper scripts are provided under `installer/`:
+
+| Platform | Setup | Run | Stop |
+|---|---|---|---|
+| Windows | `installer\windows\setup-windows.bat` | `installer\windows\run-docker.bat` | `installer\windows\stop-docker.bat` |
+| Ubuntu / Linux | `installer/ubuntu/setup-ubuntu.sh` | `installer/ubuntu/run-docker.sh` | `installer/ubuntu/stop-docker.sh` |
+| macOS | `installer/macos/setup-macos.sh` | `installer/macos/run-docker.sh` | `installer/macos/stop-docker.sh` |
+
+### Option 2 — Conda (local)
+
+```bash
+git clone https://github.com/franvinci/prosit-tool
+cd prosit-tool
+
+conda env create -f environment.yml
+conda activate prosit-tool
+
+python main.py
+```
+
+The application is then available at `http://localhost:5050`.
+
+### Dependencies
+
+| Package | Version | Purpose |
+|---|---|---|
+| `prosit-pm` | 1.0.3 | Core simulation engine (parameter discovery + discrete-event simulation) |
+| `pm4py` | 2.7 | Event log parsing, Petri net discovery and conformance |
+| `flask` | 3.1 | Web framework |
+| `flask-sqlalchemy` | 3.1 | Session persistence (SQLite by default) |
+| `gunicorn` | 23.0 | Production WSGI server |
+| `scikit-learn` | 1.6 | Decision tree models (batch discovery) |
+| `river` | 0.22 | Hoeffding Adaptive Tree (incremental discovery) |
+| `scipy` | 1.14 | Distribution fitting and sampling |
+| `pandas` | 2.2 | DataFrame manipulation |
+| `numpy` | 1.26 | Numerical operations |
+| `matplotlib` | 3.10 | Visualisation rendering |
+| `seaborn` | 0.13 | Statistical plots |
+| `graphviz` | 0.21 | Process model rendering (also requires the system Graphviz binary) |
+| `log-distance-measures` | 2.0 | Accuracy metrics between real and simulated logs |
+
+---
+
+## Quick Start
+
+After starting the application:
+
+1. Open `http://localhost:5050` in a browser.
+2. Upload an event log. XES is supported natively; CSV requires a column mapping (case ID, activity, end timestamp, optional start timestamp and resource).
+3. Optionally provide your own Petri net in PNML format. Otherwise, the Inductive Miner discovers one from the log.
+4. Configure the discovery parameters (noise threshold, decision tree depth, multitasking, attribute mode) and run discovery.
+5. Inspect and edit the discovered parameters: control flow weights, resource selection, time distributions, calendars, multitasking capacity, case-attribute distributions.
+6. (Optional) Create one or more **what-if runs** as variants of the baseline.
+7. Run the simulation, configure number of traces and starting timestamp.
+8. Compare the simulated log against the real log via accuracy metrics, and inspect the generated process maps, cycle-time distributions, resource heatmaps, and waiting-time analyses.
+9. Export the parameter file or the simulated log.
+
+The example logs under `example_data/` (`purchasing.xes`, `bpi12.xes`, `bpi17_march.xes`, `synloan.xes`, `onboard_client.xes`, `purchasing.csv`) can be used to try the workflow end-to-end without any preparation.
+
+---
+
+## Workflow
+
+ProSiT supports an end-to-end pipeline organised in five phases.
+
+### 1. Data Ingestion
+
+- **Event Log Upload.** Accepts XES or CSV. CSV requires a column mapping; XES is read with `pm4py` directly.
+- **Process Model Import.** Optionally provide a Petri net in PNML format. Otherwise, ProSiT applies the Inductive Miner with the chosen noise threshold.
+- **Validation.** The uploaded log must contain a case identifier, an activity name, and a completion timestamp. A start timestamp and a resource column are optional but recommended — the tool falls back to defaults (start = end timestamp, resource = `unknown`) when absent.
+
+### 2. Parameter Discovery
+
+ProSiT delegates the actual learning to the `prosit-pm` library. The web interface exposes the most relevant knobs:
+
+| Setting | Default | Effect |
+|---|---|---|
+| **Noise threshold** | `0.2` | Inductive Miner filtering threshold (range 0–1) |
+| **Max decision-tree depth** | `0` | `0` disables rules (pure distributions); higher values produce richer per-leaf models. CV selects the best depth up to the chosen ceiling |
+| **Multitasking threshold** | `0.05` | Minimum fraction of concurrent events for a resource to be considered multitasking |
+| **Attribute mode** | `distribution` | Independent per-attribute distributions, or `empirical` for joint sampling (preserves correlations) |
+| **Incremental discovery** | off | When on, uses Hoeffding Adaptive Trees from `river` (gives more weight to recent traces) |
+| **Grace period** | `1000` | (Incremental only) observations before the tree considers splitting a node |
+| **Random seed** | `72` | Controls reproducibility |
+
+What ProSiT discovers from the log:
+
+| Parameter | What it models |
+|---|---|
+| Arrival time | Inter-arrival time between consecutive cases, conditional on hour and weekday |
+| Execution time | Working-hours duration of each activity, conditional on resource and case context |
+| Waiting time | Queue delay after a resource becomes free, conditional on workload and case context |
+| Control flow | Routing probability at each decision point, conditional on case history |
+| Resource selection | Per (activity, candidate resource) classifier conditional on resource-usage history and case attributes |
+| Calendars | Working hours per resource and for case arrivals |
+| Multitasking | Maximum concurrent tasks per resource |
+| Data attributes | Joint or per-attribute distribution of case-level data attributes |
+
+### 3. Interactive Scenario Configuration
+
+Every discovered parameter is editable in the UI:
+
+- **Control flow.** Adjust transition weights at each decision point.
+- **Resource matrix.** Toggle which resources can perform which activities, edit per-resource weights and capacity.
+- **Calendars.** Edit weekday/hour availability per resource and for case arrivals.
+- **Time distributions.** Inspect each fitted distribution (or per-leaf distribution when rules are active) and override its parameters.
+- **Case attributes.** Inspect and modify the discovered attribute distribution.
+
+Edits can be saved as **what-if runs** alongside the baseline (As-Is) configuration. Each run is an independent simulation scenario and can be compared against the others.
+
+### 4. Accuracy Assessment
+
+The tool evaluates simulation quality by comparing the simulated log against the original event data using:
+
+- **Control-flow similarity.** N-gram distance between case sequences.
+- **Temporal accuracy.** Distributional metrics for arrival, execution, and waiting times.
+- **Resource behaviour.** Realism of resource handover patterns.
+- **Cycle time.** Distance between empirical cycle-time distributions.
+
+Metrics are computed via the [`log-distance-measures`](https://pypi.org/project/log-distance-measures/) library on the baseline run.
+
+### 5. Simulation Execution
+
+- **Configuration.** Number of traces (1–10,000) and starting timestamp.
+- **Execution.** Discrete-event simulation runs server-side; progress is streamed to the UI.
+- **Visual analytics.** Process maps annotated with frequency or performance, cycle-time histograms, resource utilisation heatmaps, per-activity execution and waiting-time distributions, and side-by-side comparisons between the real and simulated logs.
+- **Export.** The simulated log is downloadable as XES or CSV; the parameter file is downloadable as the JSON format consumed by `prosit-pm`.
+
+---
+
+## Input Format
+
+### XES
+
+XES files are read directly with `pm4py`. The default attribute names are expected: `case:concept:name`, `concept:name`, `time:timestamp`, optionally `start:timestamp` and `org:resource`. If your XES uses different attribute names, you can provide a mapping at upload time.
+
+### CSV
+
+CSV uploads always require a mapping form with at least:
+
+- **Case ID column** — unique identifier of each case.
+- **Activity column** — name of the activity.
+- **End timestamp column** — completion time of the event.
+
+Optional fields:
+
+- **Start timestamp column** — defaults to the end timestamp if not provided.
+- **Resource column** — defaults to `unknown` if not provided.
+
+Timestamps must be parseable by `pandas.to_datetime` (ISO 8601 is the safest choice). The CSV is converted to XES on the server before discovery starts.
+
+### PNML
+
+The optional Petri net file is read with `pm4py.read_pnml`. When provided, ProSiT skips the Inductive Miner step and uses the supplied net directly.
+
+---
+
+## Architecture
+
+ProSiT is a Flask application with a thin server-side template layer and a JavaScript frontend that drives all interactive parameter editing. State is persisted per session in SQLite via SQLAlchemy. The simulation engine itself is the `prosit-pm` library, invoked through `prosit_integration.py`.
 
 ![System Architecture](doc/diagram.png)
 
-## 🔌 API Endpoints
+The integration layer (`prosit_integration.py`, `format_converters.py`) is responsible for translating between the JSON shape the UI exchanges with the browser and the typed objects (`SimulatorParameters`) consumed by `prosit-pm`. This split keeps the UI free of any direct dependency on the engine internals.
 
-- `GET /` — Main application interface
-- `POST /api/upload` — Upload XES event log (and optional PNML), creates a session
-- `POST /api/discover/<session_id>` — Discover Petri net + simulation parameters
-- `GET /api/parameters/<session_id>` — Load discovered parameters for a session
-- `PUT /api/parameters/<session_id>` — Save edited parameters back to the session
-- `POST /api/simulate/<session_id>` — Run a simulation for the session
-- `GET /api/export_parameters/<session_id>` — Download the ProSiT JSON parameter file
-- `GET /api/download/<filename>` — Download a generated simulation CSV
-- `GET /api/get_activities_and_resources/<session_id>` — List activities/resources from the simulated log
-- `GET /api/get_visualization/<session_id>/<visualization_type>` — Render a chart from the simulated log
+---
 
-## ⚙️ Configuration
+## Project Structure
 
-### Environment Variables
-- `FLASK_ENV`: Set to `production` for production deployment
-- `DATABASE_URL`: Database connection string (default: SQLite)
-- `SESSION_SECRET`: Secret key for session management
-- `MAX_CONTENT_LENGTH`: Maximum file upload size (default: 100MB)
+```
+prosit-tool/
+├── app.py                  # Flask application factory
+├── main.py                 # Entry point (launches gunicorn or the dev server)
+├── models.py               # SQLAlchemy models (SimulationSession, Run)
+├── config.py               # Centralised configuration constants
+├── validators.py           # Request input validators
+├── api/                    # Flask blueprints
+│   ├── upload.py           # XES/CSV/PNML upload + column mapping
+│   ├── discovery.py        # Petri net + parameter discovery
+│   ├── parameters.py       # GET/PUT discovered parameters
+│   ├── simulation.py       # Simulation execution and metrics
+│   ├── runs.py             # What-if scenario management
+│   ├── visualization.py    # Chart and process-map renderers
+│   ├── errors.py           # JSON error handlers
+│   ├── _shared.py          # Cross-blueprint helpers
+│   └── _decorators.py      # @handle_api_errors decorator
+├── prosit_integration.py   # prosit-pm integration layer
+├── format_converters.py    # UI <-> prosit-pm distribution conversions
+├── evaluation.py           # Accuracy metrics (real vs simulated)
+├── templates/              # Jinja templates
+├── static/                 # CSS, JavaScript, static assets
+├── installer/              # Platform-specific Docker helper scripts
+├── example_data/           # Sample XES/CSV logs
+├── tests/                  # Pytest suite
+├── docker-compose.yml      # Docker Compose configuration
+├── Dockerfile              # Production image definition
+├── environment.yml         # Conda environment specification
+├── LICENSE                 # MIT License
+└── README.md               # This documentation
+```
+
+---
+
+## API Endpoints
+
+The HTTP API is what the in-browser frontend uses; it is also usable directly for scripted workflows.
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/` | Main application interface |
+| `POST` | `/api/upload` | Upload XES or CSV log (and optional PNML); creates a session |
+| `POST` | `/api/discover/<session_id>` | Run discovery (Petri net + parameters) |
+| `GET` | `/api/discover/<session_id>/progress` | Discovery progress stream |
+| `GET` | `/api/parameters/<session_id>` | Load discovered parameters for a session |
+| `PUT` | `/api/parameters/<session_id>` | Save edited parameters for the baseline run |
+| `POST` | `/api/simulate/<session_id>` | Run a simulation for the baseline run |
+| `POST` | `/api/metrics/<session_id>` | Compute accuracy metrics (real vs simulated) |
+| `GET` | `/api/sessions/<session_id>/runs` | List what-if runs |
+| `POST` | `/api/sessions/<session_id>/runs` | Create a new what-if run |
+| `GET` | `/api/runs/<run_id>` | Load parameters of a specific run |
+| `PUT` | `/api/runs/<run_id>` | Replace parameters of a run |
+| `PATCH` | `/api/runs/<run_id>` | Patch run metadata |
+| `POST` | `/api/runs/<run_id>/simulate` | Run the simulation for a specific run |
+| `DELETE` | `/api/runs/<run_id>` | Delete a run |
+| `PATCH` | `/api/sessions/<session_id>` | Update session metadata |
+| `DELETE` | `/api/sessions/<session_id>` | Delete a session |
+| `GET` | `/api/download/<filename>` | Download a generated CSV |
+| `GET` | `/api/download_xes/<filename>` | Download a generated log as XES |
+| `GET` | `/api/get_activities_and_resources/<session_id>` | List activities/resources from the simulated log |
+| `GET` | `/api/get_visualization/<session_id>/<visualization_type>` | Render a chart from the simulated log |
+
+---
+
+## Configuration
+
+### Environment variables
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `FLASK_ENV` | `production` | Flask environment (`development` enables debug) |
+| `FLASK_PORT` | `5050` | Port the application binds to |
+| `DATABASE_URL` | `sqlite:///prosit.db` | SQLAlchemy connection string |
+| `SESSION_SECRET` | (required in production) | Secret key for Flask sessions. Generate with `python -c "import secrets; print(secrets.token_hex(32))"` |
+| `MAX_CONTENT_LENGTH` | `100 MB` | Maximum upload size |
+
+### Constants
+
+Other defaults (discovery thresholds, simulation bounds, upload folder, simulation folder) are defined in `config.py`. Edit the `Config` class to change them.
 
 ### Database
-The application uses SQLite by default, but can be configured to use other databases by setting the `DATABASE_URL` environment variable.
 
-## 🔧 Troubleshooting
+SQLite is used by default; any SQLAlchemy-supported database can be plugged in by changing `DATABASE_URL`. A connection pool with a 300-second recycle is configured, suitable for hosted PostgreSQL or MySQL.
 
-### Common Issues
+---
 
-1. **Docker not starting**
-   - Ensure Docker Desktop is running
-   - Check system requirements
-   - Verify virtualization is enabled in BIOS (Windows/Linux)
-   - For macOS: Ensure Docker Desktop is fully started (whale icon in menu bar)
+## Troubleshooting
 
-2. **Port 5050 already in use (common in macOS)**
-   - Modify `docker-compose.yml` to use a different port
-   - Stop other services using port 5050
+### Docker
 
-3. **Memory issues during simulation**
-   - Increase Docker memory allocation
-   - Reduce simulation parameters (fewer cases, shorter duration)
+- **Docker not starting.** Ensure Docker Desktop is running. On Windows/Linux, verify that virtualisation is enabled in BIOS. On macOS, wait for the whale icon to settle in the menu bar.
+- **Port 5050 already in use.** Edit the `ports` mapping in `docker-compose.yml`. macOS uses port 5000 for AirPlay, so 5050 was chosen as a less conflict-prone default — change it again if needed.
+- **Build errors on Apple Silicon.** Update Docker Desktop. The Dockerfile detects the host architecture automatically.
 
-4. **Architecture compatibility issues (macOS)**
-   - The Dockerfile now automatically detects your Mac's architecture (Intel/Apple Silicon)
-   - If you encounter build errors, ensure Docker Desktop is up to date
-   - For Apple Silicon Macs, the build will use ARM64 architecture
+### Application
 
-5. **File upload errors**
-   - Check file size (max 100MB)
-   - Ensure XES file format is correct
-   - Verify required attributes are present
+- **Memory issues during simulation.** Increase Docker memory allocation, or reduce the number of cases / decision tree depth.
+- **File upload errors.** Check that the file is under 100 MB and that the format is XES or CSV. For CSV, ensure the column mapping is provided.
+- **CSV `time` parsing errors.** Timestamps must be parseable by `pandas.to_datetime`. Prefer ISO 8601.
 
-### Logs and Debugging
+### Logs
 
 - View application logs: `docker-compose logs -f`
 - Check container status: `docker-compose ps`
 - Restart application: `docker-compose restart`
 
-## 👨‍💻 Development
+---
 
-### Setting up Development Environment
-1. Clone the repository
-2. Create conda environment: `conda env create -f environment.yml`
-3. Activate environment: `conda activate prosit-tool`
-4. Run tests: `pytest`
-5. Run with debug mode: `FLASK_ENV=development python main.py`
+## Development
 
-### Contributing
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+```bash
+# Set up the environment
+conda env create -f environment.yml
+conda activate prosit-tool
 
-## 📄 License
+# Run the test suite
+pytest
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+# Run in development mode (debug + auto-reload)
+FLASK_ENV=development python main.py
+```
 
-## 🆘 Support
+Tests live under `tests/` and cover smoke, security, and unit-level behaviour. The pytest configuration is in `pytest.ini`.
 
-For issues and questions:
-1. Check the troubleshooting section above
-2. Review the application logs
-3. Create an issue in the repository
-4. Contact the development team
+---
+
+## Citation
+
+Version [v0.1.0](https://github.com/franvinci/prosit-tool/releases/tag/v0.1.0) of ProSiT corresponds to the implementation presented in the following paper. Please cite it if you use the tool in academic work:
+
+> Vinci, F., Park, G., van der Aalst, W. M. P., de Leoni, M. (2026). ProSiT: A Tool for Interactive and Transparent Process Simulations. In: *Proceedings of the International Conference on Service Oriented Computing (ICSOC): Demonstrations and Resources*. Lecture Notes in Computer Science, Springer.
+
+BibTeX:
+
+```bibtex
+@inproceedings{VinciProSiT2026,
+  author    = {Francesco Vinci and Gyunam Park and Wil M. P. van der Aalst and Massimiliano de Leoni},
+  title     = {{ProSiT}: A Tool for Interactive and Transparent Process Simulations},
+  booktitle = {Proceedings of the International Conference on Service Oriented Computing (ICSOC): Demonstrations and Resources},
+  year      = {2026},
+  publisher = {Springer},
+  series    = {Lecture Notes in Computer Science}
+}
+```
+
+The underlying simulation engine is described in:
+
+> Vinci, F., Park, G., van der Aalst, W. M. P., de Leoni, M. (2026). Reliable and Configurable Process Simulations via Probabilistic White-Box Models. In: *Service-Oriented Computing — ICSOC 2025*. Lecture Notes in Computer Science, vol 16321. Springer, Singapore. https://doi.org/10.1007/978-981-95-5015-9_24
+
+---
+
+## License
+
+MIT License — see [LICENSE](LICENSE) for details.

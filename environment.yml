@@ -5,7 +5,7 @@ channels:
 dependencies:
   - python=3.10.11
   - pip:
-    - prosit-pm==1.0.2
+    - prosit-pm==1.0.3
     - graphviz==0.21
     - log-distance-measures==2.0.0
     - lxml==5.3.0
