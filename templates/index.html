@@ -79,7 +79,7 @@
                     <div class="home-step-header">
                         <span class="home-step-num">2</span>
                         <div>
-                            <div class="home-step-title">Discovery</div>
+                            <div class="home-step-title">Process Model</div>
                             <div class="home-step-sub">Choose the process model source and tune discovery.</div>
                         </div>
                     </div>
@@ -114,7 +114,7 @@
                                     Noise Threshold: <span id="thresholdValue">0.2</span>
                                 </label>
                                 <input type="range" class="form-range" id="noiseThreshold" name="noise_threshold"
-                                       min="0" max="1" step="0.05" value="0.2">
+                                       min="0" max="1" step="0.01" value="0.2">
                                 <div class="form-text">Lower → higher fitness; 1 → simpler, more precise.</div>
                             </div>
 
@@ -154,8 +154,11 @@
                     </div>
                 </div>
 
-                <details class="mt-3 mb-2">
-                    <summary class="form-section-label" style="cursor: pointer;">Advanced</summary>
+                <details class="mt-3 mb-2 advanced-details">
+                    <summary class="form-section-label advanced-summary">
+                        <i data-feather="chevron-right" class="advanced-chevron" style="width:14px;height:14px;"></i>
+                        Advanced
+                    </summary>
                     <div class="row g-3 mt-1">
                         <div class="col-md-3">
                             <label class="form-label fw-bold mb-1">

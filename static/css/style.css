@@ -1441,3 +1441,25 @@ body {
     transform: none;
     box-shadow: none;
 }
+
+/* Advanced collapsible section */
+.advanced-summary {
+    cursor: pointer;
+    list-style: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+}
+.advanced-summary::-webkit-details-marker {
+    display: none;
+}
+.advanced-summary::marker {
+    content: '';
+}
+.advanced-chevron {
+    transition: transform 0.18s ease;
+}
+.advanced-details[open] > .advanced-summary .advanced-chevron {
+    transform: rotate(90deg);
+}
