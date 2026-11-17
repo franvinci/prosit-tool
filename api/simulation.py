@@ -187,7 +187,11 @@ def download_xes(filename):
 
         with tempfile.NamedTemporaryFile(suffix='.xes', delete=False) as tmp:
             tmp_path = tmp.name
-        pm4py.write_xes(df, tmp_path)
+        # Events without a resource (activities nobody performs in the log)
+        # must carry no org:resource attribute; converting the DataFrame as-is
+        # would write the missing value as a literal "nan" resource.
+        event_log = pm4py.convert_to_event_log(df, stream_postprocessing=True)
+        pm4py.write_xes(event_log, tmp_path)
         with open(tmp_path, 'rb') as f:
             data = f.read()
 

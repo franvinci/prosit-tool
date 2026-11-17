@@ -1456,6 +1456,10 @@ async function handleUpload(e) {
 
         hideLoading();
         showAlert('Parameters discovered successfully', 'success');
+        // Non-fatal findings of the discovery (e.g. activities of the model
+        // that nobody performs in the log). Kept on screen longer than the
+        // success toast because they change how the simulation behaves.
+        (discoverResult.warnings || []).forEach(w => showAlert(_escapeHtmlAttr(w), 'warning', 15000));
 
         // Load the session — pass through whether the user opted into metrics
         // computation so renderAccuracyResults can keep the card hidden when off.
@@ -1468,7 +1472,10 @@ async function handleUpload(e) {
 
     } catch (error) {
         hideLoading();
-        showAlert(`Error: ${error.message}`, 'danger');
+        // The message can quote what the server found in the log (activity or
+        // column names), so it must not be interpreted as HTML. Discovery
+        // errors explain what to fix: keep them on screen until dismissed.
+        showAlert(`Error: ${_escapeHtmlAttr(error.message)}`, 'danger', 0);
     }
 }
 

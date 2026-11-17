@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python versions](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/downloads/)
-[![Built on prosit-pm](https://img.shields.io/badge/built%20on-prosit--pm%201.0.3-success.svg)](https://pypi.org/project/prosit-pm/)
+[![Built on prosit-pm](https://img.shields.io/badge/built%20on-prosit--pm%201.0.5-success.svg)](https://pypi.org/project/prosit-pm/)
 
 
 ProSiT is a web-based tool for **interactive and transparent business process simulation**. Given an event log (XES or CSV) and an optional Petri net process model, it discovers simulation parameters — arrival rates, execution and waiting times, resource assignments, routing probabilities, and case-level attributes — and lets users edit them through a graphical interface before running discrete-event simulations.
@@ -76,7 +76,7 @@ The application is then available at `http://localhost:5050`.
 
 | Package | Version | Purpose |
 |---|---|---|
-| `prosit-pm` | 1.0.3 | Core simulation engine (parameter discovery + discrete-event simulation) |
+| `prosit-pm` | 1.0.5 | Core simulation engine (parameter discovery + discrete-event simulation) |
 | `pm4py` | 2.7 | Event log parsing, Petri net discovery and conformance |
 | `flask` | 3.1 | Web framework |
 | `flask-sqlalchemy` | 3.1 | Session persistence (SQLite by default) |

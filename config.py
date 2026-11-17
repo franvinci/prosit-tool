@@ -19,7 +19,7 @@ class Config:
     DEFAULT_GRACE_PERIOD = 1000
     MIN_GRACE_PERIOD = 1
 
-    # New in prosit-pm 1.0.2.
+    # Discovery options of prosit-pm exposed in the upload form.
     DEFAULT_MULTITASKING_THR = 0.05
     DEFAULT_RANDOM_STATE = 72
     DEFAULT_ATTRIBUTE_MODE = 'distribution'

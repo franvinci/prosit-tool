@@ -1,4 +1,5 @@
 import logging
+import re
 from datetime import datetime
 
 import pandas as pd
@@ -13,6 +14,42 @@ from format_converters import distribution_from_prosit
 
 logger = logging.getLogger(__name__)
 
+
+class DiscoveryError(Exception):
+    """Parameter discovery failed; the message is safe to show to the user."""
+
+
+_PATH_RE = re.compile(r'(?:[A-Za-z]:)?(?:[\\/][^\\/\s:\'"]+){2,}')
+_ADDRESS_RE = re.compile(r'0x[0-9a-fA-F]+')
+
+
+def describe_exception(exc, limit=300):
+    """One-line, user-facing description of an exception.
+
+    Keeps the exception type and message (the part that tells the user what is
+    wrong with their log) and drops what does not belong in an HTTP response:
+    file-system paths, memory addresses and anything past ``limit`` characters.
+    """
+    text = ' '.join(str(exc).split())
+    text = _PATH_RE.sub('<path>', text)
+    text = _ADDRESS_RE.sub('<address>', text)
+    if len(text) > limit:
+        text = text[:limit - 1].rstrip() + '…'
+    name = type(exc).__name__
+    return f'{name}: {text}' if text else name
+
+
+def unstaffed_activities(prosit_params):
+    """Activities of the model that no resource can perform.
+
+    prosit-pm simulates them without a resource (and without a calendar), which
+    is worth telling the user because it usually means the model contains an
+    activity that never occurs in the log.
+    """
+    act_to_resources = (prosit_params or {}).get('resource_params', {}).get('act_to_resources', {})
+    return sorted(str(act) for act, resources in act_to_resources.items() if not resources)
+
+
 class ProSiTIntegration:
     """Integration layer for ProSiT library functionality.
     
@@ -25,7 +62,8 @@ class ProSiTIntegration:
         self.event_log = None
         self.prosit_params = None
         self.prosit_metrics = None
-    
+        self.discovery_warnings = []
+
     def discover_process_model(self, noise_threshold=0.2):
         """Discover process model using PM4Py inductive miner.
         
@@ -183,6 +221,11 @@ class ProSiTIntegration:
             random_state: Seed for reproducibility
             use_workload_features: Whether to engineer workload features
             attribute_mode: Modeling mode for data attributes (e.g. 'distribution')
+            compute_metrics: Also run the reference simulation and evaluate it
+
+        Raises:
+            DiscoveryError: prosit-pm could not discover parameters from the log.
+                Non-fatal findings are collected in ``self.discovery_warnings``.
 
         Returns:
             Dictionary containing discovered parameters in application format
@@ -203,6 +246,7 @@ class ProSiTIntegration:
 
             # Discover parameters from event log (max_depth_tree=0 disables rules mode)
             logger.info("Starting ProSiT parameter discovery...")
+            self.discovery_warnings = []
             try:
                 self.prosit_params.discover_from_eventlog(
                     self.event_log,
@@ -216,21 +260,32 @@ class ProSiTIntegration:
                     attribute_mode=attribute_mode,
                     verbose=True,
                 )
-                logger.info("ProSiT parameter discovery completed successfully")
                 self.prosit_params = self.prosit_params.to_dict()
-                logger.info(f"ProSiT parameters converted to dictionary")
-
-                if compute_metrics:
-                    self.compute_prosit_metrics()
-                else:
-                    self.prosit_metrics = {}
             except Exception as discovery_error:
-                logger.warning(f"ProSiT discovery_from_eventlog failed: {discovery_error}. Falling back to default parameters.")
-                self._create_fallback_parameters()
+                # Never substitute made-up parameters for a failed discovery:
+                # the user would simulate a model that has nothing to do with
+                # their log. Report what went wrong instead.
+                self.prosit_params = None
+                logger.exception("ProSiT discover_from_eventlog failed")
+                raise DiscoveryError(describe_exception(discovery_error)) from discovery_error
+            logger.info("ProSiT parameter discovery completed successfully")
+
+            unstaffed = unstaffed_activities(self.prosit_params)
+            if unstaffed:
+                self.discovery_warnings.append(
+                    "No resource performs these activities in the event log, so they are "
+                    "simulated without a resource: " + ", ".join(unstaffed)
+                )
+
+            if compute_metrics:
+                self.compute_prosit_metrics()
+            else:
                 self.prosit_metrics = {}
 
             return self._convert_prosit_to_app_format()
-            
+
+        except DiscoveryError:
+            raise
         except Exception as e:
             logger.error(f"Error discovering parameters: {str(e)}")
             raise
@@ -516,7 +571,7 @@ class ProSiTIntegration:
                     }
                     logger.info(f"Arrival time: {arrival_dist.get('dist_name', 'fixed')} with params {arr_params}")
 
-            # Data Attributes — prosit-pm 1.0.2 wraps the dict in
+            # Data Attributes — prosit-pm (since 1.0.2) wraps the dict in
             # {"mode": ..., "data": {...}} and renames keys (dist_name→dist,
             # min_value→min, max_value→max, mean_value→mean). Older logs may
             # still have the legacy flat shape; handle both.
@@ -639,69 +694,3 @@ class ProSiTIntegration:
         except Exception as e:
             logger.error(f"Error converting parameters for {dist_name}: {e}")
             return {'mean': 15.0, 'std': 2.0, 'min_value': 0.0, 'max_value': 60.0, 'mean_value': 15.0}
-
-    def _create_fallback_parameters(self):
-        """Populate self.prosit_params with sensible defaults when discovery fails.
-
-        Returns nothing; the caller continues with _convert_prosit_to_app_format().
-        """
-        logger.info("Creating fallback parameters...")
-
-        resources = []
-        try:
-            if self.event_log and len(self.event_log) > 0:
-                for trace in self.event_log:
-                    for event in trace:
-                        if hasattr(event, 'get') and event.get('org:resource'):
-                            resource = event['org:resource']
-                            if resource not in resources:
-                                resources.append(resource)
-        except Exception:
-            pass
-
-        if not resources:
-            resources = ['Resource_1', 'Resource_2', 'Resource_3']
-
-        standard_calendar = {
-            day: {str(hour): True for hour in range(24)}
-            for day in ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')
-        }
-
-        standard_distribution = {
-            'dist_name': 'norm',
-            'params': [15.0, 5.0],
-            'min_value': 1.0,
-            'max_value': 60.0,
-            'mean_value': 15.0,
-        }
-
-        self.prosit_params = {
-            "transition_params": {
-                "transition_weights": {t: 0.5 for t in self.process_model['transitions']}
-            },
-            "resource_params": {
-                "resources": resources,
-                "max_concurrency": {r: 1 for r in resources},
-                "act_to_resources": {a: resources for a in self.process_model['activities']},
-                "resource_weights": {r: 1.0 / len(resources) for r in resources},
-                "calendars": {r: standard_calendar for r in resources}
-            },
-            "arrival_params": {
-                "arrival_calendar": standard_calendar,
-                "arrival_time_distributions": standard_distribution
-            },
-            "execution_time_params": {
-                "execution_time_distributions": {a: standard_distribution for a in self.process_model['activities']}
-            },
-            "waiting_time_params": {
-                "waiting_time_distributions": {r: standard_distribution for r in resources}
-            },
-            "data_attribute_params": {
-                "label_data_attributes": [],
-                "label_data_attributes_categorical": [],
-                "attribute_values_label_categorical": {},
-                "distribution_data_attributes": {}
-            }
-        }
-
-        logger.info(f"Created fallback parameters with {len(resources)} resources and {len(self.process_model['activities'])} activities")

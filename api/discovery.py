@@ -10,7 +10,7 @@ from pm4py.objects.log.importer.xes import importer as xes_importer
 from app import app, db
 from config import Config
 from models import BASELINE_RUN_NAME, SimulationRun, SimulationSession
-from prosit_integration import ProSiTIntegration
+from prosit_integration import DiscoveryError, ProSiTIntegration
 from validators import (
     parse_bool,
     validate_attribute_mode,
@@ -39,6 +39,18 @@ def _set_progress(session_id: int, message: str) -> None:
 
 def _clear_progress(session_id: int) -> None:
     _discovery_progress.pop(session_id, None)
+
+
+def _mark_session_failed(session_id: int) -> None:
+    """Roll back the current transaction and flag the session as 'error'."""
+    db.session.rollback()
+    try:
+        session = db.session.get(SimulationSession, session_id)
+        if session:
+            session.status = 'error'
+            db.session.commit()
+    except Exception:
+        db.session.rollback()
 
 
 @bp.route('/api/discover/<int:session_id>', methods=['POST'])
@@ -177,18 +189,19 @@ def discover_parameters(session_id):
                 'f_measure': process_model.get('f_measure', 0),
             },
             'prosit_metrics': prosit_metrics,
+            'warnings': list(prosit.discovery_warnings),
             'message': 'Parameters processed successfully',
         })
 
+    except DiscoveryError as exc:
+        # The log and the model were read correctly but prosit-pm could not
+        # learn parameters from them: tell the user why instead of a bare 500.
+        _mark_session_failed(session_id)
+        _clear_progress(session_id)
+        return jsonify({'error': f'Parameter discovery failed. {exc}'}), 422
+
     except Exception:
-        db.session.rollback()
-        try:
-            session = SimulationSession.query.get(session_id)
-            if session:
-                session.status = 'error'
-                db.session.commit()
-        except Exception:
-            db.session.rollback()
+        _mark_session_failed(session_id)
         _clear_progress(session_id)
         raise  # let @handle_api_errors produce the JSON response
 

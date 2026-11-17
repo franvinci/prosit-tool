@@ -20,6 +20,22 @@ from log_distance_measures.relative_event_distribution import relative_event_dis
 import datetime
 
 
+# Activities that nobody performs in the event log are simulated without a
+# resource (prosit-pm >= 1.0.5), so a log can carry empty resources. The
+# resource-flow metrics compare sequences of resource labels: give those events
+# an explicit label, because a missing value never equals itself and the
+# n-gram counts would otherwise depend on object identity.
+NO_RESOURCE_LABEL = '(no resource)'
+
+
+def _with_resource_labels(df: pd.DataFrame, resource_col: str = 'org:resource') -> pd.DataFrame:
+    """Copy of ``df`` whose missing resources are replaced by a fixed label."""
+    df = df.copy()
+    if resource_col in df.columns:
+        resources = df[resource_col].astype(object)
+        df[resource_col] = resources.where(resources.notna(), NO_RESOURCE_LABEL)
+    return df
+
 
 def evaluate(original_log, simulated_log, metrics_labels=["cfld", "ngd", "red", "aed", "red", "aed", "car", "ctd", "car_entropy", "hwd", "ctd_entropy", "etd_entropy"]):
 
@@ -233,6 +249,8 @@ def build_handover_matrix(df: pd.DataFrame, resources: list, case_id_col: str='c
 
 def compute_handover_error(df_sim: pd.DataFrame, df_test: pd.DataFrame, case_id_col: str='case:concept:name', resource_col: str='org:resource') -> int:
     
+    df_sim = _with_resource_labels(df_sim, resource_col)
+    df_test = _with_resource_labels(df_test, resource_col)
     resources = list(set(df_sim[resource_col]) | set(df_test[resource_col]))
 
     handover_matrix_sim = build_handover_matrix(df_sim, resources, case_id_col=case_id_col, resource_col=resource_col)
@@ -250,8 +268,8 @@ def compute_resource_flow_distance(df_sim: pd.DataFrame, df_test: pd.DataFrame):
         end_time="time:timestamp"
     )
 
-    df_test = df_test.copy()
-    df_sim = df_sim.copy()
+    df_test = _with_resource_labels(df_test)
+    df_sim = _with_resource_labels(df_sim)
 
     df_test[event_log_ids.start_time] = pd.to_datetime(df_test[event_log_ids.start_time], format='ISO8601', utc=True)
     df_test[event_log_ids.end_time] = pd.to_datetime(df_test[event_log_ids.end_time], format='ISO8601', utc=True)
@@ -411,8 +429,8 @@ def compute_resource_ngd(df_sim: pd.DataFrame, df_test: pd.DataFrame, n=3):
         end_time="time:timestamp"
     )
 
-    df_test = df_test.copy()
-    df_sim = df_sim.copy()
+    df_test = _with_resource_labels(df_test)
+    df_sim = _with_resource_labels(df_sim)
 
     df_test[event_log_ids.start_time] = pd.to_datetime(df_test[event_log_ids.start_time], format='ISO8601', utc=True)
     df_test[event_log_ids.end_time] = pd.to_datetime(df_test[event_log_ids.end_time], format='ISO8601', utc=True)
