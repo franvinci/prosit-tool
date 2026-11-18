@@ -12,6 +12,7 @@ from ..validators import validate_discovery_options
 
 from ._decorators import handle_api_errors
 from ._shared import (
+    MODEL_METRICS,
     EventLogError,
     load_event_log,
     load_session_prosit,
@@ -117,17 +118,10 @@ def discover_parameters(session_id):
                 process_model['final_marking'], pnml_filename,
             )
 
-        model_payload = {
-            'visualization': process_model.get('visualization'),
-            'activities': process_model.get('activities', []),
-            'transitions': process_model.get('transitions', []),
-            'map_transitionName_to_id': process_model.get('map_transitionName_to_id', {}),
-            'transition_label_map': process_model.get('transition_label_map', {}),
-            'places': process_model.get('places', []),
-            'fitness': process_model.get('fitness', 0),
-            'precision': process_model.get('precision', 0),
-            'f_measure': process_model.get('f_measure', 0),
-        }
+        # What cannot be read back from the PNML: how well the net fits the
+        # log. Everything else about the model is derived from the net itself
+        # whenever the session is opened.
+        model_payload = {key: process_model.get(key, 0) for key in MODEL_METRICS}
         session_metadata = session.get_parameters() or {}
         session_metadata.update({
             'json_filename': json_filename,
@@ -190,7 +184,7 @@ def discover_parameters(session_id):
         'success': True,
         'parameters': parameters,
         'json_filename': json_filename,
-        'process_model': model_payload,
+        'process_model': parameters['process_model'],
         'prosit_metrics': prosit_metrics,
         'warnings': log_notes + list(prosit.discovery_warnings),
         'message': 'Parameters processed successfully',

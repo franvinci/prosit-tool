@@ -5,7 +5,7 @@
 
 import { escapeHtml, on } from '../../core/dom.js';
 import { markParametersDirty, state } from '../../core/state.js';
-import { highlightTransitionVisualization, revertToOriginalVisualization } from '../petri-net.js';
+import { clearHighlight, highlightActivities } from '../petri-net.js';
 import { registerDistributionKind, renderDistributionParameters, renderFamilySelect } from './distribution-editor.js';
 import { editTimeDistribution } from './distributions.js';
 import { returnActivitiesPerResource } from './resource-matrix.js';
@@ -37,7 +37,7 @@ export function renderWaitingTimeParameters() {
 
 /** Show the editor of one resource and highlight its activities in the drawing. */
 export function showResourceWaiting(resourceName) {
-    revertToOriginalVisualization();
+    clearHighlight();
 
     const display = document.getElementById('resourceWaitingDisplay');
     if (!resourceName) {
@@ -45,7 +45,7 @@ export function showResourceWaiting(resourceName) {
         return;
     }
 
-    highlightTransitionVisualization(returnActivitiesPerResource(resourceName));
+    highlightActivities(returnActivitiesPerResource(resourceName));
 
     if (!state.parameters.waiting_time_params.resource_waiting_times) {
         state.parameters.waiting_time_params.resource_waiting_times = {};

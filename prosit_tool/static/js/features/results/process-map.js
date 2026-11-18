@@ -3,11 +3,13 @@
  */
 
 import { escapeHtml, on } from '../../core/dom.js';
+import { renderDot } from '../../core/graphviz.js';
 import { state } from '../../core/state.js';
 import { loadResult } from './common.js';
 
-function renderProcessMap(container, processMap, message) {
-    if (!processMap) {
+// The server describes the map (DOT text); it is drawn here.
+async function renderProcessMap(container, dot, message) {
+    if (!dot) {
         container.innerHTML = `
             <div class="d-flex justify-content-center align-items-center h-100">
                 <span class="text-muted">${escapeHtml(message || 'No process map available')}</span>
@@ -16,14 +18,13 @@ function renderProcessMap(container, processMap, message) {
         return;
     }
 
-    // The server sends the drawing as SVG.
-    container.innerHTML = `
-        <div class="text-center">
-            <div class="process-map-svg-container" style="border: 1px solid #dee2e6; border-radius: 8px; background: white; padding: 10px; margin-bottom: 15px;">
-                ${processMap}
-            </div>
-        </div>
-    `;
+    const frame = document.createElement('div');
+    frame.className = 'process-map-svg-container';
+    frame.appendChild(await renderDot(dot));
+    const centered = document.createElement('div');
+    centered.className = 'text-center';
+    centered.appendChild(frame);
+    container.replaceChildren(centered);
 }
 
 /** Load the process map of the scenario on screen, with the edge metric chosen. */
@@ -34,7 +35,7 @@ export function loadProcessMap() {
     return loadResult(
         container, 'process map',
         `/api/get_visualization/${state.sessionId}/process_map?aggregation=${encodeURIComponent(aggregation)}`,
-        (result) => renderProcessMap(container, result.visualization, result.message),
+        (result) => renderProcessMap(container, result.dot, result.message),
     );
 }
 

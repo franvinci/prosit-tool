@@ -2,61 +2,108 @@
 
 import pytest
 
-from prosit_tool import prosit_integration
 from prosit_tool.extensions import db
 from prosit_tool.models import SimulationSession
 
 from .conftest import event_rows, write_xes
 
 
-@pytest.fixture
-def drawings(monkeypatch):
-    """Count how many times the Petri net is drawn (an external Graphviz run)."""
-    calls = []
-    original = prosit_integration.ProSiTIntegration._generate_petri_net_visualization
+def _old_style_model():
+    """What versions before 1.1 stored with a session: a drawing made by Graphviz."""
+    return {
+        'visualization': '<svg><g id="node1"><title>140213</title></g></svg>',
+        'map_transitionName_to_id': {'A': '140213'},
+        'activities': ['A'],
+        'transitions': ['stale'],
+        'places': ['stale'],
+        'fitness': 0.42,
+        'precision': 0.5,
+        'f_measure': 0.4565,
+    }
 
-    def counting(self, *args, **kwargs):
-        calls.append(1)
-        return original(self, *args, **kwargs)
 
-    monkeypatch.setattr(prosit_integration.ProSiTIntegration, '_generate_petri_net_visualization', counting)
-    return calls
-
-
-def test_the_net_is_drawn_once_at_discovery_and_never_again(client, discovered, tiny_xes_path, drawings):
+def test_the_model_is_described_for_the_page_to_draw(client, discovered, tiny_xes_path):
     session_id, body = discovered(tiny_xes_path)
-    assert len(drawings) == 1
-    drawing = body['process_model']['visualization']
-    assert '<svg' in drawing
 
+    model = body['parameters']['process_model']
+
+    assert model['dot'].startswith('digraph')
+    assert 'visualization' not in model and 'map_transitionName_to_id' not in model
+    transitions = {node_id: node for node_id, node in model['nodes'].items() if node['type'] == 'transition'}
+    assert sorted(node['label'] for node in transitions.values() if not node['silent']) == ['A', 'B', 'C', 'D']
+    assert sorted(node['name'] for node in transitions.values()) == sorted(model['transitions'])
+    assert all(f'{node_id} [' in model['dot'] for node_id in model['nodes'])
+    # the answer of the discovery carries the same description at its top level
+    assert body['process_model'] == model
+
+
+def test_the_description_is_the_same_every_time_the_session_is_opened(client, discovered, tiny_xes_path):
+    """Same text, same layout: the net does not move around between one visit and the next."""
+    session_id, body = discovered(tiny_xes_path)
+    discovered_model = body['parameters']['process_model']
     run_id = client.post(f'/api/sessions/{session_id}/runs', json={'name': 'Scenario'}).get_json()['run']['id']
-    loaded = client.get(f'/api/parameters/{session_id}').get_json()['parameters']['process_model']
-    loaded_run = client.get(f'/api/runs/{run_id}').get_json()['parameters']['process_model']
-    assert client.post(f'/api/simulate/{session_id}', json={'num_instances': 2}).status_code == 200
-    assert client.post(f'/api/runs/{run_id}/simulate', json={'num_instances': 2}).status_code == 200
-    assert client.post(f'/api/metrics/{session_id}').status_code == 200
 
-    assert len(drawings) == 1
-    # What is served is the drawing made at discovery, with the ids that match it.
-    for model in (loaded, loaded_run):
-        assert model['visualization'] == drawing
-        assert model['map_transitionName_to_id'] == body['process_model']['map_transitionName_to_id']
-        assert all(node_id in drawing for node_id in model['map_transitionName_to_id'].values())
+    reloaded = client.get(f'/api/parameters/{session_id}').get_json()['parameters']['process_model']
+    of_scenario = client.get(f'/api/runs/{run_id}').get_json()['parameters']['process_model']
+
+    for model in (reloaded, of_scenario):
+        assert model['dot'] == discovered_model['dot']
+        assert model['nodes'] == discovered_model['nodes']
+        # fitness and precision need the event log: they are kept from the discovery
+        assert model['fitness'] == discovered_model['fitness'] > 0
+        assert model['precision'] == discovered_model['precision'] > 0
 
 
-def test_session_stored_without_a_drawing_gets_one_on_demand(client, discovered, tiny_xes_path, drawings):
+def test_only_the_metrics_of_the_model_are_stored_with_the_session(client, discovered, tiny_xes_path):
     session_id, _ = discovered(tiny_xes_path)
+
+    stored = db.session.get(SimulationSession, session_id).get_parameters()['process_model']
+
+    assert sorted(stored) == ['f_measure', 'fitness', 'precision']
+
+
+def test_session_stored_by_an_older_version_is_described_from_its_net(client, discovered, tiny_xes_path):
+    """No migration: the old drawing is ignored, the metrics it came with are kept."""
+    session_id, body = discovered(tiny_xes_path)
     session = db.session.get(SimulationSession, session_id)
     metadata = session.get_parameters()
-    del metadata['process_model']
+    metadata['process_model'] = _old_style_model()
     session.set_parameters(metadata)
     db.session.commit()
 
     model = client.get(f'/api/parameters/{session_id}').get_json()['parameters']['process_model']
 
-    assert len(drawings) == 2
-    assert '<svg' in model['visualization']
-    assert all(node_id in model['visualization'] for node_id in model['map_transitionName_to_id'].values())
+    assert model['dot'] == body['parameters']['process_model']['dot']
+    assert 'visualization' not in model and 'map_transitionName_to_id' not in model
+    assert sorted(model['activities']) == ['A', 'B', 'C', 'D']
+    assert (model['fitness'], model['precision'], model['f_measure']) == (0.42, 0.5, 0.4565)
+
+
+def test_no_graphviz_program_is_ever_run(client, discovered, tiny_xes_path, monkeypatch):
+    """The page draws; the server only describes. Nothing may call the `dot` program."""
+    import graphviz.backend.execute as execute
+
+    def called(*args, **kwargs):
+        raise AssertionError(f'a Graphviz program was run: {args}')
+
+    for name in ('run_check', 'run'):
+        if hasattr(execute, name):
+            monkeypatch.setattr(execute, name, called)
+    import subprocess
+    real_run = subprocess.run
+
+    def guarded(command, *args, **kwargs):
+        program = command[0] if isinstance(command, (list, tuple)) else str(command)
+        assert 'dot' not in str(program).split('/')[-1], f'a Graphviz program was run: {command}'
+        return real_run(command, *args, **kwargs)
+
+    monkeypatch.setattr(subprocess, 'run', guarded)
+
+    session_id, body = discovered(tiny_xes_path)
+    assert client.get(f'/api/parameters/{session_id}').status_code == 200
+    assert client.post(f'/api/simulate/{session_id}', json={'num_instances': 3}).status_code == 200
+    process_map = client.get(f'/api/get_visualization/{session_id}/process_map')
+    assert process_map.status_code == 200 and process_map.get_json()['dot'].startswith('digraph')
 
 
 def test_process_map_of_single_event_cases_says_there_is_nothing_to_draw(client, discovered, tmp_path):
@@ -70,7 +117,7 @@ def test_process_map_of_single_event_cases_says_there_is_nothing_to_draw(client,
     assert response.status_code == 200, response.data
     body = response.get_json()
     assert body['success'] is True
-    assert body['visualization'] == ''
+    assert body['dot'] == ''
     assert 'single event' in body['message']
     # The other charts of the same simulation still work.
     assert client.get(f'/api/get_visualization/{session_id}/case_duration_dist').status_code == 200
@@ -82,7 +129,10 @@ def test_process_map_of_a_normal_simulation(client, discovered, tiny_xes_path):
 
     for aggregation in ('median', 'mean', 'not-an-aggregation'):
         body = client.get(f'/api/get_visualization/{session_id}/process_map?aggregation={aggregation}').get_json()
-        assert '<svg' in body['visualization']
+        # described by pm4py, drawn by the page
+        assert body['dot'].startswith('digraph') and 'visualization' not in body
+        assert all(f'label={activity}' in body['dot'] or f'label="{activity}' in body['dot'] for activity in 'ABCD')
+        assert 'fontname="Helvetica"' in body['dot']
         assert body['aggregation'] == ('median' if aggregation == 'not-an-aggregation' else aggregation)
         assert 'message' not in body
 

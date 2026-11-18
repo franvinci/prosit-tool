@@ -236,7 +236,7 @@ def _render_process_map(df, aggregation='median'):
         # nothing to draw (and pm4py cannot render a graph without edges).
         return {
             'success': True,
-            'visualization': '',
+            'dot': '',
             'aggregation': aggregation,
             'message': 'Every simulated case has a single event, so there is no flow between activities to show.',
         }
@@ -246,10 +246,13 @@ def _render_process_map(df, aggregation='median'):
         dfg_perf_visualizer.Parameters.AGGREGATION_MEASURE: aggregation,
         "bgcolor": "white",
     }
+    # pm4py describes the map for Graphviz; the page draws it (no Graphviz
+    # program is needed on this side). The labels get a font whose character
+    # widths the Graphviz of the browser knows, so that they fit their boxes.
     gviz = dfg_perf_visualizer.apply(performance_dfg, parameters=parameters)
-    svg_content = gviz.pipe(format='svg', encoding='utf-8')
-    logger.info("Process Map Plot Generated (aggregation=%s).", aggregation)
-    return {'success': True, 'visualization': svg_content, 'aggregation': aggregation}
+    dot = gviz.source.replace('{', '{\n\tnode [fontname="Helvetica"]\n\tedge [fontname="Helvetica"]', 1)
+    logger.info("Process map described (aggregation=%s).", aggregation)
+    return {'success': True, 'dot': dot, 'aggregation': aggregation}
 
 
 def _histogram(values, n_bins=30):

@@ -402,6 +402,40 @@ h1 [data-feather], h2 [data-feather], h3 [data-feather] {
     overflow-x: auto;
     overflow-y: hidden;
     text-align: center;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    background: white;
+    padding: 10px;
+    margin-bottom: 15px;
+}
+
+/* The drawings are laid out for Helvetica: any font of the same widths will do. */
+#petriNetViewport svg text,
+.process-map-svg-container svg text {
+    font-family: Helvetica, Arial, sans-serif;
+}
+
+/* The drawing of the Petri net */
+.petri-net-frame {
+    display: inline-block;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 10px;
+}
+/* A transition can be clicked (or reached with Tab) to edit its weight */
+#petriNetViewport .pn-transition {
+    cursor: pointer;
+    outline: none;
+}
+#petriNetViewport .pn-transition:hover polygon,
+#petriNetViewport .pn-transition:focus-visible polygon {
+    stroke: #6f42c1;
+    stroke-width: 2.5;
+}
+#petriNetViewport .pn-transition.pn-highlighted polygon {
+    fill: #c77dff;
+    stroke: #5a189a;
 }
 .process-map-svg-container svg {
     max-width: 100%;

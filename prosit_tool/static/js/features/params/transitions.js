@@ -5,7 +5,7 @@
 
 import { escapeHtml, infoIcon, initTooltipsIn, on } from '../../core/dom.js';
 import { markParametersDirty, state } from '../../core/state.js';
-import { highlightTransitionVisualization, revertToOriginalVisualization } from '../petri-net.js';
+import { clearHighlight, highlightTransition, onTransitionActivated } from '../petri-net.js';
 import { renderDecisionTreeEditor } from './tree-editor.js';
 
 const WEIGHT_HELP = 'Represents the probability of firing a transition when it is enabled.';
@@ -52,7 +52,7 @@ export function renderTransitionParameters(transitionParams) {
 
 /** Show the editor of one transition and highlight it in the drawing. */
 export function showTransitionWeights(transitionName) {
-    revertToOriginalVisualization();
+    clearHighlight();
 
     const display = document.getElementById('transitionWeightDisplay');
     const weight = state.parameters.transition_params.transition_weights[transitionName];
@@ -62,7 +62,7 @@ export function showTransitionWeights(transitionName) {
         return;
     }
 
-    highlightTransitionVisualization(transitionName);
+    highlightTransition(transitionName);
 
     const displayName = transitionLabels()[transitionName] || transitionName;
 
@@ -102,6 +102,17 @@ function updateTransitionWeight(transition, value) {
     const label = document.getElementById('transitionWeightValue');
     if (label) label.textContent = value;
 }
+
+// A transition clicked in the drawing of the net: bring up this tab, with
+// that transition selected and its editor in sight.
+onTransitionActivated((transitionName) => {
+    const select = document.getElementById('transitionSelect');
+    if (!select) return;
+    bootstrap.Tab.getOrCreateInstance(document.getElementById('transition-tab')).show();
+    select.value = transitionName;
+    showTransitionWeights(transitionName);
+    document.getElementById('transitionWeightDisplay').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+});
 
 on('change', {
     'show-transition': (element) => showTransitionWeights(element.value),

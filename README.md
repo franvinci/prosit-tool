@@ -85,7 +85,7 @@ The application is then available at `http://localhost:5050`.
 | `pandas` | 2.2 | DataFrame manipulation |
 | `numpy` | 1.26 | Numerical operations |
 | `matplotlib` | 3.10 | Visualisation rendering |
-| `graphviz` | 0.21 | Process model rendering (also requires the system Graphviz binary) |
+| `graphviz` | 0.21 | Used by pm4py to describe graphs; the browser draws them, so no Graphviz program has to be installed |
 | `log-distance-measures` | 2.0 | Accuracy metrics between real and simulated logs |
 
 ---

@@ -43,7 +43,7 @@ export async function loadResult(container, what, url, render) {
     container.innerHTML = SPINNER;
     try {
         const result = await getJson(withRunId(url));
-        render(result);
+        await render(result);
     } catch (error) {
         const refused = error instanceof ApiError && error.status > 0;
         const message = refused ? error.message : `Failed to load ${what}: ${error.message}`;

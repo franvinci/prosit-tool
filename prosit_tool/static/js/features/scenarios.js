@@ -122,7 +122,6 @@ async function switchToWhatIf(runId) {
 
         state.activeRunId = runId;
         state.parameters = body.parameters;
-        state.originalVisualization = body.parameters.process_model.visualization;
         clearParametersDirty();
         renderParameters(body.parameters);
         renderWhatIfList();

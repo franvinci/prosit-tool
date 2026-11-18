@@ -10,8 +10,6 @@ export const state = {
     sessionId: null,
     /** Parameters of the scenario in the editor, in the format of the API. */
     parameters: null,
-    /** Drawing of the Petri net without any highlight. */
-    originalVisualization: null,
     /** Scenarios of the session, as listed by /api/sessions/<id>/runs. */
     runs: [],
     /** Id of the scenario whose parameters are in the editor. */

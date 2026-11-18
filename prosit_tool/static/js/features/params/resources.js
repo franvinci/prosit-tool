@@ -6,7 +6,7 @@
 
 import { escapeHtml, infoIcon, initTooltipsIn, on } from '../../core/dom.js';
 import { markParametersDirty, state } from '../../core/state.js';
-import { highlightTransitionVisualization, revertToOriginalVisualization } from '../petri-net.js';
+import { clearHighlight, highlightActivities } from '../petri-net.js';
 import { createDefaultWorkingHours, renderResourceCalendars } from './calendars.js';
 import { attachMatrixHandlers, renderResourceActivityMatrix, returnActivitiesPerResource } from './resource-matrix.js';
 import { renderDecisionTreeEditor } from './tree-editor.js';
@@ -64,7 +64,7 @@ export function renderResourceParameters(resourceParams) {
 
 /** Show the editor of one resource and highlight its activities in the drawing. */
 export function showResourceWeight(resourceName) {
-    revertToOriginalVisualization();
+    clearHighlight();
 
     const display = document.getElementById('resourceWeightDisplay');
     if (!resourceName) {
@@ -72,7 +72,7 @@ export function showResourceWeight(resourceName) {
         return;
     }
 
-    highlightTransitionVisualization(returnActivitiesPerResource(resourceName));
+    highlightActivities(returnActivitiesPerResource(resourceName));
 
     // A weight of zero is a weight too: only a missing one gets the default.
     const weight = state.parameters.resource_params.resource_weights?.[resourceName] ?? 0.1;

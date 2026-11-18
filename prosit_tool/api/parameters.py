@@ -26,7 +26,7 @@ from ..format_converters import (
 )
 
 from ._decorators import handle_api_errors
-from ._shared import load_session_prosit, write_json_atomic
+from ._shared import MODEL_METRICS, load_session_prosit, write_json_atomic
 
 logger = logging.getLogger(__name__)
 bp = Blueprint('parameters', __name__)
@@ -148,20 +148,20 @@ def get_parameters(session_id):
 def load_parameters_for_ui(session, json_filepath):
     """Parameters of one run in UI format, with the session's process model.
 
-    The drawing of the Petri net and the accuracy metrics are computed once,
-    at discovery, and stored with the session: they are read back from there
-    instead of being recomputed on every request.
+    The description of the net comes from its PNML every time. What needs the
+    event log (fitness and precision of the net, the accuracy metrics) was
+    computed once, at discovery, and is read back from the session.
     """
     session_metadata = session.get_parameters() or {}
     prosit = load_session_prosit(session)
     parameters = prosit.load_parameters_from_json_file(json_filepath)
 
-    stored_model = session_metadata.get('process_model')
-    if stored_model:
-        parameters['process_model'].update(stored_model)
-    if not parameters['process_model'].get('visualization'):
-        # Session stored without a drawing: make one for this response.
-        parameters['process_model'].update(prosit.render_process_model())
+    # Sessions stored by older versions keep a whole drawing here: only the
+    # metrics are taken from it.
+    stored_model = session_metadata.get('process_model') or {}
+    parameters['process_model'].update(
+        {key: stored_model[key] for key in MODEL_METRICS if key in stored_model}
+    )
 
     if 'prosit_metrics' in session_metadata:
         merged = parameters.get('prosit_metrics') or {}

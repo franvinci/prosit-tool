@@ -121,7 +121,6 @@ async function loadSession(sessionId) {
 export async function loadSessionData(sessionId, parameters, computeEval) {
     state.sessionId = sessionId;
     state.parameters = parameters;
-    state.originalVisualization = parameters.process_model.visualization;
 
     state.parameters._compute_evaluation_requested = !!computeEval;
 

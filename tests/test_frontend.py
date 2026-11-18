@@ -6,6 +6,8 @@ that exist or that a button names an action somebody handles: a mistake there
 would only show up as a control that silently does nothing.
 """
 
+import base64
+import hashlib
 import json
 import mimetypes
 import re
@@ -20,6 +22,7 @@ from prosit_tool.format_converters import distribution_from_prosit, distribution
 
 REPO = Path(__file__).resolve().parents[1]
 STATIC_JS = REPO / 'prosit_tool' / 'static' / 'js'
+VENDOR = REPO / 'prosit_tool' / 'static' / 'vendor'
 TEMPLATES = REPO / 'prosit_tool' / 'templates'
 ENTRY = STATIC_JS / 'app.js'
 MODULES = sorted(STATIC_JS.rglob('*.js'))
@@ -68,6 +71,49 @@ def test_script_type_does_not_depend_on_the_system(tmp_path):
         assert client.get('/static/js/app.js').mimetype == 'text/javascript'
     finally:
         mimetypes.add_type('text/javascript', '.js')
+
+
+# --- nothing comes from the network ----------------------------------------------------------
+
+# The libraries the page uses, as published by their authors: package, version
+# and the SHA-384 of the file (the value a browser checks as "integrity").
+VENDORED = {
+    'bootstrap/bootstrap.min.css': ('bootstrap 5.3.0', '9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM'),
+    'bootstrap/bootstrap.bundle.min.js': ('bootstrap 5.3.0', 'geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz'),
+    'chart.js/chart.umd.js': ('chart.js 4.4.7', 'zYPBGXwO4633CABX/5Spf6emCKUJCfoOkhOMYyxMsatqQZPnDblmmOewfjsIVWCM'),
+    'chartjs-chart-matrix/chartjs-chart-matrix.min.js': ('chartjs-chart-matrix 2.0.1', 'a7esWkFf+Il6h/+W+5aJjvkI7IVLbCVGkyH9OiFy3Jf0Rdn2cEyIymqq/hBdXsvj'),
+    'feather-icons/feather.min.js': ('feather-icons 4.29.2', 'qEqAs1VsN9WH2myXDbiP2wGGIttL9bMRZBKCl54ZnzpDlVqbYANP9vMaoT/wvQcf'),
+    'viz-js/viz.js': ('@viz-js/viz 3.31.0', '1K1CIg5RxaUbqpwmMN9nDsPTCO5QMIP2wKBsI5ycbs8Nv74aLuM14Jqo+ayxLE21'),
+}
+
+
+def test_page_asks_nothing_of_the_network(client):
+    """The tool is installed on a machine and may well be offline."""
+    page = client.get('/').get_data(as_text=True)
+
+    assert re.findall(r'(?:src|href)="(?:https?:)?//[^"]*"', page) == []
+    served = re.findall(r'(?:src|href)="(/static/[^"]+)"', page)
+    assert len(served) >= 6
+    for url in served:
+        assert client.get(url).status_code == 200, url
+
+
+def test_vendored_libraries_are_the_published_files():
+    present = sorted(str(path.relative_to(VENDOR)) for path in VENDOR.rglob('*') if path.is_file() and path.suffix in ('.js', '.css'))
+    assert present == sorted(VENDORED)
+
+    for name, (package, expected) in VENDORED.items():
+        digest = base64.b64encode(hashlib.sha384((VENDOR / name).read_bytes()).digest()).decode()
+        assert digest == expected, f'{name} is not {package} as published'
+
+
+def test_every_vendored_library_is_accounted_for():
+    """static/vendor/README.md says what each file is and under which licence it comes."""
+    readme = (VENDOR / 'README.md').read_text()
+
+    for name, (package, _) in VENDORED.items():
+        assert name in readme, name
+        assert package.split(' ')[1] in readme, package
 
 
 # --- wired consistently --------------------------------------------------------------------

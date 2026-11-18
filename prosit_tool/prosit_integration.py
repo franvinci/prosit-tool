@@ -4,13 +4,13 @@ from datetime import datetime
 
 import pandas as pd
 import pm4py
-from pm4py.visualization.petri_net import visualizer as pn_visualizer
 from pm4py.algo.evaluation.replay_fitness import algorithm as fitness_evaluator
 from pm4py.algo.evaluation.precision import algorithm as precision_evaluator
 
 from prosit.simulator import SimulatorParameters, SimulatorEngine
 from .evaluation import evaluate, compute_log_kpis, compute_log_charts
 from .format_converters import attribute_entry_from_prosit, prosit_entry_to_app
+from .petri_dot import petri_net_to_dot
 
 logger = logging.getLogger(__name__)
 
@@ -80,63 +80,17 @@ class ProSiTIntegration:
             net, initial_marking, final_marking = pm4py.discover_petri_net_inductive(self.event_log, noise_threshold=noise_threshold)
             
             
-            # Extract activities, transitions, and places from the net
-            activities = []
-            transitions = []
-            places = []
-            
-            for transition in net.transitions:
-                transitions.append(transition.name)
-                if transition.label:  # Skip silent transitions
-                    activities.append(transition.label)
-            
-            for place in net.places:
-                places.append(place.name)
-
-            # Create mapping from transition names AND labels to IDs so the UI
-            # can highlight by either (activity tabs pass labels, the transition
-            # selector passes names).
-            map_transitionName_to_id = {}
-            transition_label_map = {}
-            for t in net.transitions:
-                tid = str(id(t))
-                map_transitionName_to_id[t.name] = tid
-                if t.label:
-                    map_transitionName_to_id[t.label] = tid
-                transition_label_map[t.name] = t.label if t.label else t.name
-
-            # Generate visualization
-            visualization_svg = self._generate_petri_net_visualization(net, initial_marking, final_marking)
-
-            fitness = fitness_evaluator.apply(self.event_log, net, initial_marking, final_marking)
-            fitness = fitness['averageFitness']
+            fitness = fitness_evaluator.apply(self.event_log, net, initial_marking, final_marking)['averageFitness']
             precision = precision_evaluator.apply(self.event_log, net, initial_marking, final_marking)
-            f_measure = 2*fitness*precision/(fitness+precision) if (fitness+precision) else 0.0
-            
-            # Create process model structure
-            self.process_model = {
-                'activities': activities,
-                'transitions': transitions,
-                'places': places,
-                'map_transitionName_to_id': map_transitionName_to_id,
-                'transition_label_map': transition_label_map,
-                'silent_transitions': [t.name for t in net.transitions if not t.label],
-                'fitness': fitness,
-                'precision': precision,
-                'f_measure': f_measure,
-                'visualization': visualization_svg,
-                'net': net,
-                'initial_marking': initial_marking,
-                'final_marking': final_marking
-            }
-            
-            logger.info(f"Discovered process model with {len(activities)} activities")
+            self.process_model = self._describe_process_model(net, initial_marking, final_marking, fitness, precision)
+
+            logger.info("Discovered process model with %d activities", len(self.process_model['activities']))
             
         except Exception as e:
             logger.error(f"Error discovering process model: {str(e)}")
             raise
     
-    def import_petri_net_from_pnml(self, pnml_file_path, compute_metrics=True, render=True):
+    def import_petri_net_from_pnml(self, pnml_file_path, compute_metrics=True):
         """Import Petri net structure from PNML file.
 
         Args:
@@ -145,10 +99,6 @@ class ProSiTIntegration:
                 ``self.event_log``. If False (or no event log set), populate
                 metrics with zeros — useful when the only goal is to reload the
                 net for a later simulation.
-            render: If True, draw the net (an external Graphviz run). Pass
-                False when the drawing is not needed, as when the net is only
-                reloaded to simulate or to read parameters; it can still be
-                produced later with ``render_process_model``.
 
         Updates:
             self.process_model: Dictionary containing the imported process model.
@@ -157,53 +107,48 @@ class ProSiTIntegration:
             logger.info(f"Importing Petri net structure from {pnml_file_path}")
             net, initial_marking, final_marking = pm4py.read_pnml(pnml_file_path)
 
-            activities = []
-            transitions = []
-            places = [p.name for p in net.places]
-
-            map_transitionName_to_id = {}
-            transition_label_map = {}
-            for t in net.transitions:
-                transitions.append(t.name)
-                tid = str(id(t))
-                map_transitionName_to_id[t.name] = tid
-                if t.label:
-                    activities.append(t.label)
-                    map_transitionName_to_id[t.label] = tid
-                transition_label_map[t.name] = t.label if t.label else t.name
-
-            visualization_svg = (
-                self._generate_petri_net_visualization(net, initial_marking, final_marking) if render else None
-            )
-
             if compute_metrics and self.event_log is not None:
                 fitness = fitness_evaluator.apply(self.event_log, net, initial_marking, final_marking)['averageFitness']
                 precision = precision_evaluator.apply(self.event_log, net, initial_marking, final_marking)
-                f_measure = 2 * fitness * precision / (fitness + precision) if (fitness + precision) else 0.0
             else:
-                fitness = precision = f_measure = 0.0
+                fitness = precision = 0.0
+            self.process_model = self._describe_process_model(net, initial_marking, final_marking, fitness, precision)
 
-            self.process_model = {
-                'activities': activities,
-                'transitions': transitions,
-                'places': places,
-                'map_transitionName_to_id': map_transitionName_to_id,
-                'transition_label_map': transition_label_map,
-                'silent_transitions': [t.name for t in net.transitions if not t.label],
-                'fitness': fitness,
-                'precision': precision,
-                'f_measure': f_measure,
-                'visualization': visualization_svg,
-                'net': net,
-                'initial_marking': initial_marking,
-                'final_marking': final_marking
-            }
-
-            logger.info(f"PNML Petri net imported successfully: {len(activities)} activities, {len(places)} places")
+            logger.info(
+                "PNML Petri net imported successfully: %d activities, %d places",
+                len(self.process_model['activities']), len(self.process_model['places']),
+            )
 
         except Exception as e:
             logger.error(f"Failed to import Petri net from PNML: {str(e)}")
             raise
+
+    @staticmethod
+    def _describe_process_model(net, initial_marking, final_marking, fitness, precision):
+        """What the rest of the tool needs to know about a net.
+
+        ``dot`` is the description the page draws, ``nodes`` says which
+        transition or place each node of the drawing is (see ``petri_dot``).
+        """
+        dot, nodes = petri_net_to_dot(net, initial_marking, final_marking)
+        transitions = [node for node in nodes.values() if node['type'] == 'transition']
+        return {
+            # Labels of the visible transitions; a label used by more than one
+            # transition is listed once.
+            'activities': list(dict.fromkeys(t['label'] for t in transitions if not t['silent'])),
+            'transitions': [t['name'] for t in transitions],
+            'places': [node['name'] for node in nodes.values() if node['type'] == 'place'],
+            'transition_label_map': {t['name']: t['label'] or t['name'] for t in transitions},
+            'silent_transitions': [t['name'] for t in transitions if t['silent']],
+            'fitness': fitness,
+            'precision': precision,
+            'f_measure': 2 * fitness * precision / (fitness + precision) if (fitness + precision) else 0.0,
+            'dot': dot,
+            'nodes': nodes,
+            'net': net,
+            'initial_marking': initial_marking,
+            'final_marking': final_marking,
+        }
 
     def discover_parameters(
         self,
@@ -371,87 +316,6 @@ class ProSiTIntegration:
             logger.error(f"Error running simulation: {str(e)}")
             raise
 
-    def render_process_model(self):
-        """Draw the loaded net and return what the UI needs to show it.
-
-        The drawing identifies each transition by an id that is only valid
-        together with the map returned here, so the two always travel as a pair.
-        """
-        model = self.process_model
-        model['visualization'] = self._generate_petri_net_visualization(
-            model['net'], model['initial_marking'], model['final_marking'],
-        )
-        return {
-            'visualization': model['visualization'],
-            'map_transitionName_to_id': model['map_transitionName_to_id'],
-        }
-
-    def _generate_petri_net_visualization(self, net, initial_marking, final_marking):
-        """Generate Petri net visualization using PM4Py and return as SVG"""
-        try:
-            # Generate visualization with custom styling
-            gviz = pn_visualizer.apply(net, initial_marking, final_marking, parameters={
-                pn_visualizer.Variants.WO_DECORATION.value.Parameters.FORMAT: "svg"
-            })
-            
-            # Get SVG content
-            svg_content = gviz.pipe(format='svg', encoding='utf-8')
-            
-            # Enhance SVG with styling
-            enhanced_svg = self._enhance_svg_visualization(svg_content)
-            
-            return enhanced_svg
-        
-        except Exception as e:
-            logger.error(f"Error generating visualization: {str(e)}")
-            return None
-
-    def _enhance_svg_visualization(self, svg_content):
-        """Enhance SVG with improved styling for purple/green theme"""
-        try:
-            # Add basic styling for better appearance
-            enhanced_svg = svg_content.replace(
-                '<svg',
-                '''<svg style="max-width: 100%; height: auto; background: white; border-radius: 8px;"'''
-            )
-            
-            # Improve styling of transitions and places with purple/green theme
-            enhanced_svg = enhanced_svg.replace(
-                'fill="lightblue"',
-                'fill="#6f42c1" stroke="#5a2d91" stroke-width="2"'
-            )
-            enhanced_svg = enhanced_svg.replace(
-                'fill="orange"',
-                'fill="#28a745" stroke="#1e7e34" stroke-width="2"'
-            )
-            enhanced_svg = enhanced_svg.replace(
-                'fill="black"',
-                'fill="#333" stroke="#444" stroke-width="1"'
-            )
-            
-            # Add basic CSS for better text appearance
-            style_css = '''
-            <defs>
-            <style type="text/css">
-            <![CDATA[
-            text {
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                font-size: 12px;
-            }
-            ]]>
-            </style>
-            </defs>
-            '''
-            
-            # Insert CSS after opening SVG tag
-            enhanced_svg = enhanced_svg.replace('<svg', style_css + '<svg', 1)
-            
-            return enhanced_svg
-            
-        except Exception as e:
-            logger.error(f"Error enhancing SVG: {str(e)}")
-            return svg_content
-
     def save_parameters_to_json(self, output_path):
         """Save parameters to JSON using ProSiT's to_json method"""
         try:
@@ -592,10 +456,10 @@ class ProSiTIntegration:
                 'activities': self.process_model['activities'],
                 'places': self.process_model['places'],
                 'transitions': self.process_model['transitions'],
-                'map_transitionName_to_id': self.process_model['map_transitionName_to_id'],
                 'transition_label_map': self.process_model.get('transition_label_map', {}),
                 'silent_transitions': self.process_model.get('silent_transitions', []),
-                'visualization': self.process_model['visualization'],
+                'dot': self.process_model['dot'],
+                'nodes': self.process_model['nodes'],
                 'fitness': self.process_model['fitness'],
                 'precision': self.process_model['precision'],
                 'f_measure': self.process_model['f_measure']

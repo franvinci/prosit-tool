@@ -5,7 +5,7 @@
 
 import { escapeHtml, on } from '../../core/dom.js';
 import { markParametersDirty, state } from '../../core/state.js';
-import { revertToOriginalVisualization } from '../petri-net.js';
+import { clearHighlight } from '../petri-net.js';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -40,7 +40,7 @@ export function renderResourceCalendars(calendars, container) {
 }
 
 function showResourceCalendar(resourceName) {
-    revertToOriginalVisualization();
+    clearHighlight();
 
     const display = document.getElementById('calendarDisplay');
     const calendars = state.parameters.resource_params.calendars;

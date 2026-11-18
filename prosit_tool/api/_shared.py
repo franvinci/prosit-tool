@@ -218,16 +218,15 @@ def load_event_log(xes_path):
 
 # --- session ------------------------------------------------------------------------
 
+# How well the net fits the log: computed at discovery, kept with the session.
+MODEL_METRICS = ('fitness', 'precision', 'f_measure')
 
-def load_session_prosit(session, *, with_event_log=False, compute_metrics=False, render=False):
+
+def load_session_prosit(session, *, with_event_log=False, compute_metrics=False):
     """Build a fresh ProSiTIntegration for a session.
 
     Replays the saved Petri net (PNML) and optionally re-imports the XES event
     log. Every request gets its own isolated instance.
-
-    The net is not drawn unless ``render`` is set: the drawing made at
-    discovery is stored with the session, and drawing it again costs an
-    external Graphviz run on every request.
     """
     metadata = session.get_parameters() or {}
     pnml_filename = metadata.get('pnml_filename')
@@ -247,7 +246,7 @@ def load_session_prosit(session, *, with_event_log=False, compute_metrics=False,
             raise FileNotFoundError(f'XES file not found: {session.filename}')
         instance.event_log, _ = load_event_log(xes_path)
 
-    instance.import_petri_net_from_pnml(pnml_path, compute_metrics=compute_metrics, render=render)
+    instance.import_petri_net_from_pnml(pnml_path, compute_metrics=compute_metrics)
     return instance
 
 

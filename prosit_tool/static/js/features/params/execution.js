@@ -5,7 +5,7 @@
 
 import { escapeHtml, on } from '../../core/dom.js';
 import { markParametersDirty, state } from '../../core/state.js';
-import { highlightTransitionVisualization, revertToOriginalVisualization } from '../petri-net.js';
+import { clearHighlight, highlightActivities } from '../petri-net.js';
 import { registerDistributionKind, renderDistributionParameters, renderFamilySelect } from './distribution-editor.js';
 import { editTimeDistribution } from './distributions.js';
 import { renderDecisionTreeDistributionEditor } from './tree-editor.js';
@@ -36,7 +36,7 @@ export function renderExecutionTimeParameters(executionParams) {
 
 /** Show the editor of one activity and highlight it in the drawing. */
 export function showActivityExecution(activityName) {
-    revertToOriginalVisualization();
+    clearHighlight();
 
     const display = document.getElementById('activityExecutionDisplay');
     if (!activityName || !state.parameters.execution_time_params.activity_durations[activityName]) {
@@ -44,7 +44,7 @@ export function showActivityExecution(activityName) {
         return;
     }
 
-    highlightTransitionVisualization(activityName);
+    highlightActivities(activityName);
 
     const params = state.parameters.execution_time_params.activity_durations[activityName];
     if (isTree(params)) {
