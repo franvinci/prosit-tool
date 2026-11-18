@@ -8,11 +8,11 @@ from datetime import datetime
 
 import pandas as pd
 import pm4py
-from flask import Blueprint, request, jsonify, send_file, send_from_directory
+from flask import Blueprint, current_app, request, jsonify, send_file, send_from_directory
 
-from app import app, db
-from models import SimulationRun, SimulationSession
-from validators import validate_num_instances
+from ..extensions import db
+from ..models import SimulationRun, SimulationSession
+from ..validators import validate_num_instances
 
 from ._decorators import handle_api_errors
 from ._shared import load_session_prosit
@@ -40,7 +40,7 @@ def _resolve_run(session, run_id):
 
 def _do_simulate(session, run, num_instances, start_timestamp):
     """Run the ProSiT simulator for ``run``, save the CSV, update the row."""
-    json_filepath = os.path.join(app.config['UPLOAD_FOLDER'], run.parameters_filename)
+    json_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], run.parameters_filename)
     if not os.path.exists(json_filepath):
         return None, ('Stored parameter file not found', 404)
 
@@ -54,7 +54,7 @@ def _do_simulate(session, run, num_instances, start_timestamp):
 
     timestamp = int(datetime.now().timestamp())
     output_filename = f'simulation_{timestamp}_s{session.id}_r{run.id}.csv'
-    output_path = os.path.join(app.config.get('SIMULATION_FOLDER', 'simulations'), output_filename)
+    output_path = os.path.join(current_app.config['SIMULATION_FOLDER'], output_filename)
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     result_df.to_csv(output_path, index=False)
 
@@ -163,7 +163,7 @@ def simulate_run(run_id):
 @bp.route('/api/download/<path:filename>')
 def download_file(filename):
     """Download a generated simulation file. Path-safe via send_from_directory."""
-    folder = app.config.get('SIMULATION_FOLDER', 'simulations')
+    folder = current_app.config['SIMULATION_FOLDER']
     try:
         return send_from_directory(folder, filename, as_attachment=True)
     except (FileNotFoundError, NotADirectoryError):
@@ -173,7 +173,7 @@ def download_file(filename):
 @bp.route('/api/download_xes/<path:filename>')
 def download_xes(filename):
     """Convert a simulated CSV to XES on the fly and serve it."""
-    folder = os.path.abspath(app.config.get('SIMULATION_FOLDER', 'simulations'))
+    folder = os.path.abspath(current_app.config['SIMULATION_FOLDER'])
     csv_path = os.path.abspath(os.path.join(folder, filename))
     if not csv_path.startswith(folder + os.sep) or not os.path.isfile(csv_path):
         return jsonify({'error': 'File not found'}), 404

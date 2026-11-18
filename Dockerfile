@@ -18,8 +18,9 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy environment file first for better caching
-COPY environment.yml .
+# The conda environment installs the tool itself (pip install -e .), so the
+# sources have to be in place before the environment is created.
+COPY . .
 
 # Install conda and create environment
 RUN apt-get update && apt-get install -y wget && \
@@ -42,19 +43,18 @@ RUN apt-get update && apt-get install -y wget && \
     /opt/conda/bin/conda clean -afy && \
     rm -rf /var/lib/apt/lists/*
 
-# Add conda to PATH
-ENV PATH="/opt/conda/envs/prosit/bin:$PATH"
-
-# Copy application code
-COPY . .
+# Use the Python of the environment created above (named in environment.yml)
+ENV PATH="/opt/conda/envs/prosit-tool/bin:$PATH"
 
 # Create necessary directories
 RUN mkdir -p uploads simulations instance
 
 # Set environment variables
-ENV FLASK_APP=main.py
-ENV FLASK_ENV=production
 ENV PYTHONPATH=/app
+# Inside a container the server must accept connections from outside it, and
+# there is no browser to open.
+ENV PROSIT_TOOL_HOST=0.0.0.0
+ENV PROSIT_TOOL_NO_BROWSER=1
 
 # Expose port
 EXPOSE 5050

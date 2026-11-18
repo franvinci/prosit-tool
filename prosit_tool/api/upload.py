@@ -7,12 +7,12 @@ from datetime import datetime
 
 import pandas as pd
 import pm4py
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, current_app, request, jsonify
 from werkzeug.utils import secure_filename
 
-from app import app, db
-from models import SimulationSession
-from validators import validate_noise_threshold
+from ..extensions import db
+from ..models import SimulationSession
+from ..validators import validate_noise_threshold
 
 from ._decorators import handle_api_errors
 
@@ -149,11 +149,11 @@ def upload_file():
 
     base = os.path.splitext(secure_filename(xes_file.filename))[0]
     xes_filename = f"{timestamp}_{base}.xes"
-    xes_filepath = os.path.join(app.config['UPLOAD_FOLDER'], xes_filename)
+    xes_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], xes_filename)
 
     if is_csv:
         csv_filename = f"{timestamp}_{secure_filename(xes_file.filename)}"
-        csv_filepath = os.path.join(app.config['UPLOAD_FOLDER'], csv_filename)
+        csv_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], csv_filename)
         xes_file.save(csv_filepath)
         try:
             _csv_to_xes(csv_filepath, xes_filepath, mapping)
@@ -168,7 +168,7 @@ def upload_file():
         # Save the uploaded XES first; if mapping changes columns, re-read and
         # re-write with renames applied.
         original_xes_filename = f"{timestamp}_orig_{secure_filename(xes_file.filename)}"
-        original_xes_path = os.path.join(app.config['UPLOAD_FOLDER'], original_xes_filename)
+        original_xes_path = os.path.join(current_app.config['UPLOAD_FOLDER'], original_xes_filename)
         xes_file.save(original_xes_path)
         try:
             if has_mapping:
@@ -189,7 +189,7 @@ def upload_file():
     if pnml_file and pnml_file.filename:
         pnml_filename = secure_filename(pnml_file.filename)
         pnml_filename = f"{timestamp}_{pnml_filename}"
-        pnml_filepath = os.path.join(app.config['UPLOAD_FOLDER'], pnml_filename)
+        pnml_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], pnml_filename)
         pnml_file.save(pnml_filepath)
 
     session = SimulationSession(

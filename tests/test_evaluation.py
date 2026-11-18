@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from evaluation import (
+from prosit_tool.evaluation import (
     compute_atd_entropy,
     compute_ctd_entropy,
     compute_etd_entropy,

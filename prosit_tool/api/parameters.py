@@ -9,11 +9,11 @@ import os
 import json
 import logging
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, current_app, request, jsonify
 
-from app import app, db
-from models import SimulationSession
-from format_converters import app_entry_to_prosit, transform_distribution_tree
+from ..extensions import db
+from ..models import SimulationSession
+from ..format_converters import app_entry_to_prosit, transform_distribution_tree
 
 from ._decorators import handle_api_errors
 from ._shared import load_session_prosit
@@ -63,7 +63,7 @@ def get_parameters(session_id):
     if not json_filename:
         return jsonify({'error': 'No parameter file found for this session'}), 404
 
-    json_filepath = os.path.join(app.config['UPLOAD_FOLDER'], json_filename)
+    json_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], json_filename)
     if not os.path.exists(json_filepath):
         return jsonify({'error': 'Parameter JSON file not found'}), 404
 
@@ -114,7 +114,7 @@ def update_parameters(session_id):
     if not baseline or not baseline.parameters_filename:
         return jsonify({'error': 'No baseline parameters for this session'}), 400
 
-    json_filepath = os.path.join(app.config['UPLOAD_FOLDER'], baseline.parameters_filename)
+    json_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], baseline.parameters_filename)
     if not os.path.exists(json_filepath):
         return jsonify({'error': 'Parameter JSON file not found'}), 404
 

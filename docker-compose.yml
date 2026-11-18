@@ -4,11 +4,10 @@ services:
     ports:
       - "5050:5050"
     environment:
-      - FLASK_ENV=production
-      - DATABASE_URL=sqlite:///prosit.db
-      # SESSION_SECRET is required in production. Provide via the host shell or
-      # an .env file (uncomment below). Generate with: python -c "import secrets; print(secrets.token_hex(32))"
-      - SESSION_SECRET=${SESSION_SECRET:?SESSION_SECRET must be set in the environment}
+      # Inside a container the server must accept connections from outside it,
+      # and there is no browser to open.
+      - PROSIT_TOOL_HOST=0.0.0.0
+      - PROSIT_TOOL_NO_BROWSER=1
     volumes:
       - ./uploads:/app/uploads
       - ./simulations:/app/simulations

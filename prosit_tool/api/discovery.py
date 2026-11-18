@@ -4,14 +4,13 @@ import os
 import logging
 from datetime import datetime
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, current_app, request, jsonify
 from pm4py.objects.log.importer.xes import importer as xes_importer
 
-from app import app, db
-from config import Config
-from models import BASELINE_RUN_NAME, SimulationRun, SimulationSession
-from prosit_integration import DiscoveryError, ProSiTIntegration
-from validators import (
+from ..extensions import db
+from ..models import BASELINE_RUN_NAME, SimulationRun, SimulationSession
+from ..prosit_integration import DiscoveryError, ProSiTIntegration
+from ..validators import (
     parse_bool,
     validate_attribute_mode,
     validate_grace_period,
@@ -60,7 +59,7 @@ def discover_parameters(session_id):
     session = SimulationSession.query.get_or_404(session_id)
     try:
         _set_progress(session_id, 'Preparing discovery...')
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], session.filename)
+        filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], session.filename)
         if not os.path.exists(filepath):
             _clear_progress(session_id)
             return jsonify({'error': 'File not found'}), 404
@@ -82,7 +81,7 @@ def discover_parameters(session_id):
         existing_metadata = session.get_parameters() or {}
         pnml_filepath = None
         if 'pnml_filename' in existing_metadata:
-            pnml_filepath = os.path.join(app.config['UPLOAD_FOLDER'], existing_metadata['pnml_filename'])
+            pnml_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], existing_metadata['pnml_filename'])
 
         _set_progress(session_id, 'Loading event log...')
         event_log = xes_importer.apply(filepath)
@@ -121,7 +120,7 @@ def discover_parameters(session_id):
 
         timestamp = int(datetime.now().timestamp())
         json_filename = f"{timestamp}_parameters.json"
-        json_filepath = os.path.join(app.config['UPLOAD_FOLDER'], json_filename)
+        json_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], json_filename)
         prosit.save_parameters_to_json(json_filepath)
 
         # Persist the Petri net so later endpoints can rebuild SimulatorParameters
@@ -227,7 +226,7 @@ def compute_metrics(session_id):
     if not json_filename:
         return jsonify({'error': 'No discovered parameters; run discovery first'}), 400
 
-    json_filepath = os.path.join(app.config['UPLOAD_FOLDER'], json_filename)
+    json_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], json_filename)
     if not os.path.exists(json_filepath):
         return jsonify({'error': 'Parameter file missing'}), 404
 

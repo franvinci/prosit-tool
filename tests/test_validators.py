@@ -2,7 +2,7 @@
 
 import pytest
 
-from validators import (
+from prosit_tool.validators import (
     parse_bool,
     validate_attribute_mode,
     validate_grace_period,

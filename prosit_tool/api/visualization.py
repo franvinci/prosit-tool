@@ -9,10 +9,9 @@ import pandas as pd
 import pm4py
 from pm4py.visualization.dfg.variants import performance as dfg_perf_visualizer
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, current_app, request, jsonify
 
-from app import app
-from models import SimulationRun, SimulationSession
+from ..models import SimulationRun, SimulationSession
 
 from ._decorators import handle_api_errors
 
@@ -66,7 +65,7 @@ def _load_simulation_df(session, run_id=None):
     if not sim_log_filename:
         return None, ('Simulated log file not found.', 404)
 
-    sim_log_filepath = os.path.join(app.config.get('SIMULATION_FOLDER', 'simulations'), sim_log_filename)
+    sim_log_filepath = os.path.join(current_app.config['SIMULATION_FOLDER'], sim_log_filename)
     if not os.path.exists(sim_log_filepath):
         return None, ('Simulated log file not found on server.', 404)
 
@@ -98,11 +97,11 @@ def _svg_cache_get(session, viz_type, params, run_id=None):
     sim_log_filename = run.simulation_df_filename if run else None
     if not sim_log_filename:
         return None
-    sim_log_filepath = os.path.join(app.config.get('SIMULATION_FOLDER', 'simulations'), sim_log_filename)
+    sim_log_filepath = os.path.join(current_app.config['SIMULATION_FOLDER'], sim_log_filename)
     if not os.path.exists(sim_log_filepath):
         return None
     mtime = os.path.getmtime(sim_log_filepath)
-    key = (session.id, run.id if run else None, viz_type, tuple(sorted(params.items())), mtime)
+    key = (sim_log_filepath, mtime, viz_type, tuple(sorted(params.items())))
     payload = _SVG_CACHE.get(key)
     if payload is not None:
         _SVG_CACHE.move_to_end(key)
@@ -114,11 +113,11 @@ def _svg_cache_set(session, viz_type, params, payload, run_id=None):
     sim_log_filename = run.simulation_df_filename if run else None
     if not sim_log_filename:
         return
-    sim_log_filepath = os.path.join(app.config.get('SIMULATION_FOLDER', 'simulations'), sim_log_filename)
+    sim_log_filepath = os.path.join(current_app.config['SIMULATION_FOLDER'], sim_log_filename)
     if not os.path.exists(sim_log_filepath):
         return
     mtime = os.path.getmtime(sim_log_filepath)
-    key = (session.id, run.id if run else None, viz_type, tuple(sorted(params.items())), mtime)
+    key = (sim_log_filepath, mtime, viz_type, tuple(sorted(params.items())))
     _SVG_CACHE[key] = payload
     while len(_SVG_CACHE) > _SVG_CACHE_MAX:
         _SVG_CACHE.popitem(last=False)

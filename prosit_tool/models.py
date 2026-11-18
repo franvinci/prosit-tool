@@ -1,8 +1,8 @@
-from app import db
+from .extensions import db
 from datetime import datetime
 import json
 
-from config import Config
+from .config import Config
 
 
 BASELINE_RUN_NAME = 'As-Is'

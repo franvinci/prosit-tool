@@ -1,34 +1,11 @@
 """Security-focused tests for the bug fixes in Phase 2."""
 
-import pytest
-
-
 def test_no_path_traversal_download(client):
     """BUG #5: download endpoint must reject relative paths escaping the folder."""
     # send_from_directory normalizes the path and refuses anything that resolves
     # outside the simulations folder. We expect a 4xx (404 in practice).
     resp = client.get("/api/download/..%2F..%2Fapp.py")
     assert resp.status_code in (400, 404)
-
-
-def test_secret_key_required_in_prod(monkeypatch):
-    """BUG #4: _resolve_secret_key must raise in production without SESSION_SECRET."""
-    from app import _resolve_secret_key
-    monkeypatch.delenv("SESSION_SECRET", raising=False)
-    monkeypatch.delenv("FLASK_DEBUG", raising=False)
-    monkeypatch.setenv("FLASK_ENV", "production")
-
-    with pytest.raises(RuntimeError, match="SESSION_SECRET"):
-        _resolve_secret_key()
-
-
-def test_secret_key_generated_in_dev(monkeypatch):
-    """In dev/testing the function returns a non-empty ephemeral key."""
-    from app import _resolve_secret_key
-    monkeypatch.delenv("SESSION_SECRET", raising=False)
-    monkeypatch.setenv("FLASK_ENV", "development")
-    key = _resolve_secret_key()
-    assert isinstance(key, str) and len(key) >= 32
 
 
 def test_concurrent_discover_no_state_leak(client, small_xes_path):
@@ -83,8 +60,7 @@ def test_internal_error_does_not_leak_stack_trace(client, small_xes_path, tmp_pa
     # tries to load the event log. The file-existence check happens BEFORE
     # the load, so we need to bypass it: rename instead of delete to keep the
     # `os.path.exists` check happy and trigger the failure deeper in pm4py.
-    from app import app as flask_app
-    upload_folder = flask_app.config["UPLOAD_FOLDER"]
+    upload_folder = client.application.config["UPLOAD_FOLDER"]
     xes_path = os.path.join(upload_folder, upload["filename"])
     # Truncate to a non-XES payload so xes_importer.apply raises.
     with open(xes_path, "wb") as f:

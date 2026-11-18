@@ -15,11 +15,10 @@ import logging
 import shutil
 from datetime import datetime
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, current_app, request, jsonify
 
-from app import app, db
-from models import SimulationRun, SimulationSession, BASELINE_RUN_NAME
-from format_converters import app_entry_to_prosit, transform_distribution_tree
+from ..extensions import db
+from ..models import SimulationRun, SimulationSession, BASELINE_RUN_NAME
 
 from ._decorators import handle_api_errors
 from ._shared import load_session_prosit
@@ -35,7 +34,7 @@ bp = Blueprint('runs', __name__)
 
 
 def _params_path(filename):
-    return os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    return os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
 
 
 def _snapshot_filename(run_id, baseline_filename):
@@ -221,7 +220,7 @@ def delete_run(run_id):
             pass
     if run.simulation_df_filename:
         sim_path = os.path.join(
-            app.config.get('SIMULATION_FOLDER', 'simulations'),
+            current_app.config['SIMULATION_FOLDER'],
             run.simulation_df_filename,
         )
         try:
@@ -265,7 +264,7 @@ def delete_session(session_id):
         if metadata.get(key):
             upload_files.append(metadata[key])
 
-    sim_folder = app.config.get('SIMULATION_FOLDER', 'simulations')
+    sim_folder = current_app.config['SIMULATION_FOLDER']
     for run in session.runs:
         if run.parameters_filename:
             upload_files.append(run.parameters_filename)

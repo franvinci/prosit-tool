@@ -7,7 +7,7 @@ produce in routes.py / prosit_integration.py.
 
 import pytest
 
-from format_converters import (
+from prosit_tool.format_converters import (
     app_entry_to_prosit,
     distribution_from_prosit,
     distribution_to_prosit,

@@ -4,9 +4,9 @@ import io
 
 import pandas as pd
 
-import prosit_integration
-from evaluation import NO_RESOURCE_LABEL, compute_handover_error, compute_resource_ngd
-from prosit_integration import describe_exception, unstaffed_activities
+from prosit_tool import prosit_integration
+from prosit_tool.evaluation import NO_RESOURCE_LABEL, compute_handover_error, compute_resource_ngd
+from prosit_tool.prosit_integration import describe_exception, unstaffed_activities
 
 
 def _upload(client, xes_path):
@@ -37,8 +37,8 @@ def test_failed_discovery_returns_error_instead_of_made_up_parameters(client, ti
     simulate = client.post(f"/api/simulate/{sid}", json={"num_instances": 2})
     assert simulate.status_code == 400
 
-    from models import SimulationSession
-    from app import db
+    from prosit_tool.extensions import db
+    from prosit_tool.models import SimulationSession
     assert db.session.get(SimulationSession, sid).status == "error"
 
 

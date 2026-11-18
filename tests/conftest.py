@@ -1,48 +1,62 @@
-"""Shared pytest fixtures for the prosit-tool smoke suite.
+"""Shared pytest fixtures for the prosit-tool suite.
 
-Spins up the real Flask app pointed at tmp directories and an isolated
-SQLite database. Each test gets a fresh database and clean upload/sim
-folders so they cannot interfere with each other.
+Every test gets its own application, built by the factory on a temporary data
+directory: its own SQLite file, upload folder and simulation folder. Nothing is
+read from, or written to, the real data or the environment of whoever runs the
+tests.
 """
 
-import os
 import sys
 from pathlib import Path
 
-# Set env vars BEFORE importing app — app.py reads them at module load.
-os.environ.setdefault("SESSION_SECRET", "test-secret-dont-use-in-prod")
-os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
-
-# Make the project root importable.
+# Make the checkout importable without installing it.
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 import pytest
-from app import app as flask_app, db
+
+from prosit_tool.app import create_app
+from prosit_tool.extensions import db
 
 
 PURCHASING_XES = PROJECT_ROOT / "example_data" / "purchasing.xes"
 
+# Settings a developer may have exported for their own instance. A test must
+# never pick them up: DATABASE_URL in particular would point the suite at a
+# real database.
+_AMBIENT_SETTINGS = (
+    "DATABASE_URL",
+    "SESSION_SECRET",
+    "PROSIT_TOOL_DATA_DIR",
+    "PROSIT_TOOL_HOST",
+    "PROSIT_TOOL_PORT",
+    "PROSIT_TOOL_NO_BROWSER",
+    "FLASK_PORT",
+)
+
+
+@pytest.fixture(autouse=True)
+def _isolated_environment(monkeypatch):
+    for name in _AMBIENT_SETTINGS:
+        monkeypatch.delenv(name, raising=False)
+
 
 @pytest.fixture
-def client(tmp_path):
-    """Flask test client backed by a fresh tmp database and folders."""
-    uploads = tmp_path / "uploads"
-    sims = tmp_path / "simulations"
-    uploads.mkdir()
-    sims.mkdir()
-
-    flask_app.config["UPLOAD_FOLDER"] = str(uploads)
-    flask_app.config["SIMULATION_FOLDER"] = str(sims)
-    flask_app.config["TESTING"] = True
-
-    with flask_app.app_context():
-        db.drop_all()
-        db.create_all()
-        with flask_app.test_client() as c:
-            yield c
+def app(tmp_path):
+    """A fresh application whose data directory is ``tmp_path/data``."""
+    application = create_app(tmp_path / "data", testing=True)
+    yield application
+    with application.app_context():
         db.session.remove()
-        db.drop_all()
+        db.engine.dispose()
+
+
+@pytest.fixture
+def client(app):
+    """Flask test client; an application context stays active for the test."""
+    with app.app_context():
+        with app.test_client() as c:
+            yield c
 
 
 @pytest.fixture(scope="session")

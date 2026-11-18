@@ -42,9 +42,6 @@ Docker bundles the Python environment, system dependencies (Graphviz), and the a
 git clone https://github.com/franvinci/prosit-tool
 cd prosit-tool
 
-# SESSION_SECRET is required in production. Generate one once and export it.
-export SESSION_SECRET=$(python -c "import secrets; print(secrets.token_hex(32))")
-
 docker-compose up -d --build
 ```
 
@@ -80,14 +77,14 @@ The application is then available at `http://localhost:5050`.
 | `pm4py` | 2.7 | Event log parsing, Petri net discovery and conformance |
 | `flask` | 3.1 | Web framework |
 | `flask-sqlalchemy` | 3.1 | Session persistence (SQLite by default) |
-| `gunicorn` | 23.0 | Production WSGI server |
+| `waitress` | 3.0 | WSGI server (runs on Windows, macOS and Linux) |
+| `platformdirs` | 4 | Location of the per-user data directory |
 | `scikit-learn` | 1.6 | Decision tree models (batch discovery) |
 | `river` | 0.22 | Hoeffding Adaptive Tree (incremental discovery) |
 | `scipy` | 1.14 | Distribution fitting and sampling |
 | `pandas` | 2.2 | DataFrame manipulation |
 | `numpy` | 1.26 | Numerical operations |
 | `matplotlib` | 3.10 | Visualisation rendering |
-| `seaborn` | 0.13 | Statistical plots |
 | `graphviz` | 0.21 | Process model rendering (also requires the system Graphviz binary) |
 | `log-distance-measures` | 2.0 | Accuracy metrics between real and simulated logs |
 
@@ -209,7 +206,7 @@ The optional Petri net file is read with `pm4py.read_pnml`. When provided, ProSi
 
 ## Architecture
 
-ProSiT is a Flask application with a thin server-side template layer and a JavaScript frontend that drives all interactive parameter editing. State is persisted per session in SQLite via SQLAlchemy. The simulation engine itself is the `prosit-pm` library, invoked through `prosit_integration.py`.
+ProSiT is a Flask application with a thin server-side template layer and a JavaScript frontend that drives all interactive parameter editing. State is persisted per session in SQLite via SQLAlchemy. The simulation engine itself is the `prosit-pm` library, invoked through `prosit_tool/prosit_integration.py`.
 
 ![System Architecture](doc/diagram.png)
 
@@ -221,34 +218,39 @@ The integration layer (`prosit_integration.py`, `format_converters.py`) is respo
 
 ```
 prosit-tool/
-├── app.py                  # Flask application factory
-├── main.py                 # Entry point (launches gunicorn or the dev server)
-├── models.py               # SQLAlchemy models (SimulationSession, Run)
-├── config.py               # Centralised configuration constants
-├── validators.py           # Request input validators
-├── api/                    # Flask blueprints
-│   ├── upload.py           # XES/CSV/PNML upload + column mapping
-│   ├── discovery.py        # Petri net + parameter discovery
-│   ├── parameters.py       # GET/PUT discovered parameters
-│   ├── simulation.py       # Simulation execution and metrics
-│   ├── runs.py             # What-if scenario management
-│   ├── visualization.py    # Chart and process-map renderers
-│   ├── errors.py           # JSON error handlers
-│   ├── _shared.py          # Cross-blueprint helpers
-│   └── _decorators.py      # @handle_api_errors decorator
-├── prosit_integration.py   # prosit-pm integration layer
-├── format_converters.py    # UI <-> prosit-pm distribution conversions
-├── evaluation.py           # Accuracy metrics (real vs simulated)
-├── templates/              # Jinja templates
-├── static/                 # CSS, JavaScript, static assets
-├── installer/              # Platform-specific Docker helper scripts
-├── example_data/           # Sample XES/CSV logs
-├── tests/                  # Pytest suite
-├── docker-compose.yml      # Docker Compose configuration
-├── Dockerfile              # Production image definition
-├── environment.yml         # Conda environment specification
-├── LICENSE                 # MIT License
-└── README.md               # This documentation
+├── prosit_tool/                # The installable package
+│   ├── app.py                  # Application factory: create_app()
+│   ├── cli.py                  # `prosit-tool` command (server + browser)
+│   ├── config.py               # Constants, data directory, secret key
+│   ├── extensions.py           # SQLAlchemy instance
+│   ├── models.py               # SQLAlchemy models (SimulationSession, SimulationRun)
+│   ├── validators.py           # Request input validators
+│   ├── api/                    # Flask blueprints
+│   │   ├── upload.py           # XES/CSV/PNML upload + column mapping
+│   │   ├── discovery.py        # Petri net + parameter discovery
+│   │   ├── parameters.py       # GET/PUT discovered parameters
+│   │   ├── simulation.py       # Simulation execution and downloads
+│   │   ├── runs.py             # What-if scenario management
+│   │   ├── visualization.py    # Chart and process-map renderers
+│   │   ├── system.py           # Health check
+│   │   ├── errors.py           # JSON error handlers
+│   │   ├── _shared.py          # Cross-blueprint helpers
+│   │   └── _decorators.py      # @handle_api_errors decorator
+│   ├── prosit_integration.py   # prosit-pm integration layer
+│   ├── format_converters.py    # UI <-> prosit-pm distribution conversions
+│   ├── evaluation.py           # Accuracy metrics (real vs simulated)
+│   ├── templates/              # Jinja templates
+│   └── static/                 # CSS, JavaScript, static assets
+├── main.py                     # Run from a checkout, keeping data in the checkout
+├── pyproject.toml              # Package metadata, dependencies, entry point
+├── installer/                  # Platform-specific Docker helper scripts
+├── example_data/               # Sample XES/CSV logs
+├── tests/                      # Pytest suite
+├── docker-compose.yml          # Docker Compose configuration
+├── Dockerfile                  # Production image definition
+├── environment.yml             # Conda environment (installs the package in editable mode)
+├── LICENSE                     # MIT License
+└── README.md                   # This documentation
 ```
 
 ---
@@ -260,6 +262,7 @@ The HTTP API is what the in-browser frontend uses; it is also usable directly fo
 | Method | Path | Purpose |
 |---|---|---|
 | `GET` | `/` | Main application interface |
+| `GET` | `/api/health` | Application name and version (used to detect a running instance) |
 | `POST` | `/api/upload` | Upload XES or CSV log (and optional PNML); creates a session |
 | `POST` | `/api/discover/<session_id>` | Run discovery (Petri net + parameters) |
 | `GET` | `/api/discover/<session_id>/progress` | Discovery progress stream |
@@ -285,19 +288,30 @@ The HTTP API is what the in-browser frontend uses; it is also usable directly fo
 
 ## Configuration
 
+### Command-line options
+
+```
+prosit-tool [--host HOST] [--port PORT] [--data-dir DIR] [--no-browser] [--version]
+```
+
+`python main.py` accepts the same options and keeps the data inside the checkout.
+
 ### Environment variables
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `FLASK_ENV` | `production` | Flask environment (`development` enables debug) |
-| `FLASK_PORT` | `5050` | Port the application binds to |
-| `DATABASE_URL` | `sqlite:///prosit.db` | SQLAlchemy connection string |
-| `SESSION_SECRET` | (required in production) | Secret key for Flask sessions. Generate with `python -c "import secrets; print(secrets.token_hex(32))"` |
-| `MAX_CONTENT_LENGTH` | `100 MB` | Maximum upload size |
+| `PROSIT_TOOL_DATA_DIR` | per-user data directory | Where uploads, simulation logs and the database are kept |
+| `PROSIT_TOOL_HOST` | `127.0.0.1` | Address to listen on. The default accepts connections from this computer only; use `0.0.0.0` to accept them from the network |
+| `PROSIT_TOOL_PORT` | `5050` | Port to listen on (`FLASK_PORT` is still accepted). Without it, the next free port is used when 5050 is taken |
+| `PROSIT_TOOL_NO_BROWSER` | unset | Set to `1` to not open the browser at start-up |
+| `DATABASE_URL` | SQLite file in the data directory | SQLAlchemy connection string |
+| `SESSION_SECRET` | generated on first start | Secret key for Flask. Optional: when unset, a random key is created once and stored in the data directory |
+
+The per-user data directory is `~/.local/share/prosit-tool` on Linux, `~/Library/Application Support/prosit-tool` on macOS and `%LOCALAPPDATA%\prosit-tool` on Windows. It contains `uploads/`, `simulations/` and `instance/prosit.db`.
 
 ### Constants
 
-Other defaults (discovery thresholds, simulation bounds, upload folder, simulation folder) are defined in `config.py`. Edit the `Config` class to change them.
+Other defaults (discovery thresholds, simulation bounds, maximum upload size of 100 MB) are defined in `prosit_tool/config.py`. Edit the `Config` class to change them.
 
 ### Database
 
@@ -337,8 +351,11 @@ conda activate prosit-tool
 # Run the test suite
 pytest
 
-# Run in development mode (debug + auto-reload)
-FLASK_ENV=development python main.py
+# Run from the checkout (data stays in ./uploads, ./simulations, ./instance)
+python main.py
+
+# Same, with Flask's debugger and auto-reload
+PROSIT_TOOL_DATA_DIR=. flask --app prosit_tool.app run --debug --port 5050
 ```
 
 Tests live under `tests/` and cover smoke, security, and unit-level behaviour. The pytest configuration is in `pytest.ini`.

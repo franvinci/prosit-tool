@@ -7,7 +7,7 @@ err}), 400`` instead of letting ``int(request.args.get(...))`` raise a 500.
 
 from typing import Tuple
 
-from config import Config
+from .config import Config
 
 
 def _coerce_int(raw, default):

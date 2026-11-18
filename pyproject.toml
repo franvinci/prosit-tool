@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "prosit-tool"
+dynamic = ["version"]
+description = "Web tool for data-driven business process simulation, built on prosit-pm"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Francesco Vinci" }]
+keywords = ["process mining", "business process simulation", "petri net", "what-if analysis"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Framework :: Flask",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = [
+    # Simulation engine. Pinned exactly: the tool reads and writes its parameter
+    # format and is tested against this release.
+    "prosit-pm==1.0.5",
+    "pm4py>=2.7.17,<2.8",
+    "log-distance-measures>=2.0,<2.3",
+    "flask>=3.1,<4",
+    "flask-sqlalchemy>=3.1,<4",
+    "sqlalchemy>=2.0,<3",
+    "waitress>=3.0,<4",
+    "platformdirs>=4",
+    "pandas>=2.2,<3",
+    "numpy>=1.26,<2",
+    "scipy>=1.14,<2",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.scripts]
+prosit-tool = "prosit_tool.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/franvinci/prosit-tool"
+Repository = "https://github.com/franvinci/prosit-tool"
+Issues = "https://github.com/franvinci/prosit-tool/issues"
+
+[tool.setuptools.dynamic]
+version = { attr = "prosit_tool.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["prosit_tool*"]
+
+[tool.setuptools.package-data]
+prosit_tool = ["templates/**/*", "static/**/*"]

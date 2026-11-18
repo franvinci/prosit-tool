@@ -9,8 +9,8 @@ from pm4py.algo.evaluation.replay_fitness import algorithm as fitness_evaluator
 from pm4py.algo.evaluation.precision import algorithm as precision_evaluator
 
 from prosit.simulator import SimulatorParameters, SimulatorEngine
-from evaluation import evaluate, compute_log_kpis, compute_log_charts
-from format_converters import distribution_from_prosit
+from .evaluation import evaluate, compute_log_kpis, compute_log_charts
+from .format_converters import distribution_from_prosit
 
 logger = logging.getLogger(__name__)
 
