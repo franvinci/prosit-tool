@@ -228,7 +228,7 @@ prosit-tool/
 │   ├── api/                    # Flask blueprints
 │   │   ├── upload.py           # XES/CSV/PNML upload + column mapping
 │   │   ├── discovery.py        # Petri net + parameter discovery
-│   │   ├── parameters.py       # GET/PUT discovered parameters
+│   │   ├── parameters.py       # Parameters of a session; storing what the UI edits
 │   │   ├── simulation.py       # Simulation execution and downloads
 │   │   ├── runs.py             # What-if scenario management
 │   │   ├── visualization.py    # Chart and process-map renderers
@@ -240,12 +240,12 @@ prosit-tool/
 │   ├── format_converters.py    # UI <-> prosit-pm distribution conversions
 │   ├── evaluation.py           # Accuracy metrics (real vs simulated)
 │   ├── templates/              # Jinja templates
-│   └── static/                 # CSS, JavaScript, static assets
+│   └── static/                 # CSS and JavaScript (ES modules under js/, no build step)
 ├── main.py                     # Run from a checkout, keeping data in the checkout
 ├── pyproject.toml              # Package metadata, dependencies, entry point
 ├── installer/                  # Platform-specific Docker helper scripts
 ├── example_data/               # Sample XES/CSV logs
-├── tests/                      # Pytest suite
+├── tests/                      # Pytest suite; JavaScript unit tests under js/
 ├── docker-compose.yml          # Docker Compose configuration
 ├── Dockerfile                  # Production image definition
 ├── environment.yml             # Conda environment (installs the package in editable mode)
@@ -267,7 +267,6 @@ The HTTP API is what the in-browser frontend uses; it is also usable directly fo
 | `POST` | `/api/discover/<session_id>` | Run discovery (Petri net + parameters) |
 | `GET` | `/api/discover/<session_id>/progress` | Discovery progress stream |
 | `GET` | `/api/parameters/<session_id>` | Load discovered parameters for a session |
-| `PUT` | `/api/parameters/<session_id>` | Save edited parameters for the baseline run |
 | `POST` | `/api/simulate/<session_id>` | Run a simulation for the baseline run |
 | `POST` | `/api/metrics/<session_id>` | Compute accuracy metrics (real vs simulated) |
 | `GET` | `/api/sessions/<session_id>/runs` | List what-if runs |
@@ -359,6 +358,14 @@ PROSIT_TOOL_DATA_DIR=. flask --app prosit_tool.app run --debug --port 5050
 ```
 
 Tests live under `tests/` and cover smoke, security, and unit-level behaviour. The pytest configuration is in `pytest.ini`.
+
+The page's JavaScript is plain ES modules served as they are (`prosit_tool/static/js`, entry point `app.js`): there is nothing to build or install. Its unit tests are in `tests/js` and run with Node.js 20.19 or later, with no dependencies:
+
+```bash
+node --test tests/js
+```
+
+`pytest` runs them too when Node.js is available, together with checks that every module imports names that exist and that every button of the page names an action that is handled.
 
 ---
 

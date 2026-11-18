@@ -31,10 +31,6 @@
     color: var(--primary-purple) !important;
 }
 
-.border-primary {
-    border-color: var(--primary-purple) !important;
-}
-
 .bg-success {
     background-color: var(--primary-green) !important;
 }
@@ -55,18 +51,6 @@
 
 .bg-info {
     background-color: var(--light-green) !important;
-}
-
-.btn-info {
-    background-color: var(--light-green);
-    border-color: var(--light-green);
-    color: white;
-}
-
-.btn-info:hover {
-    background-color: var(--dark-green);
-    border-color: var(--dark-green);
-    color: white;
 }
 
 /* Body and layout */
@@ -245,48 +229,6 @@ body {
     }
 }
 
-/* Animation classes */
-.fade-in {
-    animation: fadeIn 0.5s ease-in;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.slide-in {
-    animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-    from { transform: translateX(-20px); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-}
-
-/* Parameter editor specific styles */
-.parameter-section {
-    background: white;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    border-left: 4px solid var(--primary-green);
-}
-
-.parameter-item {
-    padding: 0.75rem;
-    border-bottom: 1px solid var(--border-color);
-    transition: background-color 0.2s ease;
-}
-
-.parameter-item:hover {
-    background-color: rgba(123, 44, 191, 0.05);
-}
-
-.parameter-item:last-child {
-    border-bottom: none;
-}
-
 /* File upload styling */
 .form-control[type="file"] {
     border: 2px dashed var(--border-color);
@@ -307,11 +249,6 @@ body {
     background-color: var(--border-color);
 }
 
-.progress-bar {
-    background: linear-gradient(45deg, var(--primary-purple), var(--primary-green));
-    border-radius: 4px;
-}
-
 /* Modal customization */
 .modal-content {
     border: none;
@@ -324,14 +261,7 @@ body {
     border-radius: 15px 15px 0 0;
 }
 
-/* Calendar styling for resource and arrival time calendars */
-.calendar-grid {
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    gap: 2px;
-    margin-bottom: 1rem;
-}
-
+/* Hour buttons of the resource and arrival calendars */
 .calendar-hour-btn {
     width: 35px !important;
     height: 25px !important;
@@ -353,13 +283,6 @@ body {
     border-color: #28a745 !important;
 }
 
-.calendar-day-header {
-    font-weight: 600;
-    color: var(--text-dark);
-    margin-bottom: 0.5rem;
-    font-size: 0.9rem;
-}
-
 /* Arrival calendar specific styling */
 .arrival-calendar-hour {
     background-color: #f8f9fa;
@@ -379,44 +302,9 @@ body {
     border-color: #adb5bd;
 }
 
-/* Resource calendar specific styling */
-.resource-calendar-container {
-    max-height: 300px;
-    overflow-y: auto;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 1rem;
-}
-
-.btn-purple {
-    background-color: #90EE90 !important; /* Changed to light green */
-    border-color: #28a745 !important;
-    color: #000 !important;
-}
-
-.btn-purple:hover {
-    background-color: #7FDD7F !important;
-    border-color: #20a039 !important;
-    color: #000 !important;
-}
-
 .modal-footer {
     border-top: 2px solid var(--border-color);
     border-radius: 0 0 15px 15px;
-}
-
-/* Loading states */
-.loading-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(255, 255, 255, 0.9);
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 /* Feather icon adjustments */
@@ -508,57 +396,14 @@ h1 [data-feather], h2 [data-feather], h3 [data-feather] {
     }
 }
 
-/* Tree node styling improvements */
-.tree-node {
-    position: relative;
-}
-
-.tree-node::before {
-    content: '';
-    position: absolute;
-    left: -2px;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background-color: var(--border-color);
-    transition: background-color 0.2s ease;
-}
-
-.tree-node:hover::before {
-    background-color: var(--primary-purple);
-}
-
-/* Leaf node styling */
-.tree-leaf {
-    background-color: rgba(6, 214, 160, 0.05);
-    border-radius: 6px;
-    padding: 0.5rem;
-    margin: 0.25rem 0;
-    border-left: 3px solid var(--primary-green);
-}
-
-/* Split node styling */
-.tree-split {
-    background-color: rgba(123, 44, 191, 0.05);
-    border-radius: 6px;
-    padding: 0.5rem;
-    margin: 0.25rem 0;
-    border-left: 3px solid var(--primary-purple);
-}
-
 /* Visualization containers — let big SVGs (process maps, Petri nets) scale down
    to fit the viewport instead of pushing the layout sideways. */
-.process-map-svg-container,
-.case-duration-svg-container,
-.petri-net-svg-container {
+.process-map-svg-container {
     overflow-x: auto;
     overflow-y: hidden;
     text-align: center;
 }
-
-.process-map-svg-container svg,
-.case-duration-svg-container svg,
-.petri-net-svg-container svg {
+.process-map-svg-container svg {
     max-width: 100%;
     height: auto;
 }
@@ -767,4 +612,17 @@ h1 [data-feather], h2 [data-feather], h3 [data-feather] {
     background: #adb5bd;
     transform: none;
     box-shadow: none;
+}
+
+/* "Generate Simulated Event Log", the main action of the simulation card */
+.btn-run-simulation {
+    background: linear-gradient(135deg, #28a745 0%, #20a039 100%);
+    border: none;
+    color: white;
+    transition: all 0.3s ease;
+}
+.btn-run-simulation:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+    color: white;
 }

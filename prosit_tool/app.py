@@ -1,10 +1,24 @@
 """Flask application factory."""
 
+import mimetypes
+
 from flask import Flask
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from .config import Config, resolve_data_paths, resolve_database_url, resolve_secret_key
 from .extensions import db
+
+
+def _register_static_types():
+    """Name the type of scripts and style sheets ourselves.
+
+    A browser loads a JavaScript module, or a style sheet, only if the server
+    declares the right content type. Python takes the types from the system,
+    and on Windows the registry sometimes says that ``.js`` is plain text: the
+    page would stay blank.
+    """
+    mimetypes.add_type('text/javascript', '.js')
+    mimetypes.add_type('text/css', '.css')
 
 
 def create_app(data_dir=None, *, database_url=None, testing=False) -> Flask:
@@ -18,6 +32,7 @@ def create_app(data_dir=None, *, database_url=None, testing=False) -> Flask:
             SQLite file inside ``data_dir``.
         testing: Sets Flask's ``TESTING`` flag.
     """
+    _register_static_types()
     paths = resolve_data_paths(data_dir).create()
 
     # instance_path keeps a relative SQLite URL (``sqlite:///prosit.db``)

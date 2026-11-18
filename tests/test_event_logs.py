@@ -134,6 +134,25 @@ def test_csv_with_every_column_mapped_has_no_warnings(client, discovered, tmp_pa
     assert sorted(body['parameters']['resource_params']['resources']) == ['w0', 'w1']
 
 
+def test_csv_timestamps_finer_than_microseconds_can_be_read_back(client, discovered, tmp_path):
+    """Written with nine decimals, pm4py on Python 3.10 would lose every timestamp."""
+    lines = []
+    base = pd.Timestamp('2024-01-01 08:00:00.123456789')
+    for case in range(6):
+        for position, task in enumerate(('A', 'B', 'C')):
+            begin = base + pd.Timedelta(hours=case * 3 + position)
+            lines.append(f'{case},{task},{begin + pd.Timedelta(minutes=20)},{begin},w{position % 2}')
+    assert lines[0].count('.123456789') == 2
+    path = _csv(tmp_path, '\n'.join(lines) + '\n')
+
+    session_id, body = discovered(path, case_id_col='Case', activity_col='Task', end_ts_col='Done',
+                                  start_ts_col='Began', resource_col='Who')
+
+    assert body['warnings'] == []
+    assert sorted(body['process_model']['activities']) == ['A', 'B', 'C']
+    assert client.post(f'/api/simulate/{session_id}', json={'num_instances': 3}).status_code == 200
+
+
 def test_csv_with_empty_resource_cells_has_no_resource_called_nan(client, discovered, tmp_path):
     lines = _csv_rows().splitlines()
     lines[0] = lines[0].rsplit(',', 1)[0] + ','      # first event: resource cell left empty

@@ -1,8 +1,8 @@
-"""Parameters endpoint: GET (load) and PUT (update) parameters for a session.
+"""Parameters of a session: loading them for the UI, and storing what it sends back.
 
-Both endpoints operate on the session's baseline (As-Is) run by default. The
-``/api/runs/<run_id>`` endpoints are the preferred way to address a specific
-what-if scenario.
+``GET /api/parameters/<session_id>`` returns the baseline (As-Is) scenario,
+which is what discovery found and is never written again. Scenarios are read
+and written through ``/api/runs/<run_id>``.
 
 This module also owns the translation of what the UI sends back into the
 prosit-pm JSON document of a run (``convert_app_to_prosit_format``).
@@ -13,7 +13,7 @@ import json
 import logging
 import math
 
-from flask import Blueprint, current_app, request, jsonify
+from flask import Blueprint, current_app, jsonify
 
 from ..extensions import db
 from ..models import SimulationSession
@@ -168,38 +168,6 @@ def load_parameters_for_ui(session, json_filepath):
         merged.update(session_metadata.get('prosit_metrics') or {})
         parameters['prosit_metrics'] = merged
     return parameters
-
-
-@bp.route('/api/parameters/<int:session_id>', methods=['PUT'])
-@handle_api_errors('Failed to update parameters')
-def update_parameters(session_id):
-    """Backward-compat: applies UI-format edits to the baseline run.
-
-    Prefer ``PUT /api/runs/<run_id>`` for writing to a specific scenario.
-    """
-    session = db.get_or_404(SimulationSession, session_id)
-
-    new_parameters = request.get_json()
-    if not new_parameters:
-        return jsonify({'error': 'No parameters provided'}), 400
-
-    baseline = session.get_baseline_run()
-    if not baseline or not baseline.parameters_filename:
-        return jsonify({'error': 'No baseline parameters for this session'}), 400
-
-    json_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], baseline.parameters_filename)
-    if not os.path.exists(json_filepath):
-        return jsonify({'error': 'Parameter JSON file not found'}), 404
-
-    try:
-        apply_ui_parameters_to_file(json_filepath, new_parameters)
-    except ParameterError as exc:
-        return jsonify({'error': str(exc)}), 400
-
-    session.touch()
-    db.session.commit()
-    logger.info(f"Parameters updated for session {session_id} (baseline run {baseline.id})")
-    return jsonify({'success': True, 'message': 'Parameters updated successfully'})
 
 
 def apply_ui_parameters_to_file(json_filepath, ui_params):

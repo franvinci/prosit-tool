@@ -109,17 +109,21 @@ def test_invalid_parameters_do_not_create_a_scenario(client, app, discovered, ti
     assert data_files() == files_before  # no half-written snapshot left behind
 
 
-def test_legacy_baseline_endpoint_validates_too(client, app, discovered, tiny_xes_path):
+def test_baseline_cannot_be_written_through_the_parameters_endpoint(client, app, discovered, tiny_xes_path):
+    """The baseline is what discovery found: scenarios are edited, it is not."""
     session_id, body = discovered(tiny_xes_path)
     name = sorted(body['parameters']['transition_params']['transition_weights'])[0]
+    path = os.path.join(app.config['UPLOAD_FOLDER'], body['json_filename'])
+    with open(path) as handle:
+        before = handle.read()
 
     response = client.put(f'/api/parameters/{session_id}', json={
-        'transition_params': {'transition_weights': {name: -3}},
+        'transition_params': {'transition_weights': {name: 0.5}},
     })
 
-    assert response.status_code == 400
-    with open(os.path.join(app.config['UPLOAD_FOLDER'], body['json_filename'])) as handle:
-        assert json.load(handle)['transition_params']['transition_weights'][name] >= 0
+    assert response.status_code == 405
+    with open(path) as handle:
+        assert handle.read() == before
 
 
 # --- decision trees (models discovered with rules) ----------------------------------

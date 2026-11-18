@@ -78,7 +78,15 @@ def _write_xes(df: pd.DataFrame, xes_path: str) -> None:
 
     Written as they are, the empty cells of a table would become attributes
     whose value is the text "nan".
+
+    Timestamps are written to the microsecond. A table can carry nanoseconds,
+    but a timestamp with nine decimals is one that pm4py cannot read back on
+    Python 3.10: the events would come back without a timestamp.
     """
+    df = df.copy()
+    for column in df.columns:
+        if pd.api.types.is_datetime64_any_dtype(df[column]):
+            df[column] = df[column].dt.floor('us')
     pm4py.write_xes(pm4py.convert_to_event_log(df, stream_postprocessing=True), xes_path)
 
 

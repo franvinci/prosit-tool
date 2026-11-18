@@ -47,7 +47,7 @@
             </div>
             <button type="button" class="btn btn-sm sticky-run-btn"
                     id="stickyRunBtn"
-                    onclick="runSimulationFromSticky()">
+                    data-action="run-simulation-sticky">
                 <i data-feather="play" class="me-1" style="width: 14px; height: 14px;"></i>
                 <span id="stickyRunBtnLabel">Run Simulation</span>
             </button>
@@ -61,8 +61,8 @@
                     Download
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
-                    <li><button type="button" class="dropdown-item" onclick="downloadSimulation('csv')">CSV</button></li>
-                    <li><button type="button" class="dropdown-item" onclick="downloadSimulation('xes')">XES</button></li>
+                    <li><button type="button" class="dropdown-item" data-action="download-simulation" data-format="csv">CSV</button></li>
+                    <li><button type="button" class="dropdown-item" data-action="download-simulation" data-format="xes">XES</button></li>
                 </ul>
             </div>
         </div>
@@ -101,14 +101,6 @@
             crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@2.0.1/dist/chartjs-chart-matrix.min.js"
             crossorigin="anonymous"></script>
-
-    <!-- Custom JS -->
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    
-    <!-- Initialize Feather Icons -->
-    <script>
-        feather.replace();
-    </script>
 
     {% block scripts %}{% endblock %}
 </body>
