@@ -27,10 +27,37 @@ export function updateLoadingMessage(title, message) {
     if (messageElement) messageElement.textContent = message;
 }
 
+/**
+ * Show in the loading dialog how far the operation has got: `percent` (0 to
+ * 100) fills the bar, the texts go under it (`step` and `count` on the left,
+ * `percentText` and `elapsed` on the right). `null` takes the bar away.
+ */
+export function setLoadingProgress(progress) {
+    const area = document.getElementById('loadingProgress');
+    if (!area) return;
+    area.classList.toggle('d-none', !progress);
+
+    const percent = progress ? Math.min(100, Math.max(0, Number(progress.percent) || 0)) : 0;
+    // Emptied while it is out of sight, so that the next one starts from zero.
+    document.getElementById('loadingProgressBar').style.width = `${percent}%`;
+    document.getElementById('loadingProgressTrack').setAttribute('aria-valuenow', String(Math.floor(percent)));
+    const texts = {
+        loadingProgressStep: progress && progress.step,
+        loadingProgressPercent: progress && progress.percentText,
+        loadingProgressCount: progress && progress.count,
+        loadingProgressElapsed: progress && progress.elapsed,
+    };
+    for (const [id, text] of Object.entries(texts)) {
+        document.getElementById(id).textContent = text || '';
+    }
+}
+
 export function showLoading(title = 'Processing...', message = 'Please wait while we process your request.') {
     const dialog = loadingDialog();
     if (!dialog) return;
     updateLoadingMessage(title, message);
+    // The bar belongs to the operation that asks for it, not to the one before.
+    setLoadingProgress(null);
     loadingWanted = true;
     dialog.show();
 }

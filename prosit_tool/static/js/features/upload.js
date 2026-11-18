@@ -3,10 +3,11 @@
  * discovery options, then uploading and discovering the parameters.
  */
 
-import { getJson, request } from '../core/api.js';
+import { request } from '../core/api.js';
 import { formatFileSize } from '../core/format.js';
 import { state } from '../core/state.js';
-import { hideLoading, showAlert, showLoading, updateLoadingMessage } from '../core/ui.js';
+import { hideLoading, showAlert, showLoading } from '../core/ui.js';
+import { watchDiscoveryProgress } from './discovery-progress.js';
 import { loadSessionData, refreshSessionsList } from './sessions.js';
 import { extractXesColumns, guessColumnMapping, parseCsvHeaderLine } from './upload-columns.js';
 
@@ -197,22 +198,6 @@ function handleEventLogFileChange(event) {
     reader.readAsText(slice);
 }
 
-// While the discovery runs, show under the spinner which step it is at.
-function startDiscoveryProgressPolling(sessionId) {
-    const tick = async () => {
-        try {
-            const body = await getJson(`/api/discover/${sessionId}/progress`);
-            if (body.in_progress && body.message) {
-                updateLoadingMessage('Discovering parameters...', body.message);
-            }
-        } catch (e) {
-            // Only a progress report: the discovery itself is still running.
-        }
-    };
-    tick();
-    return setInterval(tick, 1500);
-}
-
 function discoveryOptions() {
     const value = (id, fallback) => (byId(id) && byId(id).value) || fallback;
     const flag = (id) => (byId(id) && byId(id).checked ? '1' : '0');
@@ -237,15 +222,15 @@ async function handleUpload(event) {
         const uploadResult = await request('/api/upload', { method: 'POST', form: formData });
         showAlert('File uploaded successfully', 'success');
 
-        updateLoadingMessage('Discovering parameters...', 'Preparing discovery...');
-        const progressTimer = startDiscoveryProgressPolling(uploadResult.session_id);
+        // The dialog now shows which step the discovery is at, and how far.
+        const progress = watchDiscoveryProgress(uploadResult.session_id);
         let discoverResult;
         try {
             discoverResult = await request(
                 `/api/discover/${uploadResult.session_id}?${discoveryOptions().toString()}`, { method: 'POST' },
             );
         } finally {
-            clearInterval(progressTimer);
+            progress.stop();
         }
 
         hideLoading();

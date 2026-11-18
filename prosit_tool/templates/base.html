@@ -76,6 +76,21 @@
                     </div>
                     <h5 id="loadingMessage">Processing...</h5>
                     <p class="text-muted mb-0" id="loadingDetail">Please wait while we process your request.</p>
+                    <!-- How far a long operation has got (setLoadingProgress in core/ui.js) -->
+                    <div class="loading-progress d-none" id="loadingProgress">
+                        <div class="progress" id="loadingProgressTrack" role="progressbar" aria-labelledby="loadingDetail"
+                             aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                            <div class="progress-bar" id="loadingProgressBar"></div>
+                        </div>
+                        <div class="loading-progress-row">
+                            <span id="loadingProgressStep"></span>
+                            <strong id="loadingProgressPercent"></strong>
+                        </div>
+                        <div class="loading-progress-row">
+                            <span id="loadingProgressCount"></span>
+                            <span id="loadingProgressElapsed"></span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

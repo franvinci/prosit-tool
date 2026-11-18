@@ -11,8 +11,75 @@ from prosit.simulator import SimulatorParameters, SimulatorEngine
 from .evaluation import evaluate, compute_log_kpis, compute_log_charts
 from .format_converters import attribute_entry_from_prosit, prosit_entry_to_app
 from .petri_dot import petri_net_to_dot
+from .progress import Bar, Step
 
 logger = logging.getLogger(__name__)
+
+# What ``discover_from_eventlog(verbose=True)`` prints when it begins a step
+# (prosit-pm 1.0.5), and the step of the plan below that it stands for.
+LIBRARY_STEPS = {
+    'Resources discovery...': 'resources',
+    'Data attributes discovery...': 'attributes',
+    'Feature discovery...': 'features',
+    'Transition Probabilities discovery...': 'transitions',
+    'Incremental Transition Probabilities discovery...': 'transitions',
+    'Resource Weights discovery...': 'resource_weights',
+    'Incremental Resource Weights discovery...': 'resource_weights',
+    'Calendars discovery...': 'calendars',
+    'Execution Time discovery...': 'execution_times',
+    'Incremental Execution Time discovery...': 'execution_times',
+    'Waiting Time discovery...': 'waiting_times',
+    'Incremental Waiting Time discovery...': 'waiting_times',
+    'Model fitting...': 'fitting',
+    'Arrival Time discovery...': 'arrival_times',
+    'Incremental Arrival Time discovery...': 'arrival_times',
+}
+
+
+def discovery_steps(*, importing_model=False, rules=False, incremental=False):
+    """The steps of a discovery, in the order in which they run.
+
+    The weight of a step is the share of the time it usually takes, measured
+    on the example logs. "Usually" is the word: the three steps that align the
+    log with the model (fitness, precision, replay) take nearly all the time
+    on a log with thousands of variants and next to none on one with a dozen.
+    The steps with a progress bar of their own move within their share.
+    """
+    models = (Bar(unit='models'),)
+    steps = [
+        Step('log', 'Reading the event log', 5, (Bar(unit='traces'),)),
+        Step('model', 'Reading the Petri net' if importing_model else 'Discovering the process model', 1),
+        Step('fitness', 'Measuring the fitness of the model', 24, (Bar(unit='variants'),)),
+        Step('precision', 'Measuring the precision of the model', 26, (Bar(unit='variants'),)),
+        Step('resources', 'Discovering the resources', 1),
+        Step('attributes', 'Discovering the data attributes', 1),
+        # Aligning every variant with the model, then one pass over the traces.
+        Step('features', 'Replaying the log on the model', 22, (Bar(0.85, 'variants'), Bar(0.15, 'traces'))),
+    ]
+    if incremental:
+        # Every step fits its own models, one after the other.
+        steps += [
+            Step('transitions', 'Discovering the transition weights', 6, models),
+            Step('resource_weights', 'Discovering the resource weights', 9, models),
+            Step('calendars', 'Discovering the calendars', 1),
+            Step('execution_times', 'Discovering the execution times', 2, models),
+            Step('waiting_times', 'Discovering the waiting times', 2, models),
+        ]
+    else:
+        # Every step only prepares its models: they are all fitted together.
+        steps += [
+            Step('transitions', 'Discovering the transition weights', 2),
+            Step('resource_weights', 'Discovering the resource weights', 1),
+            Step('calendars', 'Discovering the calendars', 1),
+            Step('execution_times', 'Discovering the execution times', 1),
+            Step('waiting_times', 'Discovering the waiting times', 1),
+            Step('fitting', 'Fitting the models', 16 if rules else 10, models),
+        ]
+    steps += [
+        Step('arrival_times', 'Discovering the arrival times', 1),
+        Step('saving', 'Saving the parameters', 2),
+    ]
+    return steps
 
 
 class DiscoveryError(Exception):
@@ -57,12 +124,19 @@ class ProSiTIntegration:
     and run simulations using the ProSiT framework.
     """
     
-    def __init__(self):
+    def __init__(self, progress=None):
         self.process_model = None
         self.event_log = None
         self.prosit_params = None
         self.prosit_metrics = None
         self.discovery_warnings = []
+        # Whoever follows the discovery (``prosit_tool.progress.Progress``), if anyone.
+        self._progress = progress
+
+    def _begin(self, step):
+        """A step of ``discovery_steps`` begins."""
+        if self._progress is not None:
+            self._progress.start(step)
 
     def discover_process_model(self, noise_threshold=0.2):
         """Discover process model using PM4Py inductive miner.
@@ -77,10 +151,12 @@ class ProSiTIntegration:
             logger.info(f"Discovering process model via Inductive Miner with noise threshold {noise_threshold}")
             
             # Apply inductive miner to discover Petri net
+            self._begin('model')
             net, initial_marking, final_marking = pm4py.discover_petri_net_inductive(self.event_log, noise_threshold=noise_threshold)
-            
-            
+
+            self._begin('fitness')
             fitness = fitness_evaluator.apply(self.event_log, net, initial_marking, final_marking)['averageFitness']
+            self._begin('precision')
             precision = precision_evaluator.apply(self.event_log, net, initial_marking, final_marking)
             self.process_model = self._describe_process_model(net, initial_marking, final_marking, fitness, precision)
 
@@ -105,10 +181,13 @@ class ProSiTIntegration:
         """
         try:
             logger.info(f"Importing Petri net structure from {pnml_file_path}")
+            self._begin('model')
             net, initial_marking, final_marking = pm4py.read_pnml(pnml_file_path)
 
             if compute_metrics and self.event_log is not None:
+                self._begin('fitness')
                 fitness = fitness_evaluator.apply(self.event_log, net, initial_marking, final_marking)['averageFitness']
+                self._begin('precision')
                 precision = precision_evaluator.apply(self.event_log, net, initial_marking, final_marking)
             else:
                 fitness = precision = 0.0
@@ -211,6 +290,8 @@ class ProSiTIntegration:
                     random_state=random_state,
                     use_workload_features=use_workload_features,
                     attribute_mode=attribute_mode,
+                    # It prints the name of each step it begins: that is how
+                    # the progress shown to the user follows it (LIBRARY_STEPS).
                     verbose=True,
                 )
                 self.prosit_params = self.prosit_params.to_dict()

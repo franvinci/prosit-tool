@@ -265,7 +265,7 @@ The HTTP API is what the in-browser frontend uses; it is also usable directly fo
 | `GET` | `/api/health` | Application name and version (used to detect a running instance) |
 | `POST` | `/api/upload` | Upload XES or CSV log (and optional PNML); creates a session |
 | `POST` | `/api/discover/<session_id>` | Run discovery (Petri net + parameters) |
-| `GET` | `/api/discover/<session_id>/progress` | Discovery progress stream |
+| `GET` | `/api/discover/<session_id>/progress` | How far the running discovery has got: percentage, step in progress, what it is counting |
 | `GET` | `/api/parameters/<session_id>` | Load discovered parameters for a session |
 | `POST` | `/api/simulate/<session_id>` | Run a simulation for the baseline run |
 | `POST` | `/api/metrics/<session_id>` | Compute accuracy metrics (real vs simulated) |

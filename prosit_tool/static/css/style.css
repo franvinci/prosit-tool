@@ -249,6 +249,39 @@ body {
     background-color: var(--border-color);
 }
 
+/* How far the operation behind the loading dialog has got: the bar, then
+   what it is counting on the left and how far it is on the right. */
+.loading-progress {
+    margin: 1.25rem 0.5rem 0;
+    font-size: 0.875rem;
+    color: #6c757d;
+    /* digits of one width: the text does not shake while the numbers run */
+    font-variant-numeric: tabular-nums;
+}
+
+.loading-progress .progress {
+    height: 10px;
+    border-radius: 5px;
+    margin-bottom: 0.5rem;
+}
+
+.loading-progress .progress-bar {
+    background-color: var(--primary-purple);
+    border-radius: 5px;
+}
+
+.loading-progress-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 1.5em;
+    text-align: left;
+}
+
+.loading-progress-row strong {
+    color: var(--text-dark);
+}
+
 /* Modal customization */
 .modal-content {
     border: none;

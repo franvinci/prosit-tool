@@ -5,9 +5,10 @@ import logging
 
 from flask import Blueprint, current_app, request, jsonify
 
+from .. import progress
 from ..extensions import db
 from ..models import BASELINE_RUN_NAME, SimulationRun, SimulationSession
-from ..prosit_integration import DiscoveryError, ProSiTIntegration
+from ..prosit_integration import LIBRARY_STEPS, DiscoveryError, ProSiTIntegration, discovery_steps
 from ..validators import validate_discovery_options
 
 from ._decorators import handle_api_errors
@@ -25,18 +26,9 @@ logger = logging.getLogger(__name__)
 bp = Blueprint('discovery', __name__)
 
 
-# Tracks the human-readable phase of an in-flight discovery request so the UI
-# can poll and surface progress under the loading spinner. Single-process
-# only — that's fine for this dev tool.
-_discovery_progress: dict[int, str] = {}
-
-
-def _set_progress(session_id: int, message: str) -> None:
-    _discovery_progress[session_id] = message
-
-
-def _clear_progress(session_id: int) -> None:
-    _discovery_progress.pop(session_id, None)
+def _progress_key(session_id: int) -> str:
+    """Under which name the progress of a session's discovery is followed."""
+    return f'discovery:{session_id}'
 
 
 def _mark_session_failed(session_id: int) -> None:
@@ -66,38 +58,52 @@ def discover_parameters(session_id):
     if not os.path.exists(filepath):
         return jsonify({'error': 'File not found'}), 404
 
+    pnml_filename = (session.get_parameters() or {}).get('pnml_filename')
+    if not (pnml_filename and os.path.exists(os.path.join(upload_folder, pnml_filename))):
+        pnml_filename = None  # the model is discovered from the log
+
+    steps = discovery_steps(
+        importing_model=pnml_filename is not None,
+        rules=options['max_depth_tree'] > 0,
+        incremental=options['incremental_discovery'],
+    )
+    # While this runs, GET .../progress says which step it is at and how far.
+    with progress.track(_progress_key(session_id), steps, LIBRARY_STEPS) as report:
+        return _discover(session, filepath, pnml_filename, options, report)
+
+
+def _discover(session, filepath, pnml_filename, options, report):
+    """Run the discovery of a session and store what it finds; returns the response."""
+    session_id = session.id
+    upload_folder = current_app.config['UPLOAD_FOLDER']
+    pnml_on_disk = pnml_filename is not None
+
     # Files written by this request; removed again if it does not complete.
     created = []
     try:
-        _set_progress(session_id, 'Preparing discovery...')
         session.status = 'discovering'
         db.session.commit()
 
         logger.info(f"Discovering parameters from XES file for session {session_id}")
 
-        existing_metadata = session.get_parameters() or {}
-        pnml_filename = existing_metadata.get('pnml_filename')
-        pnml_on_disk = bool(pnml_filename) and os.path.exists(os.path.join(upload_folder, pnml_filename))
-
-        _set_progress(session_id, 'Loading event log...')
+        report.start('log')
         event_log, log_notes = load_event_log(filepath)
         logger.info(f"Loaded {len(event_log)} traces from XES file")
 
-        prosit = ProSiTIntegration()
+        # It announces the steps it runs itself; the ones of prosit-pm are
+        # read from what the library prints.
+        prosit = ProSiTIntegration(progress=report)
         prosit.event_log = event_log
 
         if pnml_on_disk:
             logger.info("Using PNML model and discovering parameters from XES")
-            _set_progress(session_id, 'Loading Petri net...')
             prosit.import_petri_net_from_pnml(os.path.join(upload_folder, pnml_filename))
         else:
             logger.info("Discovering process model and parameters from XES")
-            _set_progress(session_id, 'Discovering process model (Inductive Miner)...')
             prosit.discover_process_model(noise_threshold=session.noise_threshold)
         process_model = prosit.process_model
-        _set_progress(session_id, 'Discovering simulation parameters (resources, times, attributes)...')
         parameters = prosit.discover_parameters(**options)
-        _set_progress(session_id, 'Saving parameters...')
+        report.start('saving')
         prosit_metrics = prosit.prosit_metrics or {}
         for metric_cat, metrics in prosit_metrics.items():
             for m, value in metrics.items():
@@ -161,7 +167,6 @@ def discover_parameters(session_id):
         for filename in created:
             remove_file(upload_folder, filename)
         _mark_session_failed(session_id)
-        _clear_progress(session_id)
         reason = 'The event log cannot be used.' if isinstance(exc, EventLogError) else 'Parameter discovery failed.'
         return jsonify({'error': f'{reason} {exc}'}), 422
 
@@ -169,7 +174,6 @@ def discover_parameters(session_id):
         for filename in created:
             remove_file(upload_folder, filename)
         _mark_session_failed(session_id)
-        _clear_progress(session_id)
         raise  # let @handle_api_errors produce the JSON response
 
     # The previous discovery of this session is now unreachable: drop its files,
@@ -178,7 +182,6 @@ def discover_parameters(session_id):
     if replaced_parameters and replaced_parameters not in still_used:
         remove_file(upload_folder, replaced_parameters)
     remove_file(current_app.config['SIMULATION_FOLDER'], replaced_simulation)
-    _clear_progress(session_id)
 
     return jsonify({
         'success': True,
@@ -193,9 +196,16 @@ def discover_parameters(session_id):
 
 @bp.route('/api/discover/<int:session_id>/progress')
 def discover_progress(session_id):
-    """Return the current discovery phase string, or empty if no work in flight."""
-    message = _discovery_progress.get(session_id)
-    return jsonify({'in_progress': message is not None, 'message': message or ''})
+    """How far the discovery of a session has got.
+
+    ``in_progress`` is false when none is running. Otherwise: ``percent`` of
+    the whole, the ``step`` in progress out of ``steps`` and its ``label``,
+    and, when the step counts what it does, ``done`` of ``total`` ``unit``.
+    """
+    report = progress.snapshot(_progress_key(session_id)) or {'in_progress': False, 'message': ''}
+    response = jsonify(report)
+    response.headers['Cache-Control'] = 'no-store'
+    return response
 
 
 @bp.route('/api/metrics/<int:session_id>', methods=['POST'])
