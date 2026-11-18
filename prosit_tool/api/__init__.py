@@ -6,7 +6,6 @@ attaches them all to an application; ``prosit_tool.app.create_app`` calls it.
 
 from flask import render_template
 
-from ..models import SimulationSession
 from . import discovery, errors, parameters, runs, simulation, system, upload, visualization
 
 
@@ -24,21 +23,6 @@ def register_blueprints(app):
 
     @app.route('/')
     def index():
-        sessions = (
-            SimulationSession.query
-            .order_by(
-                SimulationSession.last_used_at.desc().nullslast(),
-                SimulationSession.created_at.desc(),
-            )
-            .limit(15)
-            .all()
-        )
-        # Hydrate each session with the data the template needs without
-        # touching its model definition: a clean label, run summary, and the
-        # filename of the most recent simulation (if any) so the badge can
-        # reflect "completed" vs "ready" accurately.
-        for s in sessions:
-            s._display_label = s.display_label()
-            s._run_count = len(s.runs) if s.runs else 0
-            s._has_simulation = any(r.simulation_df_filename for r in s.runs)
-        return render_template('index.html', sessions=sessions)
+        # The page is the same for everybody: what it shows (sessions,
+        # parameters, results) is loaded by its scripts through the API.
+        return render_template('index.html')

@@ -26,12 +26,16 @@ export function renderTransitionParameters(transitionParams) {
     html += '<select class="form-select mb-3" id="transitionSelect" data-action="show-transition">';
     html += '<option value="">Choose a transition...</option>';
 
+    // The server lists the silent transitions. Sessions stored by older
+    // versions do not have the list: there a transition shown under its own
+    // name is taken as silent, as before.
+    const silent = state.parameters?.process_model?.silent_transitions;
     const haveLabelMap = Object.keys(labelMap).length > 0;
     transitions.forEach(transition => {
         const mapped = labelMap[transition];
         const display = mapped || transition;
-        // A transition whose label equals its name has no label of its own.
-        const suffix = (haveLabelMap && mapped === transition) ? ' (silent)' : '';
+        const isSilent = silent ? silent.includes(transition) : (haveLabelMap && mapped === transition);
+        const suffix = isSilent ? ' (silent)' : '';
         html += `<option value="${escapeHtml(transition)}">${escapeHtml(display + suffix)}</option>`;
     });
 
@@ -51,14 +55,15 @@ export function showTransitionWeights(transitionName) {
     revertToOriginalVisualization();
 
     const display = document.getElementById('transitionWeightDisplay');
-    if (!transitionName || !state.parameters.transition_params.transition_weights[transitionName]) {
+    const weight = state.parameters.transition_params.transition_weights[transitionName];
+    // A weight of zero is a weight too: the transition never fires.
+    if (!transitionName || weight === undefined || weight === null) {
         display.innerHTML = '<p class="text-muted">No weight data available</p>';
         return;
     }
 
     highlightTransitionVisualization(transitionName);
 
-    const weight = state.parameters.transition_params.transition_weights[transitionName];
     const displayName = transitionLabels()[transitionName] || transitionName;
 
     if (typeof weight === 'number') {

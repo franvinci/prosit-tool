@@ -235,6 +235,38 @@ def delete_run(run_id):
     return jsonify({'success': True})
 
 
+# How many sessions the "Recent Sessions" list shows.
+RECENT_SESSIONS = 15
+
+
+def _session_summary(session):
+    used = session.last_used_at or session.created_at
+    return {
+        'id': session.id,
+        'label': session.display_label(),
+        'status': session.status,
+        # Stored as UTC without a zone: say so, for the browser to show local time.
+        'last_used_at': used.isoformat() + 'Z' if used else None,
+        'run_count': len(session.runs) if session.runs else 0,
+    }
+
+
+@bp.route('/api/sessions', methods=['GET'])
+@handle_api_errors('Failed to list sessions')
+def list_sessions():
+    """The sessions used most recently, newest first."""
+    sessions = (
+        SimulationSession.query
+        .order_by(
+            SimulationSession.last_used_at.desc().nullslast(),
+            SimulationSession.created_at.desc(),
+        )
+        .limit(RECENT_SESSIONS)
+        .all()
+    )
+    return jsonify({'success': True, 'sessions': [_session_summary(session) for session in sessions]})
+
+
 @bp.route('/api/sessions/<int:session_id>', methods=['DELETE'])
 @handle_api_errors('Failed to delete session')
 def delete_session(session_id):

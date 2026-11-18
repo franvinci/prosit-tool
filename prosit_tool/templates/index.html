@@ -19,7 +19,7 @@
                     </div>
 
                     <div id="csvColumnMapping" class="mb-3" style="display: none;">
-                        <div class="alert alert-info py-2 small mb-2">Map your event-log columns to the required fields.</div>
+                        <div class="alert alert-info py-2 small mb-2">Map the columns of your event log. Start timestamp and resource can be left out.</div>
                         <div class="row g-2">
                             <div class="col-md-6">
                                 <label for="csvCaseIdCol" class="form-label small mb-1">Case ID</label>
@@ -34,11 +34,11 @@
                                 <select class="form-select form-select-sm" id="csvEndTsCol" name="end_ts_col"></select>
                             </div>
                             <div class="col-md-6">
-                                <label for="csvStartTsCol" class="form-label small mb-1">Start timestamp</label>
+                                <label for="csvStartTsCol" class="form-label small mb-1">Start timestamp <span class="text-muted">(optional)</span></label>
                                 <select class="form-select form-select-sm" id="csvStartTsCol" name="start_ts_col"></select>
                             </div>
                             <div class="col-md-6">
-                                <label for="csvResourceCol" class="form-label small mb-1">Resource</label>
+                                <label for="csvResourceCol" class="form-label small mb-1">Resource <span class="text-muted">(optional)</span></label>
                                 <select class="form-select form-select-sm" id="csvResourceCol" name="resource_col"></select>
                             </div>
                         </div>
@@ -239,34 +239,9 @@
             </div>
             <div class="card-body p-0">
                 <div class="list-group list-group-flush" id="sessionsList">
-                    {% for session in sessions %}
-                    {% set badge_class = 'success' if session.status in ('ready', 'completed') else 'warning' if session.status == 'uploaded' else ('danger' if session.status == 'error' else 'info') %}
-                    <div class="list-group-item recent-session-item" data-session-id="{{ session.id }}">
-                        <div class="d-flex justify-content-between align-items-start gap-2">
-                            <div class="recent-session-main flex-grow-1 cursor-pointer" data-action="load-session" data-session-id="{{ session.id }}">
-                                <h6 class="mb-1 text-truncate" title="{{ session._display_label }}">{{ session._display_label }}</h6>
-                                <small class="text-muted d-block">
-                                    {{ (session.last_used_at or session.created_at).strftime('%Y-%m-%d %H:%M') }}
-                                    {% if session._run_count > 0 %}· {{ session._run_count }} run{{ '' if session._run_count == 1 else 's' }}{% endif %}
-                                </small>
-                            </div>
-                            <div class="d-flex flex-column align-items-end gap-1">
-                                <span class="badge bg-{{ badge_class }}">{{ session.status }}</span>
-                                <button type="button"
-                                        class="btn btn-sm btn-link text-danger p-0 recent-session-delete"
-                                        title="Delete session"
-                                        data-action="delete-session" data-session-id="{{ session.id }}"
-                                        data-session-label="{{ session._display_label }}">
-                                    <i data-feather="trash-2" style="width: 14px; height: 14px;"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    {% else %}
                     <div class="list-group-item text-center text-muted py-3">
-                        <small>No sessions yet — upload a log to get started.</small>
+                        <small>Loading sessions...</small>
                     </div>
-                    {% endfor %}
                 </div>
             </div>
         </div>

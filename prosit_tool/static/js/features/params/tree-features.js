@@ -1,38 +1,36 @@
 /**
- * What a split of a decision tree can test: the features available for each
- * kind of tree, and an explanation of each in plain words.
+ * What a split of a decision tree can test: the features prosit-pm gives to
+ * each kind of tree when it simulates, and an explanation of each in plain
+ * words.
  *
- * A feature is a string. "attribute = value" and "resource = name" are
- * conditions that hold or not; any other feature is a number compared with a
- * threshold (an hour, a count of how often an activity occurred...).
+ * A feature is a string. "attribute = value", "resource = name" and the like
+ * are conditions that hold or not; any other feature is a number compared
+ * with a threshold (an hour, how often an activity occurred...). A split on a
+ * feature the simulator does not provide for that kind of tree makes the
+ * simulation fail, so the lists below follow the simulator exactly.
  */
 
 import { state } from '../../core/state.js';
-
-/** True for a feature that is a condition, not a number compared with a threshold. */
-export function isCategoricalFeature(feature) {
-    return String(feature).includes(' = ');
-}
+import { isCategoricalFeature } from './trees.js';
 
 /** Explain a feature to the person reading or building a tree. */
 export function getFeatureTooltip(featureValue, parameters = state.parameters) {
     if (featureValue == null || featureValue === '') return '';
     const v = String(featureValue);
+    const after = (prefix) => v.slice(prefix.length);
 
     if (v === 'hour') return 'Hour of the day (0-23) when the event occurs.';
     if (v === 'weekday') return 'Day of the week (0=Monday, …, 6=Sunday) when the event occurs.';
-    if (v === 'workload') return 'Number of cases active in the system at that moment.';
+    if (v === 'workload') return 'How many events the resource is working on at that moment.';
+    if (v === 'queue_length') return 'How many events are already scheduled for the resource after that moment.';
 
-    if (v.startsWith('resource = ')) {
-        const r = v.slice('resource = '.length);
-        return `True when the executing resource is «${r}».`;
-    }
+    if (v.startsWith('resource = ')) return `True when the executing resource is «${after('resource = ')}».`;
+    if (v.startsWith('waiting_activity = ')) return `True when the activity waiting for the resource is «${after('waiting_activity = ')}».`;
+    if (v.startsWith('activity = ')) return `True when the activity to be performed is «${after('activity = ')}».`;
 
     if (isCategoricalFeature(v)) {
         const idx = v.indexOf(' = ');
-        const attr = v.slice(0, idx);
-        const val = v.slice(idx + 3);
-        return `True when the case attribute «${attr}» equals «${val}».`;
+        return `True when the case attribute «${v.slice(0, idx)}» equals «${v.slice(idx + 3)}».`;
     }
 
     const activities = parameters?.process_model?.activities || [];
@@ -76,25 +74,44 @@ function attributeFeatures(parameters) {
 /**
  * The features a split of a tree of kind `treeType` can use, as
  * `{value, label, group}`; the groups are the headings of the list.
+ *
+ * What the simulator of prosit-pm 1.0.5 provides:
+ *   transition  attributes of the case, how often each activity occurred
+ *   resource    how often each resource served the case, the activity to
+ *               perform, attributes of the case (+ workload of the resource)
+ *   arrival     hour and weekday
+ *   execution   the executing resource, hour and weekday, the counts of the
+ *               activities, attributes of the case
+ *   waiting     hour and weekday, the activity that waits, the counts of the
+ *               activities, attributes of the case (+ workload of the resource)
+ * The workload features exist only in a model discovered with them.
  */
 export function generateFeaturesForTreeType(treeType, parameters = state.parameters) {
-    const activities = (parameters?.process_model?.activities || []).map(activity => feature(activity, 'Activities'));
+    const activities = parameters?.process_model?.activities || [];
     const resources = parameters?.resource_params?.resources || [];
     const attributes = attributeFeatures(parameters);
     const time = [feature('hour', 'Time'), feature('weekday', 'Time')];
+    const workload = parameters?.model_options?.use_workload_features
+        ? [feature('workload', 'Workload'), feature('queue_length', 'Workload')]
+        : [];
+    const counts = (names, group) => names.map(name => feature(name, group));
+    const conditions = (prefix, names, group) => names.map(name => feature(`${prefix} = ${name}`, group));
 
     switch (treeType) {
         case 'transition':
-            return [...attributes, ...activities];
+            return [...attributes, ...counts(activities, 'Activities')];
         case 'resource':
-            return [...resources.map(resource => feature(resource, 'Resources')), ...attributes, ...activities];
+            return [...counts(resources, 'Resources'), ...conditions('activity', activities, 'Activities'), ...attributes, ...workload];
         case 'arrival':
             return time;
         case 'waiting':
-            return [feature('workload', 'Workload'), ...activities, ...attributes];
+            return [
+                ...workload, ...time, ...conditions('waiting_activity', activities, 'Activities'),
+                ...counts(activities, 'Activities'), ...attributes,
+            ];
         case 'execution':
         case 'distribution':
-            return [...resources.map(resource => feature(`resource = ${resource}`, 'Resources')), ...activities, ...attributes];
+            return [...conditions('resource', resources, 'Resources'), ...time, ...counts(activities, 'Activities'), ...attributes];
         default:
             return [...time, ...attributes];
     }

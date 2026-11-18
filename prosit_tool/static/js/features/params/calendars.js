@@ -9,11 +9,11 @@ import { revertToOriginalVisualization } from '../petri-net.js';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-/** Working hours a new resource starts with: 9 to 17, every day. */
+/** The hours of a working day until told otherwise: from 9 to 17. */
 export function createDefaultWorkingHours() {
     const hours = {};
     for (let i = 0; i < 24; i++) {
-        hours[i.toString()] = (i >= 9 && i <= 17);
+        hours[i.toString()] = (i >= 9 && i < 17);
     }
     return hours;
 }
@@ -95,9 +95,10 @@ export function renderArrivalCalendar(calendar) {
         html += '<div class="mb-2">';
         html += `<div class="small fw-bold mb-1">${day.substring(0, 3)}</div>`;
         html += '<div class="d-flex flex-wrap gap-1">';
+        // A day the calendar says nothing about is shown with working hours.
+        const hours = calendar[day] || createDefaultWorkingHours();
         for (let hour = 0; hour < 24; hour++) {
-            // A day the calendar says nothing about is shown with business hours.
-            const isActive = calendar[day] ? (calendar[day][hour.toString()] === true) : (hour >= 9 && hour <= 17);
+            const isActive = hours[hour.toString()] === true;
             html += `
                 <button type="button" class="btn btn-sm calendar-hour-btn arrival-calendar-hour ${isActive ? 'active' : ''}"
                         data-action="toggle-arrival-hour" data-day="${day}" data-hour="${hour}" data-set="${!isActive}">
@@ -118,7 +119,11 @@ function toggleArrivalHour(day, hour, isActive) {
     if (!arrivalParams.inter_arrival_time) arrivalParams.inter_arrival_time = {};
     if (!arrivalParams.inter_arrival_time.calendar) arrivalParams.inter_arrival_time.calendar = {};
     const calendar = arrivalParams.inter_arrival_time.calendar;
-    if (!calendar[day]) calendar[day] = {};
+    // The days the calendar said nothing about were shown with working
+    // hours: write them down, or this click would leave only one hour on.
+    for (const name of DAYS) {
+        if (!calendar[name]) calendar[name] = createDefaultWorkingHours();
+    }
     calendar[day][hour] = isActive;
 
     const calendarDisplay = document.getElementById('arrivalCalendarDisplay');

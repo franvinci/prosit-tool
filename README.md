@@ -269,6 +269,7 @@ The HTTP API is what the in-browser frontend uses; it is also usable directly fo
 | `GET` | `/api/parameters/<session_id>` | Load discovered parameters for a session |
 | `POST` | `/api/simulate/<session_id>` | Run a simulation for the baseline run |
 | `POST` | `/api/metrics/<session_id>` | Compute accuracy metrics (real vs simulated) |
+| `GET` | `/api/sessions` | List the most recent sessions |
 | `GET` | `/api/sessions/<session_id>/runs` | List what-if runs |
 | `POST` | `/api/sessions/<session_id>/runs` | Create a new what-if run |
 | `GET` | `/api/runs/<run_id>` | Load parameters of a specific run |

@@ -6,12 +6,12 @@
 import { escapeHtml, initTooltipsIn, on } from '../../core/dom.js';
 import { markParametersDirty, state } from '../../core/state.js';
 import { renderInterArrivalTimeParameters } from './arrival.js';
-import { FAMILIES } from './distributions.js';
+import { FAMILIES, leafFields } from './distributions.js';
 import { showActivityExecution } from './execution.js';
 import { showResourceWeight } from './resources.js';
 import { showTransitionWeights } from './transitions.js';
-import { generateFeaturesForTreeType, getFeatureTooltip, isCategoricalFeature } from './tree-features.js';
-import { addSplit, isTree, removeSplit, singleLeafTimeTree } from './trees.js';
+import { generateFeaturesForTreeType, getFeatureTooltip } from './tree-features.js';
+import { addSplit, isCategoricalFeature, isTree, removeSplit, singleLeafTimeTree } from './trees.js';
 import { showResourceWaiting } from './waiting.js';
 
 const WEIGHT_TREES = ['transition', 'resource'];
@@ -91,8 +91,9 @@ function leafValueInput(treeType, id) {
         : `<div id="${id}Container"></div>`;
 }
 
-// The fields of the distribution of a new leaf; their ids start with `branch`.
-function setupDistributionControls(containerId, branch, unitSuffix) {
+// The fields of the distribution of a new leaf, inside `containerId`: a
+// family and, for each one, the same fields a leaf has in the tree.
+function setupDistributionControls(containerId, unitSuffix) {
     const container = document.getElementById(containerId);
     if (!container) {
         console.error('Container not found:', containerId);
@@ -102,87 +103,54 @@ function setupDistributionControls(containerId, branch, unitSuffix) {
         <div class="row">
             <div class="col-md-6">
                 <label class="form-label small">Distribution</label>
-                <select class="form-select form-select-sm" id="${branch}Distribution">
+                <select class="form-select form-select-sm" data-role="family">
                     ${FAMILIES.map(([value, name]) => `<option value="${value}"${value === 'expon' ? ' selected' : ''}>${name}</option>`).join('')}
                 </select>
             </div>
-            <div class="col-md-6">
-                <div id="${branch}Params"></div>
-            </div>
+            <div class="col-md-6" data-role="params"></div>
         </div>
     `;
-
-    const distSelect = document.getElementById(`${branch}Distribution`);
-    const paramsContainer = document.getElementById(`${branch}Params`);
-
-    function numInput(id, value, marginClass) {
-        const cls = marginClass ? ` ${marginClass}` : '';
-        if (unitSuffix) {
-            return `<div class="input-group input-group-sm${cls}">
-                        <input type="number" class="form-control" id="${id}" min="0" step="0.1" value="${value}">
-                        <span class="input-group-text">${unitSuffix}</span>
-                    </div>`;
-        }
-        return `<input type="number" class="form-control form-control-sm${cls}" id="${id}" min="0" step="0.1" value="${value}">`;
-    }
+    const familySelect = container.querySelector('[data-role="family"]');
+    const paramsContainer = container.querySelector('[data-role="params"]');
 
     function renderParams() {
-        const dist = distSelect.value;
-        let html = '';
-
-        if (dist === 'fixed') {
-            html = `<label class="form-label small">Value</label>${numInput(`${branch}Value`, 15)}`;
-        } else if (dist === 'norm') {
-            html = `<label class="form-label small">Mean</label>${numInput(`${branch}Mean`, 15, 'mb-1')}
-                    <label class="form-label small">Std Dev</label>${numInput(`${branch}Std`, 5, 'mb-1')}
-                    <label class="form-label small">Min</label>${numInput(`${branch}Min`, 0, 'mb-1')}
-                    <label class="form-label small">Max</label>${numInput(`${branch}Max`, 100)}`;
-        } else if (dist === 'expon') {
-            html = `<label class="form-label small">Mean</label>${numInput(`${branch}Mean`, 15, 'mb-1')}
-                    <label class="form-label small">Min</label>${numInput(`${branch}Min`, 0, 'mb-1')}
-                    <label class="form-label small">Max</label>${numInput(`${branch}Max`, 100)}`;
-        } else if (dist === 'uniform') {
-            html = `<label class="form-label small">Min</label>${numInput(`${branch}Min`, 0, 'mb-1')}
-                    <label class="form-label small">Max</label>${numInput(`${branch}Max`, 100)}`;
-        }
-
-        paramsContainer.innerHTML = html;
+        paramsContainer.innerHTML = leafFields(familySelect.value, 15, 0, 100).map(([label, key, limits, fallback]) => {
+            const withUnit = unitSuffix && key !== 'shape';
+            const input = `<input type="number" class="form-control${withUnit ? '' : ' form-control-sm mb-1'}" data-param="${key}" `
+                + `${limits.min !== undefined ? `min="${limits.min}" ` : ''}step="${limits.step || 0.1}" value="${fallback}">`;
+            return `<label class="form-label small">${label}</label>`
+                + (withUnit ? `<div class="input-group input-group-sm mb-1">${input}<span class="input-group-text">${unitSuffix}</span></div>` : input);
+        }).join('');
     }
 
-    distSelect.addEventListener('change', renderParams);
+    familySelect.addEventListener('change', renderParams);
     renderParams();
 }
 
-// The leaf described by the fields whose ids start with `branch`.
-function getDistributionValue(branch) {
-    const field = (name) => document.getElementById(`${branch}${name}`);
-    const dist = field('Distribution').value;
-    const value = parseFloat(field('Value')?.value || field('Mean')?.value || 15);
+// The leaf described by the fields inside `containerId`.
+function readLeaf(containerId) {
+    const container = document.getElementById(containerId);
+    const family = container.querySelector('[data-role="family"]').value;
+    const params = {};
+    container.querySelectorAll('[data-param]').forEach(input => {
+        const value = parseFloat(input.value);
+        if (!Number.isNaN(value)) params[input.dataset.param] = value;
+    });
 
-    let params = {};
-    let minValue = 0, maxValue = 100;
-
-    if (dist === 'fixed') {
-        params = { value: value };
-        minValue = maxValue = value;
-    } else if (dist === 'norm') {
-        params = { mean: value, std: parseFloat(field('Std').value) };
-        minValue = parseFloat(field('Min').value);
-        maxValue = parseFloat(field('Max').value);
-    } else if (dist === 'expon') {
-        params = { mean: value };
-        minValue = parseFloat(field('Min').value);
-        maxValue = parseFloat(field('Max').value);
-    } else if (dist === 'uniform') {
-        minValue = parseFloat(field('Min').value);
-        maxValue = parseFloat(field('Max').value);
-        params = { min: minValue, max: maxValue };
+    const dist = { dist_name: family, params };
+    // The value of a leaf is the typical value of its distribution.
+    let value = params.value ?? params.mean ?? params.scale;
+    if (family === 'uniform') value = ((params.min ?? 0) + (params.max ?? 0)) / 2;
+    if (value === undefined) value = 15;
+    if (family === 'fixed') {
+        dist.min_value = value;
+        dist.max_value = value;
+    } else {
+        // An emptied bound is no bound.
+        if (params.min !== undefined) dist.min_value = params.min;
+        if (params.max !== undefined) dist.max_value = params.max;
     }
-
-    return {
-        value: value,
-        dist: { dist_name: dist, params: params, min_value: minValue, max_value: maxValue },
-    };
+    return { value, dist };
 }
 
 // The weight typed in the field `id`, or null (after telling the user) when
@@ -242,11 +210,11 @@ function addSplitToNode(nodeId, treeType) {
                             <input type="number" class="form-control" id="splitThreshold" step="0.1" value="0.5">
                         </div>
                         <div class="mb-3">
-                            <label for="trueValue" class="form-label">True Branch Value</label>
+                            <label for="trueValue" class="form-label">True Branch Value <small class="text-muted">(the condition holds)</small></label>
                             ${leafValueInput(treeType, 'trueValue')}
                         </div>
                         <div class="mb-3">
-                            <label for="falseValue" class="form-label">False Branch Value</label>
+                            <label for="falseValue" class="form-label">False Branch Value <small class="text-muted">(it does not)</small></label>
                             ${leafValueInput(treeType, 'falseValue')}
                         </div>
                     </div>
@@ -280,8 +248,8 @@ function addSplitToNode(nodeId, treeType) {
 
     if (!WEIGHT_TREES.includes(treeType)) {
         const unit = TIME_TREES.includes(treeType) ? 'min' : null;
-        setupDistributionControls('trueValueContainer', 'true', unit);
-        setupDistributionControls('falseValueContainer', 'false', unit);
+        setupDistributionControls('trueValueContainer', unit);
+        setupDistributionControls('falseValueContainer', unit);
     }
     initTooltipsIn(modalEl);
 }
@@ -315,8 +283,8 @@ function confirmAddSplit(nodeId, treeType) {
         trueLeaf = { value: trueWeight };
         falseLeaf = { value: falseWeight };
     } else {
-        trueLeaf = getDistributionValue('true');
-        falseLeaf = getDistributionValue('false');
+        trueLeaf = readLeaf('trueValueContainer');
+        falseLeaf = readLeaf('falseValueContainer');
     }
 
     addSplit(tree, nodeId, feature, threshold, trueLeaf, falseLeaf);
@@ -361,7 +329,7 @@ function removeSplitFromNode(nodeId, treeType) {
     `);
 
     if (!WEIGHT_TREES.includes(treeType)) {
-        setupDistributionControls('newLeafValueContainer', 'newLeaf', TIME_TREES.includes(treeType) ? 'min' : null);
+        setupDistributionControls('newLeafValueContainer', TIME_TREES.includes(treeType) ? 'min' : null);
     }
 }
 
@@ -378,7 +346,7 @@ function confirmRemoveSplit(nodeId, treeType) {
         if (weight === null) return;
         leaf = { value: weight };
     } else {
-        leaf = getDistributionValue('newLeaf');
+        leaf = readLeaf('newLeafValueContainer');
     }
 
     removeSplit(tree, nodeId, leaf);

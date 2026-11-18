@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
-    FAMILIES, TIME_FAMILY_DEFAULTS, distributionPdf, distributionRange, editTimeDistribution,
-    leafParamsFromProsit, mergeDistParams,
+    FAMILIES, TIME_FAMILY_DEFAULTS, distributionPdf, distributionRange, editTimeDistribution, isOptionalBound,
+    leafFields, leafParamsFromProsit, mergeDistParams, setDistributionParam,
 } from '../../prosit_tool/static/js/features/params/distributions.js';
 
 const close = (actual, expected, tolerance = 1e-9) => {
@@ -68,6 +68,59 @@ test('a fixed value is its own minimum and maximum', () => {
     const entry = { distribution: 'fixed', parameters: { value: 1, min: 1, max: 1 } };
     editTimeDistribution(entry, 'value', 9);
     assert.deepEqual(entry.parameters, { value: 9, min: 9, max: 9 });
+});
+
+test('a family picked in the editor has no made-up bounds', () => {
+    // a bound that does not follow the mean would cut the distribution as soon as the mean is moved
+    for (const family of ['norm', 'expon', 'lognorm', 'gamma']) {
+        assert.equal(TIME_FAMILY_DEFAULTS[family].min, undefined, family);
+        assert.equal(TIME_FAMILY_DEFAULTS[family].max, undefined, family);
+    }
+    assert.deepEqual(TIME_FAMILY_DEFAULTS.uniform, { min: 30, max: 240 });
+});
+
+test('emptying a bound removes it, also the one the server sent', () => {
+    const entry = { distribution: 'norm', parameters: { mean: 5, std: 1, min: 2, min_value: 0, max_value: 9 } };
+    editTimeDistribution(entry, 'min', NaN);
+    assert.deepEqual(entry.parameters, { mean: 5, std: 1, max_value: 9 });
+    editTimeDistribution(entry, 'max', NaN);
+    assert.deepEqual(entry.parameters, { mean: 5, std: 1 });
+});
+
+test('emptying any other field changes nothing', () => {
+    const parameters = { mean: 5, std: 1 };
+    assert.equal(setDistributionParam(parameters, 'norm', 'mean', NaN), false);
+    assert.deepEqual(parameters, { mean: 5, std: 1 });
+    const ends = { min: 1, max: 2 };
+    assert.equal(setDistributionParam(ends, 'uniform', 'min', NaN), false);
+    assert.deepEqual(ends, { min: 1, max: 2 });
+});
+
+test('minimum and maximum are optional except where they are the distribution', () => {
+    assert.equal(isOptionalBound('norm', 'min'), true);
+    assert.equal(isOptionalBound('gamma', 'max'), true);
+    assert.equal(isOptionalBound('uniform', 'min'), false);
+    assert.equal(isOptionalBound('fixed', 'max'), false);
+    assert.equal(isOptionalBound('norm', 'mean'), false);
+});
+
+test('every family has its fields in a tree leaf', () => {
+    const params = (family) => leafFields(family, 20, 0, 90).map(([, param]) => param);
+    assert.deepEqual(params('fixed'), ['value']);
+    assert.deepEqual(params('norm'), ['mean', 'std', 'min', 'max']);
+    assert.deepEqual(params('expon'), ['mean', 'min', 'max']);
+    assert.deepEqual(params('uniform'), ['min', 'max']);
+    assert.deepEqual(params('lognorm'), ['scale', 'shape', 'loc', 'min', 'max']);
+    assert.deepEqual(params('gamma'), ['mean', 'std', 'min', 'max']);
+    for (const [family] of FAMILIES) assert.ok(leafFields(family).length > 0, family);
+});
+
+test('the fields of a leaf start from its value and its bounds', () => {
+    const defaults = (family, ...rest) => Object.fromEntries(leafFields(family, ...rest).map(([, param, , fallback]) => [param, fallback]));
+    assert.deepEqual(defaults('norm', 20, 0, 90), { mean: 20, std: 5, min: 0, max: 90 });
+    assert.deepEqual(defaults('lognorm', 20, 0, 90), { scale: 20, shape: 0.5, loc: 0, min: 0, max: 90 });
+    // a leaf without bounds has none to show
+    assert.deepEqual(defaults('gamma', 20), { mean: 20, std: 5, min: undefined, max: undefined });
 });
 
 test('an entry without parameters gets them on the first edit', () => {

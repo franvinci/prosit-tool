@@ -6,6 +6,7 @@
 
 import { initTooltipsIn, patchFeatherReplace } from './core/dom.js';
 import { initResults } from './features/results/index.js';
+import { refreshSessionsList } from './features/sessions.js';
 import { initSimulationControls } from './features/simulation.js';
 import { initUploadForm } from './features/upload.js';
 import './features/params/tree-splits.js';
@@ -14,5 +15,6 @@ patchFeatherReplace();
 initUploadForm();
 initSimulationControls();
 initResults();
+refreshSessionsList();
 feather.replace();
 initTooltipsIn(document);

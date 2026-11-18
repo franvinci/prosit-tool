@@ -7,7 +7,7 @@ import { getJson, request } from '../core/api.js';
 import { formatFileSize } from '../core/format.js';
 import { state } from '../core/state.js';
 import { hideLoading, showAlert, showLoading, updateLoadingMessage } from '../core/ui.js';
-import { loadSessionData } from './sessions.js';
+import { loadSessionData, refreshSessionsList } from './sessions.js';
 import { extractXesColumns, guessColumnMapping, parseCsvHeaderLine } from './upload-columns.js';
 
 const CSV_MAPPING_SELECTS = {
@@ -17,6 +17,9 @@ const CSV_MAPPING_SELECTS = {
     start_ts: 'csvStartTsCol',
     resource: 'csvResourceCol',
 };
+
+// The columns a log may not have: they can be left out of the mapping.
+const OPTIONAL_ROLES = ['start_ts', 'resource'];
 
 const ACCEPTED_EXTENSIONS = {
     xesFile: { extensions: ['.xes', '.csv'], message: 'Please select a valid XES or CSV file' },
@@ -127,14 +130,29 @@ function checkPickedFile(input) {
 }
 
 // Offer the columns of the log in each mapping select, with the likely one
-// already chosen.
+// already chosen. A column nothing looks like is never taken from the first
+// one in the list: an optional role is left out ("(none)"), a required one
+// has to be chosen before the form can be sent.
 function populateCsvMapping(headers) {
     const guesses = guessColumnMapping(headers);
     for (const [role, selectId] of Object.entries(CSV_MAPPING_SELECTS)) {
         const select = byId(selectId);
         if (!select) continue;
-        select.replaceChildren(...headers.map(header => new Option(header, header)));
-        if (guesses[role]) select.value = guesses[role];
+        const optional = OPTIONAL_ROLES.includes(role);
+        const empty = new Option(optional ? '(none)' : 'Choose a column...', '');
+        empty.disabled = !optional;
+        select.replaceChildren(empty, ...headers.map(header => new Option(header, header)));
+        select.required = !optional;
+        select.value = guesses[role] || '';
+    }
+}
+
+function clearCsvMapping() {
+    for (const selectId of Object.values(CSV_MAPPING_SELECTS)) {
+        const select = byId(selectId);
+        if (!select) continue;
+        select.replaceChildren();
+        select.required = false;
     }
 }
 
@@ -148,10 +166,7 @@ function handleEventLogFileChange(event) {
     const lowerName = file ? file.name.toLowerCase() : '';
     if (!file || !(lowerName.endsWith('.csv') || lowerName.endsWith('.xes'))) {
         mappingDiv.style.display = 'none';
-        Object.values(CSV_MAPPING_SELECTS).forEach(id => {
-            const select = byId(id);
-            if (select) select.replaceChildren();
-        });
+        clearCsvMapping();
         return;
     }
 
@@ -252,6 +267,8 @@ async function handleUpload(event) {
         hideLoading();
         // A discovery error says what to fix in the log: it stays until closed.
         showAlert(`Error: ${error.message}`, 'danger', 0);
+        // The log may have been stored before the failure: it is in the list.
+        refreshSessionsList();
     }
 }
 

@@ -74,7 +74,8 @@ export function showResourceWeight(resourceName) {
 
     highlightTransitionVisualization(returnActivitiesPerResource(resourceName));
 
-    const weight = state.parameters.resource_params.resource_weights?.[resourceName] || 0.1;
+    // A weight of zero is a weight too: only a missing one gets the default.
+    const weight = state.parameters.resource_params.resource_weights?.[resourceName] ?? 0.1;
     const name = escapeHtml(resourceName);
 
     if (typeof weight === 'number') {
@@ -196,8 +197,14 @@ function addNewResource() {
         alert('Resource already exists');
         return;
     }
+    // Everything is checked before anything is added: a resource added
+    // halfway would stay in the list with no weight.
+    const weights = state.parameters.resource_params.resource_weights || {};
+    if (isDecisionTreeModeForResourceWeights() && !(copyFrom && weights[copyFrom] !== undefined)) {
+        alert('Please choose a resource to copy the decision tree from.');
+        return;
+    }
 
-    // Add to resources list
     state.parameters.resource_params.resources.push(resourceName);
 
     // "Copy from" copies everything the source has: weight, concurrency,
@@ -206,14 +213,7 @@ function addNewResource() {
 
     // Resource weight
     if (!rp.resource_weights) rp.resource_weights = {};
-    if (isDecisionTreeModeForResourceWeights()) {
-        if (copyFrom && rp.resource_weights[copyFrom] !== undefined) {
-            rp.resource_weights[resourceName] = deepClone(rp.resource_weights[copyFrom]);
-        } else {
-            alert('Please choose a resource to copy the decision tree from.');
-            return;
-        }
-    } else if (copyFrom && rp.resource_weights[copyFrom] !== undefined) {
+    if (copyFrom && rp.resource_weights[copyFrom] !== undefined) {
         rp.resource_weights[resourceName] = deepClone(rp.resource_weights[copyFrom]);
     } else {
         rp.resource_weights[resourceName] = (typeof resourceWeight === 'number' && !isNaN(resourceWeight)) ? resourceWeight : 0.1;

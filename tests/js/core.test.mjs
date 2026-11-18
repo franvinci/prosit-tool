@@ -3,7 +3,7 @@ import { afterEach, test } from 'node:test';
 
 import { ApiError, getJson, postJson, request } from '../../prosit_tool/static/js/core/api.js';
 import { escapeHtml, infoIcon, on } from '../../prosit_tool/static/js/core/dom.js';
-import { formatFileSize } from '../../prosit_tool/static/js/core/format.js';
+import { formatDateTime, formatFileSize } from '../../prosit_tool/static/js/core/format.js';
 import {
     EDITABLE_SECTIONS, activeRun, clearParametersDirty, editableParameters, isBaselineActive, markParametersDirty,
     onDirtyChange, state,
@@ -202,6 +202,13 @@ test('the first edit is announced once, saving always', () => {
 });
 
 // ---- formatting -----------------------------------------------------------------------------------
+
+test('a date and time is shown in the time of the person reading', () => {
+    const local = new Date(2024, 2, 4, 9, 6);          // 4 March 2024, 09:06 here
+    assert.equal(formatDateTime(local.toISOString()), '2024-03-04 09:06');
+    assert.equal(formatDateTime(null), '');
+    assert.equal(formatDateTime('not a date'), '');
+});
 
 test('file sizes are shown in the largest unit that fits', () => {
     assert.equal(formatFileSize(0), '0 Bytes');

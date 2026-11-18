@@ -7,7 +7,7 @@
 import { attrSelector, escapeHtml } from '../../core/dom.js';
 import { markParametersDirty, state } from '../../core/state.js';
 import { registerDistributionKind, renderDistributionParameters, renderFamilySelect } from './distribution-editor.js';
-import { distributionPdf, distributionRange, mergeDistParams } from './distributions.js';
+import { distributionPdf, distributionRange, mergeDistParams, setDistributionParam } from './distributions.js';
 
 export function renderDataAttributeParameters(dataParams) {
     const container = document.getElementById('dataParams');
@@ -364,14 +364,7 @@ function updateDataAttributeParam(attribute, isCategorical, param, value, catego
         if (!targetObject.parameters) {
             targetObject.parameters = {};
         }
-        targetObject.parameters[param] = parseFloat(value);
-
-        // A fixed value is its own minimum and maximum.
-        if (targetObject.distribution === 'fixed' && param === 'value') {
-            targetObject.parameters.min = value;
-            targetObject.parameters.max = value;
-        }
-
+        setDistributionParam(targetObject.parameters, targetObject.distribution, param, parseFloat(value));
     }
 
     renderDataAttributeParameters(state.parameters.data_attribute_params);

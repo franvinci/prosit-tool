@@ -8,7 +8,7 @@ globalThis.document = { addEventListener: (type, listener) => { listeners[type] 
 const { registerDistributionKind, renderDistributionParameters, renderFamilySelect } =
     await import('../../prosit_tool/static/js/features/params/distribution-editor.js');
 
-const fieldsOf = (html) => [...html.matchAll(/value="([^"]*)"\s+data-action="set-distribution-param" data-param="(\w+)"/g)]
+const fieldsOf = (html) => [...html.matchAll(/value="([^"]*)"(?: placeholder="auto")?\s+data-action="set-distribution-param" data-param="(\w+)"/g)]
     .map(match => [match[2], match[1]]);
 
 test('each family shows its own fields, with the values of the entry', () => {
@@ -27,6 +27,14 @@ test('what the server sent is shown until the user edits it', () => {
     const edited = { ...fromServer, min: 0, max: 30 };
     assert.deepEqual(fieldsOf(renderDistributionParameters('waiting', 'r', 'norm', edited)),
         [['mean', '15'], ['std', '5'], ['min', '0'], ['max', '30']]);
+});
+
+test('a bound that is not set is shown as automatic, not as a number nobody chose', () => {
+    const html = renderDistributionParameters('execution', 'A', 'expon', { mean: 120 });
+    assert.deepEqual(fieldsOf(html), [['mean', '120'], ['min', ''], ['max', '']]);
+    assert.equal(html.split('placeholder="auto"').length - 1, 2);
+    // the two ends of a uniform are the distribution: they always have a value
+    assert.ok(!renderDistributionParameters('execution', 'A', 'uniform', { min: 2, max: 9 }).includes('placeholder'));
 });
 
 test('a gamma is shown as mean and standard deviation, whichever way it is stored', () => {

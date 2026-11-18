@@ -176,3 +176,93 @@ def test_tree_leaf_shown_by_the_editor_is_saved_back_unchanged(node):
         # ...and, saved, the parameters prosit-pm had.
         saved = distribution_to_prosit(family, {**shown, 'min_value': -1000, 'max_value': 1000})
         assert saved['params'] == pytest.approx(params, rel=1e-9), family
+
+
+# --- the features a split can test, against the simulator itself ---------------------------
+
+def _weight(value):
+    return {'value': value}
+
+
+def _time(minutes):
+    return {'value': minutes, 'dist': {'dist_name': 'fixed', 'params': [minutes], 'min_value': minutes, 'max_value': minutes}}
+
+
+def _split(feature, when_at_most, when_above):
+    return {'0': {'feature': feature, 'threshold': 0.5, 'children': {'true': 1, 'false': 2}},
+            '1': when_at_most, '2': when_above}
+
+
+def _with_split_everywhere(parameters, tree_type, feature):
+    """A copy of ``parameters`` where every tree of ``tree_type`` is one split on ``feature``."""
+    changed = json.loads(json.dumps(parameters))
+    if tree_type == 'transition':
+        weights = changed['transition_params']['transition_weights']
+        for name in weights:
+            weights[name] = _split(feature, _weight(0.6), _weight(0.4))
+    elif tree_type == 'resource':
+        weights = changed['resource_params']['resource_weights']
+        for name in weights:
+            weights[name] = _split(feature, _weight(0.6), _weight(0.4))
+    elif tree_type == 'arrival':
+        changed['inter_arrival_params']['inter_arrival_time']['distribution'] = _split(feature, _time(30), _time(45))
+    elif tree_type == 'execution':
+        durations = changed['execution_time_params']['activity_durations']
+        for name in durations:
+            durations[name] = _split(feature, _time(5), _time(7))
+    elif tree_type == 'waiting':
+        waiting = changed['waiting_time_params']['resource_waiting_times']
+        for name in waiting:
+            waiting[name] = _split(feature, _time(1), _time(2))
+    return changed
+
+
+@pytest.mark.parametrize('workload', [False, True], ids=['plain', 'with workload features'])
+def test_every_feature_offered_for_a_split_is_one_the_simulator_provides(client, discovered, tmp_path, node, workload):
+    """The dialog that adds a split lists features per kind of tree (tree-features.js).
+    A feature the simulator does not compute for that kind of tree would make every
+    simulation of the scenario fail: each one offered is tried on a real simulation.
+    """
+    from .conftest import event_rows, write_xes
+
+    rows = event_rows(activities=('A', 'B', 'C'), cases=12, resources=('r1', 'r2'))
+    for row in rows:
+        case = int(row['case:concept:name'][1:])
+        row['case:kind'] = 'gold' if case % 2 else 'silver'
+        row['case:amount'] = 10.0 + case * 3
+    query = '?max_depth_tree=1' + ('&use_workload_features=1' if workload else '')
+    session_id, body = discovered(write_xes(rows, tmp_path / 'log.xes'), query)
+    parameters = body['parameters']
+    assert parameters['model_options'] == {'rules_mode': True, 'use_workload_features': workload}
+
+    saved = tmp_path / 'parameters.json'
+    saved.write_text(json.dumps(parameters))
+    module = (STATIC_JS / 'features' / 'params' / 'tree-features.js').as_uri()
+    script = (
+        "import { readFileSync } from 'node:fs';"
+        f"const {{ generateFeaturesForTreeType }} = await import({json.dumps(module)});"
+        f"const parameters = JSON.parse(readFileSync({json.dumps(str(saved))}, 'utf8'));"
+        "const types = ['transition', 'resource', 'arrival', 'execution', 'waiting'];"
+        "console.log(JSON.stringify(Object.fromEntries(types.map(type =>"
+        " [type, generateFeaturesForTreeType(type, parameters).map(feature => feature.value)]))));"
+    )
+    result = subprocess.run([node, '--input-type=module', '-e', script], capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stderr
+    offered = json.loads(result.stdout)
+
+    # the log has what every kind of feature needs
+    assert 'case:kind = gold' in offered['transition'] and 'case:amount' in offered['transition']
+    assert ('workload' in offered['waiting']) is workload
+    assert {len(features) > 0 for features in offered.values()} == {True}
+
+    run_id = client.post(f'/api/sessions/{session_id}/runs', json={'name': 'Splits'}).get_json()['run']['id']
+    refused = []
+    for tree_type, features in offered.items():
+        for feature in features:
+            edited = _with_split_everywhere(parameters, tree_type, feature)
+            saved_run = client.put(f'/api/runs/{run_id}', json={'parameters': edited})
+            assert saved_run.status_code == 200, (tree_type, feature, saved_run.data)
+            simulated = client.post(f'/api/runs/{run_id}/simulate', json={'num_instances': 4})
+            if simulated.status_code != 200:
+                refused.append(f'{tree_type}: {feature}')
+    assert refused == []

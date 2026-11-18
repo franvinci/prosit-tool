@@ -120,6 +120,7 @@ class ProSiTIntegration:
                 'places': places,
                 'map_transitionName_to_id': map_transitionName_to_id,
                 'transition_label_map': transition_label_map,
+                'silent_transitions': [t.name for t in net.transitions if not t.label],
                 'fitness': fitness,
                 'precision': precision,
                 'f_measure': f_measure,
@@ -188,6 +189,7 @@ class ProSiTIntegration:
                 'places': places,
                 'map_transitionName_to_id': map_transitionName_to_id,
                 'transition_label_map': transition_label_map,
+                'silent_transitions': [t.name for t in net.transitions if not t.label],
                 'fitness': fitness,
                 'precision': precision,
                 'f_measure': f_measure,
@@ -592,12 +594,19 @@ class ProSiTIntegration:
                 'transitions': self.process_model['transitions'],
                 'map_transitionName_to_id': self.process_model['map_transitionName_to_id'],
                 'transition_label_map': self.process_model.get('transition_label_map', {}),
+                'silent_transitions': self.process_model.get('silent_transitions', []),
                 'visualization': self.process_model['visualization'],
                 'fitness': self.process_model['fitness'],
                 'precision': self.process_model['precision'],
                 'f_measure': self.process_model['f_measure']
             },
             'prosit_metrics': self.prosit_metrics,
+            # How the model was discovered: it decides what a decision tree
+            # can test (see tree-features.js). Shown, never edited.
+            'model_options': {
+                'rules_mode': bool(prosit_params.get('rules_mode', False)),
+                'use_workload_features': bool(prosit_params.get('use_workload_features', False)),
+            },
             'transition_params': {
                 'transition_weights': prosit_params["transition_params"]["transition_weights"]
             },

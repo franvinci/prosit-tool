@@ -3,6 +3,9 @@
 import json
 import logging
 import os
+import re
+import sys
+import tempfile
 import threading
 import time
 
@@ -156,10 +159,57 @@ def normalize_event_log(log):
     return log, notes
 
 
+# A <date .../> attribute, and seconds with a fraction inside it.
+_DATE_ELEMENT = re.compile(rb'<date\b[^>]*>')
+_SECONDS_FRACTION = re.compile(rb'(T\d{2}:\d{2}:\d{2})\.(\d+)')
+
+
+def _fraction_of_three_or_six_digits(match):
+    digits = match.group(2)[:6]
+    return match.group(1) + b'.' + digits.ljust(3 if len(digits) <= 3 else 6, b'0')
+
+
+def _events_lack_timestamps(log):
+    return any('time:timestamp' not in event or 'start:timestamp' not in event
+               for trace in log for event in trace)
+
+
+def _import_xes(xes_path):
+    """Read an XES file, whatever the precision of its timestamps.
+
+    pm4py parses a timestamp with ``datetime.fromisoformat``. Before Python
+    3.11 that accepts only three or six decimals of a second, and pm4py drops
+    without a word any timestamp written otherwise (with nanoseconds, or with
+    tenths): the events come back with no time at all. When that may have
+    happened, the file is read again from a copy whose fractions are rewritten
+    with three or six digits.
+    """
+    log = xes_importer.apply(xes_path)
+    if sys.version_info >= (3, 11) or not _events_lack_timestamps(log):
+        return log
+
+    rewritten = False
+    with tempfile.NamedTemporaryFile(suffix='.xes', delete=False) as copy:
+        try:
+            with open(xes_path, 'rb') as original:
+                for line in original:
+                    fixed = _DATE_ELEMENT.sub(
+                        lambda date: _SECONDS_FRACTION.sub(_fraction_of_three_or_six_digits, date.group(0)), line,
+                    )
+                    rewritten = rewritten or fixed != line
+                    copy.write(fixed)
+            copy.close()
+            # Nothing to rewrite: the log simply has events without timestamps.
+            return xes_importer.apply(copy.name) if rewritten else log
+        finally:
+            copy.close()
+            os.unlink(copy.name)
+
+
 def load_event_log(xes_path):
     """Read an XES file and normalize it. Returns ``(log, notes)``."""
     try:
-        log = xes_importer.apply(xes_path)
+        log = _import_xes(xes_path)
     except Exception as exc:
         logger.exception("Could not parse %s as XES", xes_path)
         raise EventLogError(f'The file is not a valid XES event log ({describe_exception(exc)}).') from exc

@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { generateFeaturesForTreeType, getFeatureTooltip, isCategoricalFeature } from '../../prosit_tool/static/js/features/params/tree-features.js';
-import { addSplit, branchIds, isTree, removeSplit, singleLeafTimeTree } from '../../prosit_tool/static/js/features/params/trees.js';
+import { generateFeaturesForTreeType, getFeatureTooltip } from '../../prosit_tool/static/js/features/params/tree-features.js';
+import {
+    addSplit, branchIds, isCategoricalFeature, isTree, removeSplit, shownBranches, singleLeafTimeTree,
+} from '../../prosit_tool/static/js/features/params/trees.js';
 
 // ---- shape of a tree --------------------------------------------------------------------
 
@@ -28,6 +30,31 @@ test('a new time tree is one exponential leaf', () => {
 });
 
 // ---- adding and removing splits ------------------------------------------------------------
+
+// prosit-pm follows the "true" branch when feature <= threshold. A condition is
+// a feature worth 1 when it holds, split at 0.5: its "true" branch is the one
+// of the cases where it does NOT hold.
+
+test('for a number, the branch shown as true is the one prosit-pm calls true', () => {
+    const node = { feature: 'hour', threshold: 17.5, children: { true: 1, false: 2 } };
+    assert.deepEqual(shownBranches(node), [1, 2]);
+});
+
+test('for a condition, the branch shown as true is the one prosit-pm calls false', () => {
+    assert.deepEqual(shownBranches({ feature: 'kind = gold', threshold: 0.5, children: { true: 1, false: 2 } }), [2, 1]);
+    assert.deepEqual(shownBranches({ feature: 'resource = Anna', threshold: 0.5, children: { '1': 5, '0': 6 } }), [6, 5]);
+});
+
+test('a split on a condition stores the leaf for "it holds" where prosit-pm looks for it', () => {
+    const tree = { '0': { value: 0.5 } };
+    addSplit(tree, '0', 'kind = gold', 0.5, { value: 0.9 }, { value: 0.1 });
+    // kind = gold  ->  the feature is 1  ->  1 <= 0.5 is false  ->  the "false" child
+    assert.deepEqual(tree[tree['0'].children.false], { value: 0.9 });
+    assert.deepEqual(tree[tree['0'].children.true], { value: 0.1 });
+    // and it is shown back the way it was entered
+    const [holds, otherwise] = shownBranches(tree['0']);
+    assert.deepEqual([tree[holds], tree[otherwise]], [{ value: 0.9 }, { value: 0.1 }]);
+});
 
 test('adding a split turns the leaf into a condition with two new leaves', () => {
     const tree = { '0': { feature: 'hour', threshold: 12, children: { true: 1, false: 2 } }, '1': { value: 0.2 }, '2': { value: 0.8 } };
@@ -83,17 +110,30 @@ const parameters = {
 };
 const values = (treeType) => generateFeaturesForTreeType(treeType, parameters).map(f => f.value);
 
-test('each kind of tree offers the features prosit-pm uses for it', () => {
+test('each kind of tree offers the features the simulator gives it', () => {
+    const attributes = ['amount', 'kind = a"b', 'kind = <x>'];
     assert.deepEqual(values('arrival'), ['hour', 'weekday']);
-    assert.deepEqual(values('transition'), ['amount', 'kind = a"b', 'kind = <x>', 'Check', "O'Neil's review"]);
-    assert.deepEqual(values('resource'), ['Anna', 'R&D <team>', 'amount', 'kind = a"b', 'kind = <x>', 'Check', "O'Neil's review"]);
-    assert.deepEqual(values('execution'), ['resource = Anna', 'resource = R&D <team>', 'Check', "O'Neil's review", 'amount', 'kind = a"b', 'kind = <x>']);
-    assert.deepEqual(values('waiting'), ['workload', 'Check', "O'Neil's review", 'amount', 'kind = a"b', 'kind = <x>']);
+    assert.deepEqual(values('transition'), [...attributes, 'Check', "O'Neil's review"]);
+    assert.deepEqual(values('resource'), ['Anna', 'R&D <team>', 'activity = Check', "activity = O'Neil's review", ...attributes]);
+    assert.deepEqual(values('execution'),
+        ['resource = Anna', 'resource = R&D <team>', 'hour', 'weekday', 'Check', "O'Neil's review", ...attributes]);
+    assert.deepEqual(values('waiting'),
+        ['hour', 'weekday', 'waiting_activity = Check', "waiting_activity = O'Neil's review", 'Check', "O'Neil's review", ...attributes]);
+});
+
+test('the workload of a resource can be tested only in a model discovered with it', () => {
+    assert.ok(!values('waiting').includes('workload'));
+    assert.ok(!values('resource').includes('queue_length'));
+    const withWorkload = { ...parameters, model_options: { use_workload_features: true } };
+    const of = (treeType) => generateFeaturesForTreeType(treeType, withWorkload).map(f => f.value);
+    assert.deepEqual(of('waiting').slice(0, 2), ['workload', 'queue_length']);
+    assert.deepEqual(of('resource').slice(-2), ['workload', 'queue_length']);
+    for (const treeType of ['transition', 'arrival', 'execution']) assert.ok(!of(treeType).includes('workload'), treeType);
 });
 
 test('features are grouped under the headings of the list', () => {
     const groups = new Set(generateFeaturesForTreeType('resource', parameters).map(f => f.group));
-    assert.deepEqual([...groups], ['Resources', 'Trace attributes', 'Activities']);
+    assert.deepEqual([...groups], ['Resources', 'Activities', 'Trace attributes']);
 });
 
 test('the values of a categorical attribute listed by the server win over the ones in its distribution', () => {
@@ -104,8 +144,8 @@ test('the values of a categorical attribute listed by the server win over the on
 });
 
 test('a session without attributes or resources still gets its features', () => {
-    assert.deepEqual(generateFeaturesForTreeType('execution', {}), []);
-    assert.deepEqual(generateFeaturesForTreeType('waiting', {}).map(f => f.value), ['workload']);
+    assert.deepEqual(generateFeaturesForTreeType('transition', {}), []);
+    assert.deepEqual(generateFeaturesForTreeType('waiting', {}).map(f => f.value), ['hour', 'weekday']);
 });
 
 test('a condition is told from a number compared with a threshold', () => {
@@ -121,5 +161,8 @@ test('each feature is explained in words', () => {
     assert.match(getFeatureTooltip('Check', parameters), /gone through activity «Check»/);
     assert.match(getFeatureTooltip('Anna', parameters), /resource «Anna» has served/);
     assert.match(getFeatureTooltip('amount', parameters), /Numeric threshold/);
+    assert.match(getFeatureTooltip('activity = Check', parameters), /activity to be performed is «Check»/);
+    assert.match(getFeatureTooltip('waiting_activity = Check', parameters), /waiting for the resource is «Check»/);
+    assert.match(getFeatureTooltip('queue_length', parameters), /scheduled for the resource/);
     assert.equal(getFeatureTooltip('', parameters), '');
 });

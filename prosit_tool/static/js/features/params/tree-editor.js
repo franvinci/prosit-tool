@@ -9,9 +9,9 @@
 
 import { escapeHtml, initTooltipsIn, on } from '../../core/dom.js';
 import { markParametersDirty } from '../../core/state.js';
-import { FAMILIES, distributionPdf, distributionRange, leafParamsFromProsit } from './distributions.js';
-import { getFeatureTooltip, isCategoricalFeature } from './tree-features.js';
-import { branchIds } from './trees.js';
+import { FAMILIES, distributionPdf, distributionRange, isOptionalBound, leafFields, leafParamsFromProsit } from './distributions.js';
+import { getFeatureTooltip } from './tree-features.js';
+import { isCategoricalFeature, shownBranches } from './trees.js';
 
 const TIME_TREE_TYPES = ['execution', 'waiting', 'arrival'];
 
@@ -65,8 +65,10 @@ function renderTree(treeData, mountEl, treeType, leafExplanation, createLeaf) {
             wrapper.appendChild(childrenContainer);
 
             if (node.children) {
-                const [trueId, falseId] = branchIds(node.children);
-                for (const [name, childId] of [['true', trueId], ['false', falseId]]) {
+                // "true" is the branch of the cases for which the condition
+                // written above holds, whichever way prosit-pm stores it.
+                const [holdsId, otherwiseId] = shownBranches(node);
+                for (const [name, childId] of [['true', holdsId], ['false', otherwiseId]]) {
                     const label = document.createElement('div');
                     label.innerHTML = `<em>${name}</em>`;
                     childrenContainer.appendChild(label);
@@ -200,53 +202,6 @@ function renderLeafDistributionChart(canvas, family, params) {
     });
 }
 
-// The fields of each family in a leaf: [label, parameter, {min, step}, default].
-// `central` is the value of the leaf, `low`/`high` its clipping bounds.
-function leafFields(family, central, low, high) {
-    switch (family) {
-        case 'fixed':
-            return [['Fixed Value', 'value', { min: 0 }, central ?? 1]];
-        case 'norm':
-            return [
-                ['Mean', 'mean', { min: 0 }, central ?? 15],
-                ['Std Dev', 'std', { min: 0 }, 5],
-                ['Min', 'min', { min: 0 }, low],
-                ['Max', 'max', { min: 0 }, high],
-            ];
-        case 'expon':
-            return [
-                ['Mean', 'mean', { min: 0 }, central ?? 15],
-                ['Min', 'min', { min: 0 }, low],
-                ['Max', 'max', { min: 0 }, high],
-            ];
-        case 'uniform':
-            return [
-                ['Min Value', 'min', { min: 0 }, low],
-                ['Max Value', 'max', { min: 0 }, high],
-            ];
-        case 'lognorm':
-            // scipy's (shape, loc, scale), under the names people use for them.
-            return [
-                ['Median (scale)', 'scale', { min: 0 }, central ?? 1],
-                ['Sigma (shape)', 'shape', { min: 0.0001, step: 0.01 }, 0.5],
-                ['Shift (loc)', 'loc', {}, 0],
-                ['Min', 'min', {}, low],
-                ['Max', 'max', {}, high],
-            ];
-        case 'gamma':
-            // The server derives scipy's shape and scale from mean and standard
-            // deviation, and keeps the shift that was fitted.
-            return [
-                ['Mean', 'mean', { min: 0.0001 }, central ?? 15],
-                ['Std Dev', 'std', { min: 0.0001 }, 5],
-                ['Min', 'min', {}, low],
-                ['Max', 'max', {}, high],
-            ];
-        default:
-            return [];
-    }
-}
-
 /** A tree whose leaves are distributions (execution, waiting and arrival times). */
 export function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType = 'distribution') {
     const unitSuffix = TIME_TREE_TYPES.includes(treeType) ? 'min' : null;
@@ -298,20 +253,20 @@ export function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType
             paramsContainer.replaceChildren();
             const family = select.value;
             const shown = editableParams();
-            const low = node.dist.min_value ?? node.dist.min ?? 0;
-            const high = node.dist.max_value ?? node.dist.max ?? 100;
+            // Undefined when the leaf has no bound on that side.
+            const low = node.dist.min_value ?? node.dist.min;
+            const high = node.dist.max_value ?? node.dist.max;
 
             // What a field shows: the parameter if there is one, else the
             // bound or the value of the leaf it stands for, else a default.
             function current(key, fallback) {
                 if (shown[key] != null) return shown[key];
-                if (key === 'min') return low;
-                if (key === 'max') return high;
                 if (key === 'value') return node.value ?? fallback;
                 return fallback;
             }
 
             for (const [label, key, limits, fallback] of leafFields(family, node.value, low, high)) {
+                const optional = isOptionalBound(family, key);
                 const withUnit = unitSuffix && key !== 'shape';
                 const group = document.createElement('div');
                 group.className = 'mb-2';
@@ -322,12 +277,25 @@ export function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType
                            ${limits.min !== undefined ? `min="${limits.min}" ` : ''}step="${limits.step || 0.1}">
                     ${withUnit ? `<span class="input-group-text">${unitSuffix}</span></div>` : ''}`;
                 const input = group.querySelector('input');
-                input.value = current(key, fallback ?? 0);
+                input.value = current(key, fallback) ?? (optional ? '' : 0);
+                if (optional) {
+                    // No bound: the distribution is not cut on that side.
+                    input.placeholder = 'auto';
+                    input.title = 'Sampled values are kept within this bound. Leave it empty for no bound.';
+                }
                 input.addEventListener('change', () => {
                     const value = parseFloat(input.value);
-                    if (isNaN(value)) return;
+                    const emptied = optional && input.value === '';
+                    if (isNaN(value) && !emptied) return;
                     // The first edit turns prosit-pm's list into editable parameters.
                     node.dist.params = editableParams();
+                    if (emptied) {
+                        delete node.dist.params[key];
+                        delete node.dist[key === 'min' ? 'min_value' : 'max_value'];
+                        markParametersDirty();
+                        updateLeafChart();
+                        return;
+                    }
                     node.dist.params[key] = value;
                     if (key === 'min') node.dist.min_value = value;
                     if (key === 'max') node.dist.max_value = value;
@@ -352,6 +320,16 @@ export function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType
             // have no field that shows it.
             const next = { ...editableParams() };
             delete next.loc;
+            // The bounds of a fixed value are the value itself. Kept for
+            // another family, they would turn it into the same constant.
+            let bounded = true;
+            if (node.dist.dist_name === 'fixed' || (node.dist.min_value != null && node.dist.min_value === node.dist.max_value)) {
+                delete node.dist.min_value;
+                delete node.dist.max_value;
+                delete next.min;
+                delete next.max;
+                bounded = false;
+            }
             node.dist.dist_name = family;
             if (family === 'fixed') {
                 if (next.value == null) next.value = node.value ?? 1;
@@ -363,8 +341,13 @@ export function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType
             } else if (family === 'expon') {
                 if (next.mean == null) next.mean = node.value ?? 15;
             } else if (family === 'uniform') {
-                if (next.min == null) next.min = node.dist.min_value ?? 0;
-                if (next.max == null) next.max = node.dist.max_value ?? 100;
+                // The two ends are the distribution: the old bounds when the
+                // leaf had them, else an interval around its value.
+                const around = node.value > 0 ? [node.value / 2, node.value * 1.5] : [0, 100];
+                if (next.min == null) next.min = bounded ? (node.dist.min_value ?? around[0]) : around[0];
+                if (next.max == null) next.max = bounded ? (node.dist.max_value ?? around[1]) : around[1];
+                node.dist.min_value = next.min;
+                node.dist.max_value = next.max;
             } else if (family === 'lognorm') {
                 if (next.shape == null) next.shape = 0.5;
                 if (next.loc == null) next.loc = 0;

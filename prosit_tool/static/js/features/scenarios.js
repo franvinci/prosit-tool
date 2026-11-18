@@ -9,6 +9,7 @@ import { BASELINE_RUN_NAME, activeRun, clearParametersDirty, editableParameters,
 import { showAlert } from '../core/ui.js';
 import { renderParameters } from './params/index.js';
 import { loadAllVisualizations } from './results/index.js';
+import { refreshSessionsList } from './sessions.js';
 import { setSimOutputFilename } from './simulation.js';
 
 /**
@@ -81,8 +82,14 @@ export function renderWhatIfList() {
     feather.replace();
 }
 
+/**
+ * Read the scenarios of the session again, after one was created, renamed,
+ * deleted or simulated. The list of the sessions shows how many there are and
+ * the state of the session, so it is read again with them.
+ */
 export async function refreshWhatIfList() {
     if (!state.sessionId) return;
+    refreshSessionsList();
     try {
         const body = await getJson(`/api/sessions/${state.sessionId}/runs`);
         state.runs = body.runs || [];
@@ -203,6 +210,9 @@ async function createWhatIfFromModal() {
 
         const modal = bootstrap.Modal.getInstance(document.getElementById('createWhatIfModal'));
         if (modal) modal.hide();
+        // The edits made so far are in the new scenario: opening it loses
+        // nothing, so there is nothing to confirm.
+        clearParametersDirty();
         await refreshWhatIfList();
         await switchToWhatIf(result.run.id);
         showAlert(`Created scenario "${result.run.name}"`, 'success');

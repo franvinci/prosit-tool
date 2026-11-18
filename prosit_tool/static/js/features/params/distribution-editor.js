@@ -6,12 +6,16 @@
  */
 
 import { escapeHtml, on } from '../../core/dom.js';
-import { FAMILIES } from './distributions.js';
+import { FAMILIES, isOptionalBound } from './distributions.js';
 
 const first = (...values) => values.find(value => value !== undefined && value !== null);
 
+const NO_BOUND_HELP = 'Sampled values are kept within this bound. Leave it empty for no bound.';
+
 // One row of fields per inner list. `value` is what the field shows: the
 // parameter as edited, else what the server sent, else a neutral default.
+// Minimum and maximum have no default: without them the distribution is not
+// cut (the field says "auto"), and emptying the field removes the bound.
 const FIELD_ROWS = {
     fixed: (p) => [[
         { param: 'value', label: 'Fixed Value', min: 1, value: first(p.value, p.mean_value) },
@@ -28,12 +32,12 @@ const FIELD_ROWS = {
     ],
     expon: (p) => [[
         { param: 'mean', label: 'Mean', min: 1, value: first(p.mean, p.scale, p.mean_value) },
-        { param: 'min', label: 'Min', min: 0, value: first(p.min, p.min_value, 0) },
-        { param: 'max', label: 'Max', min: 1, value: first(p.max, p.max_value, 100) },
+        { param: 'min', label: 'Min', min: 0, value: first(p.min, p.min_value) },
+        { param: 'max', label: 'Max', min: 1, value: first(p.max, p.max_value) },
     ]],
     uniform: (p) => [[
         { param: 'min', label: 'Min Value', min: 0, value: first(p.min, p.min_value, 0) },
-        { param: 'max', label: 'Max Value', min: 1, value: first(p.max, p.max_value, 100) },
+        { param: 'max', label: 'Max Value', min: 1, value: first(p.max, p.max_value, 60) },
     ]],
     // The server works with scipy's shape and scale; mean and standard
     // deviation say the same and are easier to reason about.
@@ -53,8 +57,8 @@ const FIELD_ROWS = {
                 },
             ],
             [
-                { param: 'min', label: 'Min', value: first(p.min, p.min_value, 0) },
-                { param: 'max', label: 'Max', value: first(p.max, p.max_value, 100) },
+                { param: 'min', label: 'Min', value: first(p.min, p.min_value) },
+                { param: 'max', label: 'Max', value: first(p.max, p.max_value) },
             ],
         ];
     },
@@ -79,8 +83,8 @@ const FIELD_ROWS = {
             },
         ],
         [
-            { param: 'min', label: 'Min', value: first(p.min, p.min_value, 0) },
-            { param: 'max', label: 'Max', value: first(p.max, p.max_value, 100) },
+            { param: 'min', label: 'Min', value: first(p.min, p.min_value) },
+            { param: 'max', label: 'Max', value: first(p.max, p.max_value) },
         ],
     ],
 };
@@ -103,13 +107,17 @@ export function renderDistributionParameters(kind, item, distribution, params) {
     const target = targetAttributes(kind, item);
     return rows.map((fields, index) => {
         const width = 12 / fields.length;
-        const columns = fields.map(field => `
+        const columns = fields.map(field => {
+            const optional = isOptionalBound(distribution, field.param);
+            const title = field.title || (optional ? NO_BOUND_HELP : '');
+            return `
                 <div class="col-md-${width}">
-                    <label class="form-label small"${field.title ? ` title="${escapeHtml(field.title)}"` : ''}>${field.label}</label>
+                    <label class="form-label small"${title ? ` title="${escapeHtml(title)}"` : ''}>${field.label}</label>
                     <input type="number" class="form-control form-control-sm"
-                           ${field.min !== undefined ? `min="${field.min}" ` : ''}step="${field.step || 0.1}" value="${escapeHtml(field.value)}"
+                           ${field.min !== undefined ? `min="${field.min}" ` : ''}step="${field.step || 0.1}" value="${escapeHtml(field.value)}"${optional ? ' placeholder="auto"' : ''}
                            data-action="set-distribution-param" data-param="${field.param}" ${target}>
-                </div>`).join('');
+                </div>`;
+        }).join('');
         return `
             <div class="row${index ? ' mt-2' : ''}">${columns}
             </div>`;

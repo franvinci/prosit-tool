@@ -17,15 +17,47 @@ export const FAMILIES = [
     ['gamma', 'Gamma'],
 ];
 
-/** Parameters a time distribution (in minutes) starts with when its family is picked. */
+/**
+ * Parameters a time distribution (in minutes) starts with when its family is
+ * picked. No minimum and maximum, except where they are the distribution
+ * itself: a bound left out means "no bound" (the server then clips only the
+ * extreme tails), while a made-up one would silently cut the distribution as
+ * soon as the user moves its mean.
+ */
 export const TIME_FAMILY_DEFAULTS = {
     fixed: { value: 120, min: 120, max: 120 },
     norm: { mean: 120, std: 30 },
     expon: { mean: 120 },
     uniform: { min: 30, max: 240 },
-    lognorm: { shape: 0.5, loc: 0, scale: 60, min: 0, max: 600 },
-    gamma: { mean: 60, std: 30, min: 0, max: 600 },
+    lognorm: { shape: 0.5, loc: 0, scale: 60 },
+    gamma: { mean: 60, std: 30 },
 };
+
+/** True for the minimum or maximum of a family that works without them. */
+export function isOptionalBound(family, param) {
+    return (param === 'min' || param === 'max') && family !== 'uniform' && family !== 'fixed';
+}
+
+/**
+ * Set one parameter of a distribution. A field that was emptied (`value` is
+ * NaN) removes a bound, also the one that came from the server, and changes
+ * nothing for any other parameter. Returns whether something was changed.
+ */
+export function setDistributionParam(parameters, family, param, value) {
+    if (Number.isNaN(value)) {
+        if (!isOptionalBound(family, param)) return false;
+        delete parameters[param];
+        delete parameters[`${param}_value`];
+        return true;
+    }
+    parameters[param] = value;
+    // A fixed value is its own minimum and maximum.
+    if (family === 'fixed' && param === 'value') {
+        parameters.min = value;
+        parameters.max = value;
+    }
+    return true;
+}
 
 /**
  * Apply one edit to a time distribution `{distribution, parameters}`:
@@ -39,11 +71,56 @@ export function editTimeDistribution(entry, param, value) {
         return;
     }
     if (!entry.parameters) entry.parameters = {};
-    entry.parameters[param] = value;
-    // A fixed value is its own minimum and maximum.
-    if (entry.distribution === 'fixed' && param === 'value') {
-        entry.parameters.min = value;
-        entry.parameters.max = value;
+    setDistributionParam(entry.parameters, entry.distribution, param, value);
+}
+
+/**
+ * The fields of the distribution of a tree leaf, per family, as
+ * `[label, parameter, {min, step}, default]`. `central` is the value of the
+ * leaf, `low` and `high` its bounds (undefined: no bound).
+ */
+export function leafFields(family, central, low, high) {
+    switch (family) {
+        case 'fixed':
+            return [['Fixed Value', 'value', { min: 0 }, central ?? 1]];
+        case 'norm':
+            return [
+                ['Mean', 'mean', { min: 0 }, central ?? 15],
+                ['Std Dev', 'std', { min: 0 }, 5],
+                ['Min', 'min', { min: 0 }, low],
+                ['Max', 'max', { min: 0 }, high],
+            ];
+        case 'expon':
+            return [
+                ['Mean', 'mean', { min: 0 }, central ?? 15],
+                ['Min', 'min', { min: 0 }, low],
+                ['Max', 'max', { min: 0 }, high],
+            ];
+        case 'uniform':
+            return [
+                ['Min Value', 'min', { min: 0 }, low ?? 0],
+                ['Max Value', 'max', { min: 0 }, high ?? 100],
+            ];
+        case 'lognorm':
+            // scipy's (shape, loc, scale), under the names people use for them.
+            return [
+                ['Median (scale)', 'scale', { min: 0 }, central ?? 1],
+                ['Sigma (shape)', 'shape', { min: 0.0001, step: 0.01 }, 0.5],
+                ['Shift (loc)', 'loc', {}, 0],
+                ['Min', 'min', {}, low],
+                ['Max', 'max', {}, high],
+            ];
+        case 'gamma':
+            // The server derives scipy's shape and scale from mean and standard
+            // deviation, and keeps the shift that was fitted.
+            return [
+                ['Mean', 'mean', { min: 0.0001 }, central ?? 15],
+                ['Std Dev', 'std', { min: 0.0001 }, 5],
+                ['Min', 'min', {}, low],
+                ['Max', 'max', {}, high],
+            ];
+        default:
+            return [];
     }
 }
 

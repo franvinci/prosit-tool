@@ -8,7 +8,7 @@ import pandas as pd
 import pm4py
 import pytest
 
-from prosit_tool.api._shared import UNKNOWN_RESOURCE, EventLogError, normalize_event_log
+from prosit_tool.api._shared import UNKNOWN_RESOURCE, EventLogError, load_event_log, normalize_event_log
 
 from .conftest import event_rows, write_xes
 
@@ -191,3 +191,49 @@ def test_csv_rows_without_end_timestamp_are_reported(upload, tmp_path, data_file
     assert response.status_code == 400, response.data
     assert response.get_json()['error'] == 'CSV has 1 row(s) with no end timestamp'
     assert data_files() == ([], [])  # the rejected upload leaves no file
+
+
+# --- timestamps of any precision ------------------------------------------------------
+
+XES_WITH_FINE_TIMESTAMPS = """<?xml version="1.0" encoding="utf-8" ?>
+<log xes.version="1849-2016" xmlns="http://www.xes-standard.org/">
+  <trace>
+    <string key="concept:name" value="case 1" />
+    <event>
+      <string key="concept:name" value="A" />
+      <string key="org:resource" value="r1" />
+      <date key="start:timestamp" value="2024-01-01T08:00:00.123456789+00:00" />
+      <date key="time:timestamp" value="2024-01-01T08:20:00.5+00:00" />
+    </event>
+    <event>
+      <string key="concept:name" value="B" />
+      <string key="org:resource" value="r1" />
+      <date key="start:timestamp" value="2024-01-01T09:00:00.25+00:00" />
+      <date value="2024-01-01T09:30:00.1234+00:00" key="time:timestamp" />
+    </event>
+  </trace>
+</log>
+"""
+
+
+def test_xes_timestamps_with_any_number_of_decimals_are_read(tmp_path):
+    """pm4py drops them on Python 3.10 unless they have three or six decimals."""
+    path = tmp_path / 'fine.xes'
+    path.write_text(XES_WITH_FINE_TIMESTAMPS)
+
+    log, notes = load_event_log(str(path))
+
+    assert notes == []
+    first, second = log[0]
+    assert first['start:timestamp'].isoformat() == '2024-01-01T08:00:00.123456+00:00'
+    assert first['time:timestamp'].isoformat() == '2024-01-01T08:20:00.500000+00:00'
+    assert second['start:timestamp'].isoformat() == '2024-01-01T09:00:00.250000+00:00'
+    assert second['time:timestamp'].isoformat() == '2024-01-01T09:30:00.123400+00:00'
+
+
+def test_xes_whose_events_really_have_no_timestamp_is_still_refused(tmp_path):
+    path = tmp_path / 'untimed.xes'
+    path.write_text(XES_WITH_FINE_TIMESTAMPS.replace('<date ', '<string ').replace('time:timestamp', 'when'))
+
+    with pytest.raises(EventLogError, match='no timestamp'):
+        load_event_log(str(path))

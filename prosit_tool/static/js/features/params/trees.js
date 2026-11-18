@@ -39,9 +39,17 @@ export function singleLeafTimeTree(mean = 15) {
 }
 
 /**
- * Ids of the two children of a split: `[taken when the condition holds, taken
- * otherwise]`. prosit-pm names the branches "true"/"false" in memory and
- * "1"/"0" once the tree has been through JSON.
+ * True for a feature that is a condition ("kind = gold", "resource = Anna")
+ * and not a number compared with a threshold ("hour", a count of activities).
+ */
+export function isCategoricalFeature(feature) {
+    return String(feature).includes(' = ');
+}
+
+/**
+ * Ids of the two children of a split as prosit-pm follows them:
+ * `[taken when feature <= threshold, taken otherwise]`. It names the branches
+ * "true"/"false" in memory and "1"/"0" once the tree has been through JSON.
  */
 export function branchIds(children) {
     return [
@@ -50,14 +58,35 @@ export function branchIds(children) {
     ];
 }
 
-/** Turn the leaf `nodeId` into a split on `feature`, with two new leaves under it. */
-export function addSplit(tree, nodeId, feature, threshold, trueLeaf, falseLeaf) {
+/**
+ * Ids of the two children of a split as the editor shows them:
+ * `[when the condition on screen holds, when it does not]`.
+ *
+ * For a number the condition on screen is the test prosit-pm makes
+ * ("hour ≤ 17.5"). A condition such as "kind = gold" is a feature worth 1
+ * when it holds and 0 when it does not, split at 0.5: prosit-pm's "true"
+ * branch (feature <= 0.5) is then the one of the cases where the condition
+ * does NOT hold, so the two are swapped.
+ */
+export function shownBranches(node) {
+    const [atMost, above] = branchIds(node.children);
+    return isCategoricalFeature(node.feature) ? [above, atMost] : [atMost, above];
+}
+
+/**
+ * Turn the leaf `nodeId` into a split on `feature`, with two new leaves under
+ * it: `whenItHolds` for the cases where the condition on screen holds (the
+ * feature is at most the threshold, or the condition is true), `otherwise`
+ * for the rest.
+ */
+export function addSplit(tree, nodeId, feature, threshold, whenItHolds, otherwise) {
     const maxId = Math.max(...Object.keys(tree).map(key => parseInt(key) || 0));
-    const trueId = maxId + 1;
-    const falseId = maxId + 2;
-    tree[nodeId] = { feature, threshold, children: { true: trueId, false: falseId } };
-    tree[trueId] = trueLeaf;
-    tree[falseId] = falseLeaf;
+    const atMostId = maxId + 1;
+    const aboveId = maxId + 2;
+    const categorical = isCategoricalFeature(feature);
+    tree[nodeId] = { feature, threshold, children: { true: atMostId, false: aboveId } };
+    tree[atMostId] = categorical ? otherwise : whenItHolds;
+    tree[aboveId] = categorical ? whenItHolds : otherwise;
 }
 
 /** Turn the split `nodeId` back into `leaf`, dropping everything below it. */

@@ -20,13 +20,21 @@ logger = logging.getLogger(__name__)
 bp = Blueprint('upload', __name__)
 
 
-def _apply_mapping(df: pd.DataFrame, mapping: dict, source_label: str) -> pd.DataFrame:
+# The optional roles of the mapping and the column each one becomes.
+_OPTIONAL_COLUMNS = {'start_ts': 'start:timestamp', 'resource': 'org:resource'}
+
+
+def _apply_mapping(df: pd.DataFrame, mapping: dict, source_label: str, unused=()) -> pd.DataFrame:
     """Rename DataFrame columns to pm4py conventions and check the required ones.
 
     Case id, activity and end timestamp are required. The start timestamp and
     the resource are optional and nothing is made up for them here: an event
     without them is written without them, and the reader of the log
     (``normalize_event_log``) decides what to use instead and tells the user.
+
+    ``unused`` names the optional roles the user chose to leave out: a column
+    of the log that already has the standard name of one of them is dropped,
+    instead of being used behind the user's back.
 
     ``source_label`` is used in error messages (e.g. ``"CSV"`` / ``"XES"``).
     """
@@ -50,6 +58,10 @@ def _apply_mapping(df: pd.DataFrame, mapping: dict, source_label: str) -> pd.Dat
     if drop_cols:
         df = df.drop(columns=drop_cols)
     df = df.rename(columns=rename)
+    left_out = [_OPTIONAL_COLUMNS[role] for role in unused
+                if not mapping.get(role) and _OPTIONAL_COLUMNS[role] in df.columns]
+    if left_out:
+        df = df.drop(columns=left_out)
 
     for column, meaning in (('case:concept:name', 'case id'), ('concept:name', 'activity'),
                             ('time:timestamp', 'end timestamp')):
@@ -90,10 +102,10 @@ def _write_xes(df: pd.DataFrame, xes_path: str) -> None:
     pm4py.write_xes(pm4py.convert_to_event_log(df, stream_postprocessing=True), xes_path)
 
 
-def _csv_to_xes(csv_path: str, xes_path: str, mapping: dict) -> None:
+def _csv_to_xes(csv_path: str, xes_path: str, mapping: dict, unused=()) -> None:
     """Read a CSV log, rename columns to pm4py conventions, write as XES."""
     df = pd.read_csv(csv_path)
-    df = _apply_mapping(df, mapping, source_label='CSV')
+    df = _apply_mapping(df, mapping, source_label='CSV', unused=unused)
     _write_xes(df, xes_path)
 
 
@@ -106,10 +118,10 @@ _DEFAULT_XES_COLS = {
 }
 
 
-def _xes_apply_mapping(input_xes_path: str, output_xes_path: str, mapping: dict) -> None:
+def _xes_apply_mapping(input_xes_path: str, output_xes_path: str, mapping: dict, unused=()) -> None:
     """If ``mapping`` is a no-op vs pm4py defaults, copy the XES; otherwise
     re-read with pm4py, rename columns, and write a new XES."""
-    is_noop = all(
+    is_noop = not unused and all(
         mapping.get(k) in (None, '', _DEFAULT_XES_COLS[k]) for k in _DEFAULT_XES_COLS
     )
     if is_noop:
@@ -118,7 +130,7 @@ def _xes_apply_mapping(input_xes_path: str, output_xes_path: str, mapping: dict)
         return
 
     df = pm4py.convert_to_dataframe(pm4py.read_xes(input_xes_path))
-    df = _apply_mapping(df, mapping, source_label='XES')
+    df = _apply_mapping(df, mapping, source_label='XES', unused=unused)
     _write_xes(df, output_xes_path)
 
 
@@ -168,6 +180,10 @@ def upload_file():
         if missing:
             return jsonify({'error': f"Column mapping incomplete: {', '.join(missing)}"}), 400
 
+    # "(none)" chosen for an optional column: the field is sent, and is empty.
+    unused = [role for role, field in (('start_ts', 'start_ts_col'), ('resource', 'resource_col'))
+              if has_mapping and field in request.form and not request.form[field].strip()]
+
     mapping = {
         'case_id': case_id_col,
         'activity': activity_col,
@@ -185,7 +201,7 @@ def upload_file():
         csv_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], csv_filename)
         xes_file.save(csv_filepath)
         try:
-            _csv_to_xes(csv_filepath, xes_filepath, mapping)
+            _csv_to_xes(csv_filepath, xes_filepath, mapping, unused)
         except (ValueError, pd.errors.ParserError) as ve:
             return jsonify({'error': str(ve)}), 400
         finally:
@@ -201,7 +217,7 @@ def upload_file():
         xes_file.save(original_xes_path)
         try:
             if has_mapping:
-                _xes_apply_mapping(original_xes_path, xes_filepath, mapping)
+                _xes_apply_mapping(original_xes_path, xes_filepath, mapping, unused)
             else:
                 shutil.move(original_xes_path, xes_filepath)
                 original_xes_path = None
