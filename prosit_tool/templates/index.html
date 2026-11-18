@@ -1927,8 +1927,59 @@ function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType = 'dis
         row.appendChild(colControls);
         row.appendChild(colChart);
 
+        // prosit-pm stores the parameters as scipy fitted them; the editor
+        // shows the quantities a person reasons about. This mapping is the
+        // inverse of distribution_to_prosit() in format_converters.py.
+        function arrayToObject(dist, arr) {
+            const obj = {};
+            if (!Array.isArray(arr)) return obj;
+            if (dist === 'expon') {
+                // scipy expon(loc, scale): shifted by loc, mean = loc + scale.
+                const loc = arr[0] ?? 0;
+                obj.loc = loc;
+                obj.mean = arr[1] != null ? loc + arr[1] : (node.value ?? 15);
+            }
+            else if (dist === 'norm') { obj.mean = arr[0] ?? node.value ?? 15; obj.std = arr[1] ?? 5; }
+            else if (dist === 'uniform') {
+                // scipy uniform(loc, scale) spans [loc, loc + scale].
+                const low = arr[0] ?? (node.dist.min_value ?? 0);
+                obj.min = low;
+                obj.max = arr[1] != null ? low + arr[1] : (node.dist.max_value ?? 100);
+            }
+            else if (dist === 'fixed') {
+                // The simulator samples a fixed leaf from the leaf's own value.
+                obj.value = node.value ?? arr[0] ?? 1;
+            }
+            else if (dist === 'lognorm') {
+                // scipy.stats.lognorm: (shape s, loc, scale).
+                obj.shape = arr[0] ?? 0.5;
+                obj.loc = arr[1] ?? 0;
+                obj.scale = arr[2] ?? node.value ?? 1;
+            }
+            else if (dist === 'gamma') {
+                // scipy.stats.gamma: (a, loc, scale). Surface as Mean/Std.
+                const a = arr[0] ?? 2.0;
+                const loc = arr[1] ?? 0;
+                const sc = arr[2] ?? 1;
+                obj.loc = loc;
+                obj.mean = loc + a * sc;
+                obj.std = Math.sqrt(a) * sc;
+            }
+            return obj;
+        }
+
+        // What the fields and the preview show. A leaf nobody edited keeps the
+        // parameter list of prosit-pm, so that opening a leaf changes nothing
+        // of what is saved; the first edit replaces the list with editable
+        // parameters.
+        function editableParams() {
+            const stored = node.dist.params;
+            if (Array.isArray(stored)) return arrayToObject(node.dist.dist_name, stored);
+            return (stored && typeof stored === 'object') ? stored : {};
+        }
+
         function updateLeafChart() {
-            renderLeafDistributionChart(chartCanvas, node.dist.dist_name, node.dist.params || {});
+            renderLeafDistributionChart(chartCanvas, node.dist.dist_name, editableParams());
         }
 
         const distContainer = document.createElement('div');
@@ -1961,58 +2012,12 @@ function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType = 'dis
             // Clear
             while (paramsContainer.firstChild) paramsContainer.removeChild(paramsContainer.firstChild);
             const distName = select.value;
-            node.dist.dist_name = distName;
-            // Normalize params: ensure object form for editing
-            if (!node.dist.params) node.dist.params = {};
-            const rawExisting = node.dist.params;
-            function arrayToObject(dist, arr) {
-                const obj = {};
-                if (!Array.isArray(arr)) return obj;
-                if (dist === 'expon') { obj.mean = arr[1] ?? node.value ?? 15; }
-                else if (dist === 'norm') { obj.mean = arr[0] ?? node.value ?? 15; obj.std = arr[1] ?? 5; }
-                else if (dist === 'uniform') { obj.min = arr[0] ?? (node.dist.min_value ?? 0); obj.max = arr[1] ?? (node.dist.max_value ?? 100); }
-                else if (dist === 'fixed') { obj.value = arr[0] ?? node.value ?? 1; }
-                else if (dist === 'lognorm') {
-                    // scipy.stats.lognorm: (shape s, loc, scale).
-                    obj.shape = arr[0] ?? 0.5;
-                    obj.loc = arr[1] ?? 0;
-                    obj.scale = arr[2] ?? node.value ?? 1;
-                }
-                else if (dist === 'gamma') {
-                    // scipy.stats.gamma: (a, loc, scale). Surface as Mean/Std.
-                    const a = arr[0] ?? 2.0;
-                    const sc = arr[2] ?? 1;
-                    obj.mean = a * sc;
-                    obj.std = Math.sqrt(a) * sc;
-                }
-                return obj;
-            }
-            if (Array.isArray(rawExisting)) {
-                node.dist.params = arrayToObject(distName, rawExisting);
-            } else if (typeof rawExisting !== 'object') {
-                node.dist.params = {};
-            }
-            const raw = node.dist.params;
+            const raw = editableParams();
             const minDefault = node.dist.min_value ?? node.dist.min ?? 0;
             const maxDefault = node.dist.max_value ?? node.dist.max ?? 100;
 
             function readParam(key, fallback) {
-                if (raw && typeof raw === 'object' && !Array.isArray(raw) && raw[key] != null) return raw[key];
-                if (Array.isArray(raw)) {
-                    // Heuristic mapping for common distributions
-                    if (distName === 'expon') {
-                        // params = (loc, scale) → mean ~ scale
-                        if (key === 'mean') return raw[1] ?? fallback;
-                    } else if (distName === 'norm') {
-                        // params = (loc, scale) → mean ~ loc, std ~ scale
-                        if (key === 'mean') return raw[0] ?? fallback;
-                        if (key === 'std') return raw[1] ?? fallback;
-                    } else if (distName === 'uniform') {
-                        // params = (low, high)
-                        if (key === 'min') return raw[0] ?? fallback;
-                        if (key === 'max') return raw[1] ?? fallback;
-                    }
-                }
+                if (raw && typeof raw === 'object' && raw[key] != null) return raw[key];
                 // Fallback to top-level convenience fields
                 if (key === 'min') return node.dist.min_value ?? node.dist.min ?? fallback;
                 if (key === 'max') return node.dist.max_value ?? node.dist.max ?? fallback;
@@ -2037,8 +2042,8 @@ function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType = 'dis
                 input.addEventListener('change', () => {
                     const val = parseFloat(input.value);
                     if (!isNaN(val)) {
-                        // Ensure object form
-                        if (!node.dist.params || Array.isArray(node.dist.params)) node.dist.params = {};
+                        // The first edit turns prosit-pm's list into editable parameters.
+                        node.dist.params = editableParams();
                         node.dist.params[key] = val;
                         // Keep top-level min/max in sync if edited
                         if (key === 'min') node.dist.min_value = val;
@@ -2046,6 +2051,7 @@ function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType = 'dis
                         if (distName === 'fixed' && key === 'value') {
                             node.dist.min_value = val;
                             node.dist.max_value = val;
+                            node.value = val;
                         }
                         markParametersDirty();
                         updateLeafChart();
@@ -2090,8 +2096,8 @@ function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType = 'dis
                 numberInput('Min', 'min', { step: 0.1, defaultValue: minDefault });
                 numberInput('Max', 'max', { step: 0.1, defaultValue: maxDefault });
             } else if (distName === 'gamma') {
-                // Surfaced as Mean / Std Dev — the backend converts to scipy
-                // gamma's (shape, scale). loc stays 0 (rarely useful).
+                // Surfaced as Mean / Std Dev — the backend derives scipy gamma's
+                // shape and scale from them and keeps the fitted shift (loc).
                 numberInput('Mean', 'mean', { min: 0.0001, step: 0.1, defaultValue: node.value ?? 15 });
                 numberInput('Std Dev', 'std', { min: 0.0001, step: 0.1, defaultValue: 5 });
                 numberInput('Min', 'min', { step: 0.1, defaultValue: minDefault });
@@ -2102,15 +2108,13 @@ function renderDecisionTreeDistributionEditor(treeData, mountEl, treeType = 'dis
         select.addEventListener('change', () => {
             // When distribution changes, reset/convert params to a clean object suitable for editing
             const distName = select.value;
-            const current = node.dist.params;
-            let next = {};
-            if (Array.isArray(current)) {
-                // Convert array to object based on previous selection
-                next = arrayToObject(distName, current);
-            } else if (typeof current === 'object' && current) {
-                // Keep any overlapping keys
-                next = { ...current };
-            }
+            // Read the parameters with the family the leaf had until now and
+            // keep the ones the two families share. The shift is not one of
+            // them: it was fitted for the previous family, and most families
+            // have no field that shows it.
+            const next = { ...editableParams() };
+            delete next.loc;
+            node.dist.dist_name = distName;
             // Ensure required fields exist for each dist
             if (distName === 'fixed') { if (next.value == null) next.value = node.value ?? 1; node.dist.min_value = next.value; node.dist.max_value = next.value; }
             if (distName === 'norm') { if (next.mean == null) next.mean = node.value ?? 15; if (next.std == null) next.std = 5; }
@@ -2977,9 +2981,14 @@ function _attributePdf(distribution, params, x) {
             return Math.exp(-((x - mean) ** 2) / (2 * std * std)) / (std * Math.sqrt(2 * Math.PI));
         }
         case 'expon': {
+            // mean = shift + scale; a mean at or below the shift is read as a
+            // plain exponential (same rule as the server).
             const mean = parseFloat(params.mean ?? 1);
-            if (x < 0 || mean <= 0) return 0;
-            return Math.exp(-x / mean) / mean;
+            let loc = parseFloat(params.loc ?? 0) || 0;
+            if (mean <= loc) loc = 0;
+            const scale = mean - loc;
+            if (x < loc || scale <= 0) return 0;
+            return Math.exp(-(x - loc) / scale) / scale;
         }
         case 'uniform': {
             const lo = parseFloat(params.min ?? 0);
@@ -2999,13 +3008,15 @@ function _attributePdf(distribution, params, x) {
         }
         case 'gamma': {
             // UI surfaces mean/std → derive scipy gamma's (shape a, scale).
-            const mean = parseFloat(params.mean ?? 1);
+            const loc = parseFloat(params.loc ?? 0) || 0;
+            const mean = parseFloat(params.mean ?? 1) - loc;
             const std = parseFloat(params.std ?? 1);
-            if (mean <= 0 || std <= 0 || x < 0) return 0;
+            const t = x - loc;
+            if (mean <= 0 || std <= 0 || t < 0) return 0;
             const a = (mean * mean) / (std * std);
             const scale = (std * std) / mean;
             if (a <= 0 || scale <= 0) return 0;
-            const logPdf = (a - 1) * Math.log(Math.max(x, 1e-12)) - x / scale - a * Math.log(scale) - _logGamma(a);
+            const logPdf = (a - 1) * Math.log(Math.max(t, 1e-12)) - t / scale - a * Math.log(scale) - _logGamma(a);
             return Math.exp(logPdf);
         }
         default: return null;
@@ -3025,7 +3036,9 @@ function _attributeRange(distribution, params) {
         }
         case 'expon': {
             const mean = parseFloat(params.mean ?? 1);
-            return [0, Math.max(1, 5 * mean)];
+            let loc = parseFloat(params.loc ?? 0) || 0;
+            if (mean <= loc) loc = 0;
+            return [loc, loc + Math.max(1, 5 * (mean - loc))];
         }
         case 'uniform': {
             const lo = parseFloat(params.min ?? 0);
@@ -3042,9 +3055,13 @@ function _attributeRange(distribution, params) {
             return [lo, hi];
         }
         case 'gamma': {
+            // A fitted gamma can start far below its mean (large shape, large
+            // negative shift): show the part where the density is.
+            const loc = parseFloat(params.loc ?? 0) || 0;
             const mean = parseFloat(params.mean ?? 1);
             const std = parseFloat(params.std ?? 1);
-            return [0, Math.max(1, mean + 4 * std)];
+            const lo = Math.max(loc, mean - 4 * std);
+            return [lo, Math.max(lo + 1, mean + 4 * std)];
         }
         default: return null;
     }
@@ -5033,7 +5050,7 @@ async function loadProcessMap(sessionId, aggregation = 'median') {
         `/api/get_visualization/${sessionId}/process_map?aggregation=${encodeURIComponent(aggregation)}`
     ));
     const result_process_map = await response_process_map.json();
-    renderProcessMap(result_process_map.visualization);
+    renderProcessMap(result_process_map.visualization, result_process_map.message);
 }
 
 async function loadAllVisualizations(sessionId, runId) {
@@ -5177,13 +5194,13 @@ async function fetchAndPopulateDropdowns(sessionId) {
 }
 
 
-function renderProcessMap(processMap) {
+function renderProcessMap(processMap, message) {
     const container = document.getElementById('processMapContainer');
     
     if (!processMap) {
         container.innerHTML = `
             <div class="d-flex justify-content-center align-items-center h-100">
-                <span class="text-muted">No process map available</span>
+                <span class="text-muted">${_escapeHtmlAttr(message || 'No process map available')}</span>
             </div>
         `;
         return;

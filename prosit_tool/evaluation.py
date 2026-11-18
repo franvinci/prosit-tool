@@ -3,7 +3,6 @@ import pm4py
 import numpy as np
 
 from scipy.stats import entropy
-from scipy.stats import wasserstein_distance
 
 from log_distance_measures.config import EventLogIDs
 
@@ -37,7 +36,7 @@ def _with_resource_labels(df: pd.DataFrame, resource_col: str = 'org:resource') 
     return df
 
 
-def evaluate(original_log, simulated_log, metrics_labels=["cfld", "ngd", "red", "aed", "red", "aed", "car", "ctd", "car_entropy", "hwd", "ctd_entropy", "etd_entropy"]):
+def evaluate(original_log, simulated_log, metrics_labels=("cfld", "ngd", "red", "aed", "car", "ctd", "car_entropy", "hwd", "ctd_entropy", "etd_entropy")):
 
     event_log_ids = EventLogIDs(
         case="case:concept:name",
@@ -247,7 +246,7 @@ def build_handover_matrix(df: pd.DataFrame, resources: list, case_id_col: str='c
     return handover_matrix
 
 
-def compute_handover_error(df_sim: pd.DataFrame, df_test: pd.DataFrame, case_id_col: str='case:concept:name', resource_col: str='org:resource') -> int:
+def compute_handover_error(df_sim: pd.DataFrame, df_test: pd.DataFrame, case_id_col: str='case:concept:name', resource_col: str='org:resource') -> float:
     
     df_sim = _with_resource_labels(df_sim, resource_col)
     df_test = _with_resource_labels(df_test, resource_col)

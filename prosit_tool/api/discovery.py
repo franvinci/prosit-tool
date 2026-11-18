@@ -2,25 +2,23 @@
 
 import os
 import logging
-from datetime import datetime
 
 from flask import Blueprint, current_app, request, jsonify
-from pm4py.objects.log.importer.xes import importer as xes_importer
 
 from ..extensions import db
 from ..models import BASELINE_RUN_NAME, SimulationRun, SimulationSession
 from ..prosit_integration import DiscoveryError, ProSiTIntegration
-from ..validators import (
-    parse_bool,
-    validate_attribute_mode,
-    validate_grace_period,
-    validate_max_depth_tree,
-    validate_multitasking_thr,
-    validate_random_state,
-)
+from ..validators import validate_discovery_options
 
 from ._decorators import handle_api_errors
-from ._shared import load_session_prosit, save_petri_net_pnml
+from ._shared import (
+    EventLogError,
+    load_event_log,
+    load_session_prosit,
+    remove_file,
+    save_petri_net_pnml,
+    unique_timestamp,
+)
 
 logger = logging.getLogger(__name__)
 bp = Blueprint('discovery', __name__)
@@ -56,97 +54,85 @@ def _mark_session_failed(session_id: int) -> None:
 @handle_api_errors('Parameter discovery failed')
 def discover_parameters(session_id):
     """Discover parameters from uploaded file (XES or PNML)."""
-    session = SimulationSession.query.get_or_404(session_id)
+    session = db.get_or_404(SimulationSession, session_id)
+
+    options, error = validate_discovery_options(request.args)
+    if error:
+        return jsonify({'error': error}), 400
+
+    upload_folder = current_app.config['UPLOAD_FOLDER']
+    filepath = os.path.join(upload_folder, session.filename)
+    if not os.path.exists(filepath):
+        return jsonify({'error': 'File not found'}), 404
+
+    # Files written by this request; removed again if it does not complete.
+    created = []
     try:
         _set_progress(session_id, 'Preparing discovery...')
-        filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], session.filename)
-        if not os.path.exists(filepath):
-            _clear_progress(session_id)
-            return jsonify({'error': 'File not found'}), 404
-
         session.status = 'discovering'
         db.session.commit()
 
         logger.info(f"Discovering parameters from XES file for session {session_id}")
 
-        max_depth_tree, _ = validate_max_depth_tree(request.args.get('max_depth_tree'))
-        grace_period, _ = validate_grace_period(request.args.get('grace_period'))
-        multitasking_thr, _ = validate_multitasking_thr(request.args.get('multitasking_thr'))
-        random_state, _ = validate_random_state(request.args.get('random_state'))
-        incremental_discovery = parse_bool(request.args.get('incremental_discovery'))
-        enable_multitasking = parse_bool(request.args.get('enable_multitasking'))
-        use_workload_features = parse_bool(request.args.get('use_workload_features'))
-        attribute_mode, _ = validate_attribute_mode(request.args.get('attribute_mode'))
-
         existing_metadata = session.get_parameters() or {}
-        pnml_filepath = None
-        if 'pnml_filename' in existing_metadata:
-            pnml_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], existing_metadata['pnml_filename'])
+        pnml_filename = existing_metadata.get('pnml_filename')
+        pnml_on_disk = bool(pnml_filename) and os.path.exists(os.path.join(upload_folder, pnml_filename))
 
         _set_progress(session_id, 'Loading event log...')
-        event_log = xes_importer.apply(filepath)
+        event_log, log_notes = load_event_log(filepath)
         logger.info(f"Loaded {len(event_log)} traces from XES file")
 
         prosit = ProSiTIntegration()
         prosit.event_log = event_log
 
-        discovery_kwargs = dict(
-            max_depth_tree=max_depth_tree,
-            incremental_discovery=incremental_discovery,
-            grace_period=grace_period,
-            enable_multitasking=enable_multitasking,
-            multitasking_thr=multitasking_thr,
-            random_state=random_state,
-            use_workload_features=use_workload_features,
-            attribute_mode=attribute_mode,
-        )
-
-        if pnml_filepath and os.path.exists(pnml_filepath):
+        if pnml_on_disk:
             logger.info("Using PNML model and discovering parameters from XES")
-            _set_progress(session_id, 'Loading uploaded Petri net...')
-            prosit.import_petri_net_from_pnml(pnml_filepath)
+            _set_progress(session_id, 'Loading Petri net...')
+            prosit.import_petri_net_from_pnml(os.path.join(upload_folder, pnml_filename))
         else:
             logger.info("Discovering process model and parameters from XES")
             _set_progress(session_id, 'Discovering process model (Inductive Miner)...')
             prosit.discover_process_model(noise_threshold=session.noise_threshold)
         process_model = prosit.process_model
         _set_progress(session_id, 'Discovering simulation parameters (resources, times, attributes)...')
-        parameters = prosit.discover_parameters(**discovery_kwargs)
+        parameters = prosit.discover_parameters(**options)
         _set_progress(session_id, 'Saving parameters...')
         prosit_metrics = prosit.prosit_metrics or {}
         for metric_cat, metrics in prosit_metrics.items():
             for m, value in metrics.items():
                 logger.info(f"Accuracy results for {m}: {value}")
 
-        timestamp = int(datetime.now().timestamp())
-        json_filename = f"{timestamp}_parameters.json"
-        json_filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], json_filename)
-        prosit.save_parameters_to_json(json_filepath)
+        stamp = unique_timestamp()
+        json_filename = f"{stamp}_s{session.id}_parameters.json"
+        created.append(json_filename)
+        prosit.save_parameters_to_json(os.path.join(upload_folder, json_filename))
 
         # Persist the Petri net so later endpoints can rebuild SimulatorParameters
         # without re-running discovery.
-        pnml_filename = existing_metadata.get('pnml_filename')
-        if not pnml_filename:
-            pnml_filename = save_petri_net_pnml(
+        if not pnml_on_disk:
+            pnml_filename = f"{stamp}_{session.id}_model.pnml"
+            created.append(pnml_filename)
+            save_petri_net_pnml(
                 process_model['net'], process_model['initial_marking'],
-                process_model['final_marking'], session.id, timestamp,
+                process_model['final_marking'], pnml_filename,
             )
 
+        model_payload = {
+            'visualization': process_model.get('visualization'),
+            'activities': process_model.get('activities', []),
+            'transitions': process_model.get('transitions', []),
+            'map_transitionName_to_id': process_model.get('map_transitionName_to_id', {}),
+            'transition_label_map': process_model.get('transition_label_map', {}),
+            'places': process_model.get('places', []),
+            'fitness': process_model.get('fitness', 0),
+            'precision': process_model.get('precision', 0),
+            'f_measure': process_model.get('f_measure', 0),
+        }
         session_metadata = session.get_parameters() or {}
         session_metadata.update({
             'json_filename': json_filename,
             'pnml_filename': pnml_filename,
-            'process_model': {
-                'visualization': process_model.get('visualization'),
-                'activities': process_model.get('activities', []),
-                'transitions': process_model.get('transitions', []),
-                'map_transitionName_to_id': process_model.get('map_transitionName_to_id', {}),
-                'transition_label_map': process_model.get('transition_label_map', {}),
-                'places': process_model.get('places', []),
-                'fitness': process_model.get('fitness', 0),
-                'precision': process_model.get('precision', 0),
-                'f_measure': process_model.get('f_measure', 0),
-            },
+            'process_model': model_payload,
             'prosit_metrics': prosit_metrics,
         })
         session.set_parameters(session_metadata)
@@ -157,6 +143,7 @@ def discover_parameters(session_id):
         # discovered JSON. Re-running discovery on a session resets the
         # baseline; user-created what-if runs are kept untouched.
         baseline = session.get_baseline_run()
+        replaced_parameters = replaced_simulation = None
         if baseline is None:
             baseline = SimulationRun(
                 session_id=session.id,
@@ -164,45 +151,50 @@ def discover_parameters(session_id):
                 is_baseline=True,
             )
             db.session.add(baseline)
+        else:
+            replaced_parameters = baseline.parameters_filename
+            replaced_simulation = baseline.simulation_df_filename
         baseline.parameters_filename = json_filename
         baseline.simulation_df_filename = None  # invalidate any stale sim
         baseline.num_instances = None
         baseline.last_run_at = None
 
         db.session.commit()
-        _clear_progress(session_id)
 
-        return jsonify({
-            'success': True,
-            'parameters': parameters,
-            'json_filename': json_filename,
-            'process_model': {
-                'visualization': process_model.get('visualization'),
-                'activities': process_model.get('activities', []),
-                'transitions': process_model.get('transitions', []),
-                'places': process_model.get('places', []),
-                'map_transitionName_to_id': process_model.get('map_transitionName_to_id', {}),
-                'transition_label_map': process_model.get('transition_label_map', {}),
-                'fitness': process_model.get('fitness', 0),
-                'precision': process_model.get('precision', 0),
-                'f_measure': process_model.get('f_measure', 0),
-            },
-            'prosit_metrics': prosit_metrics,
-            'warnings': list(prosit.discovery_warnings),
-            'message': 'Parameters processed successfully',
-        })
-
-    except DiscoveryError as exc:
-        # The log and the model were read correctly but prosit-pm could not
-        # learn parameters from them: tell the user why instead of a bare 500.
+    except (EventLogError, DiscoveryError) as exc:
+        # The request was fine but nothing can be learnt from this log or
+        # model: tell the user why instead of a bare 500.
+        for filename in created:
+            remove_file(upload_folder, filename)
         _mark_session_failed(session_id)
         _clear_progress(session_id)
-        return jsonify({'error': f'Parameter discovery failed. {exc}'}), 422
+        reason = 'The event log cannot be used.' if isinstance(exc, EventLogError) else 'Parameter discovery failed.'
+        return jsonify({'error': f'{reason} {exc}'}), 422
 
     except Exception:
+        for filename in created:
+            remove_file(upload_folder, filename)
         _mark_session_failed(session_id)
         _clear_progress(session_id)
         raise  # let @handle_api_errors produce the JSON response
+
+    # The previous discovery of this session is now unreachable: drop its files,
+    # unless a what-if run still points at them.
+    still_used = {run.parameters_filename for run in session.runs}
+    if replaced_parameters and replaced_parameters not in still_used:
+        remove_file(upload_folder, replaced_parameters)
+    remove_file(current_app.config['SIMULATION_FOLDER'], replaced_simulation)
+    _clear_progress(session_id)
+
+    return jsonify({
+        'success': True,
+        'parameters': parameters,
+        'json_filename': json_filename,
+        'process_model': model_payload,
+        'prosit_metrics': prosit_metrics,
+        'warnings': log_notes + list(prosit.discovery_warnings),
+        'message': 'Parameters processed successfully',
+    })
 
 
 @bp.route('/api/discover/<int:session_id>/progress')
@@ -220,7 +212,7 @@ def compute_metrics(session_id):
     Discovery skips this step by default to keep the request fast; the UI
     fires this endpoint asynchronously to fill in the accuracy tables.
     """
-    session = SimulationSession.query.get_or_404(session_id)
+    session = db.get_or_404(SimulationSession, session_id)
     metadata = session.get_parameters() or {}
     json_filename = metadata.get('json_filename')
     if not json_filename:

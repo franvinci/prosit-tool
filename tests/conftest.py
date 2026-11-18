@@ -6,6 +6,8 @@ read from, or written to, the real data or the environment of whoever runs the
 tests.
 """
 
+import io
+import os
 import sys
 from pathlib import Path
 
@@ -57,6 +59,76 @@ def client(app):
     with app.app_context():
         with app.test_client() as c:
             yield c
+
+
+@pytest.fixture
+def upload(client):
+    """``upload(xes_path, pnml_path=None, **form_fields)`` -> the HTTP response."""
+    def _upload(log_path, pnml_path=None, **form):
+        data = dict(form)
+        with open(log_path, "rb") as handle:
+            data["xes_file"] = (io.BytesIO(handle.read()), Path(log_path).name)
+        if pnml_path is not None:
+            with open(pnml_path, "rb") as handle:
+                data["pnml_file"] = (io.BytesIO(handle.read()), Path(pnml_path).name)
+        return client.post("/api/upload", data=data, content_type="multipart/form-data")
+    return _upload
+
+
+@pytest.fixture
+def discovered(client, upload):
+    """``discovered(xes_path, query="", pnml_path=None)`` -> ``(session_id, discovery body)``."""
+    def _discovered(log_path, query="", pnml_path=None, **form):
+        response = upload(log_path, pnml_path, **form)
+        assert response.status_code == 200, response.data
+        session_id = response.get_json()["session_id"]
+        response = client.post(f"/api/discover/{session_id}{query}")
+        assert response.status_code == 200, response.data
+        return session_id, response.get_json()
+    return _discovered
+
+
+@pytest.fixture
+def data_files(app):
+    """``data_files()`` -> ``(names in the upload folder, names in the simulation folder)``."""
+    def _data_files():
+        return (
+            sorted(os.listdir(app.config["UPLOAD_FOLDER"])),
+            sorted(os.listdir(app.config["SIMULATION_FOLDER"])),
+        )
+    return _data_files
+
+
+def write_xes(rows, path):
+    """Write event rows (dicts with pm4py column names) as an XES file."""
+    import pandas as pd
+    import pm4py
+
+    pm4py.write_xes(pm4py.convert_to_event_log(pd.DataFrame(rows)), str(path))
+    return path
+
+
+def event_rows(activities=("A", "B", "C", "D"), cases=5, resources=("r1", "r1", "r2", "r2"),
+               with_start=True, minutes=10):
+    """Rows of a small sequential log: every case runs ``activities`` in order."""
+    import pandas as pd
+
+    rows = []
+    base = pd.Timestamp("2024-01-01 08:00", tz="UTC")
+    for case in range(cases):
+        for position, activity in enumerate(activities):
+            start = base + pd.Timedelta(hours=case * 2 + position * 0.5)
+            row = {
+                "case:concept:name": f"c{case}",
+                "concept:name": activity,
+                "time:timestamp": start + pd.Timedelta(minutes=minutes),
+            }
+            if with_start:
+                row["start:timestamp"] = start
+            if resources is not None:
+                row["org:resource"] = resources[position % len(resources)]
+            rows.append(row)
+    return rows
 
 
 @pytest.fixture(scope="session")

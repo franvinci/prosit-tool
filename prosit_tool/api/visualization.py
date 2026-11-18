@@ -11,7 +11,10 @@ from pm4py.visualization.dfg.variants import performance as dfg_perf_visualizer
 
 from flask import Blueprint, current_app, request, jsonify
 
+from ..extensions import db
 from ..models import SimulationRun, SimulationSession
+
+from ..validators import validate_run_id
 
 from ._decorators import handle_api_errors
 
@@ -123,22 +126,32 @@ def _svg_cache_set(session, viz_type, params, payload, run_id=None):
         _SVG_CACHE.popitem(last=False)
 
 
+class _BadRunId(ValueError):
+    pass
+
+
 def _read_run_id():
-    raw = request.args.get('run_id')
-    if not raw:
-        return None
-    try:
-        return int(raw)
-    except (TypeError, ValueError):
-        return None
+    """``run_id`` of the query string; ``None`` means "the latest simulation".
+
+    A value that is not a number is an error: falling back to another run would
+    show the charts of a scenario the caller did not ask for.
+    """
+    run_id, err = validate_run_id(request.args.get('run_id'))
+    if err:
+        raise _BadRunId(err)
+    return run_id
 
 
 @bp.route('/api/get_activities_and_resources/<int:session_id>')
 @handle_api_errors('Failed to get data')
 def get_activities_and_resources(session_id):
     """List all activities and resources from the saved simulation log."""
-    session = SimulationSession.query.get_or_404(session_id)
-    df, err = _load_simulation_df(session, run_id=_read_run_id())
+    session = db.get_or_404(SimulationSession, session_id)
+    try:
+        run_id = _read_run_id()
+    except _BadRunId as exc:
+        return jsonify({'error': str(exc)}), 400
+    df, err = _load_simulation_df(session, run_id=run_id)
     if err:
         msg, code = err
         return jsonify({'error': msg}), code
@@ -152,13 +165,18 @@ def get_activities_and_resources(session_id):
 @handle_api_errors('Failed to generate visualization')
 def get_visualization(session_id, visualization_type):
     """Generate and return a specific visualization from the simulated log."""
-    session = SimulationSession.query.get_or_404(session_id)
-    run_id = _read_run_id()
+    session = db.get_or_404(SimulationSession, session_id)
+    try:
+        run_id = _read_run_id()
+    except _BadRunId as exc:
+        return jsonify({'error': str(exc)}), 400
 
     unit = request.args.get('unit', 'min')
     if unit not in _UNIT_FACTORS:
         unit = 'min'
     aggregation = request.args.get('aggregation', 'median')
+    if aggregation not in _VALID_AGGREGATIONS:
+        aggregation = 'median'
     resource_arg = request.args.get('resource') or ''
     activity_arg = request.args.get('activity') or ''
 
@@ -205,8 +223,6 @@ _VALID_AGGREGATIONS = {'median', 'mean', 'min', 'max', 'sum', 'stdev'}
 
 
 def _render_process_map(df, aggregation='median'):
-    if aggregation not in _VALID_AGGREGATIONS:
-        aggregation = 'median'
     # pm4py.discover_performance_dfg accepts a DataFrame directly; skipping
     # pm4py.convert_to_event_log saves ~1s on a 50k-event log.
     performance_dfg, start_activities, end_activities = pm4py.discover_performance_dfg(
@@ -215,6 +231,15 @@ def _render_process_map(df, aggregation='median'):
         activity_key='concept:name',
         timestamp_key='time:timestamp',
     )
+    if not performance_dfg:
+        # No case has two events, so no activity follows another: there is
+        # nothing to draw (and pm4py cannot render a graph without edges).
+        return {
+            'success': True,
+            'visualization': '',
+            'aggregation': aggregation,
+            'message': 'Every simulated case has a single event, so there is no flow between activities to show.',
+        }
     parameters = {
         dfg_perf_visualizer.Parameters.START_ACTIVITIES: start_activities,
         dfg_perf_visualizer.Parameters.END_ACTIVITIES: end_activities,
@@ -233,9 +258,8 @@ def _histogram(values, n_bins=30):
     arr = arr[np.isfinite(arr)]
     if arr.size == 0:
         return [], []
-    if arr.size == 1 or arr.max() == arr.min():
-        center = float(arr[0]) if arr.size else 0.0
-        return [center], [int(arr.size)]
+    if arr.max() == arr.min():
+        return [float(arr[0])], [int(arr.size)]
     counts, edges = np.histogram(arr, bins=n_bins)
     centers = ((edges[:-1] + edges[1:]) / 2.0).tolist()
     return centers, counts.astype(int).tolist()

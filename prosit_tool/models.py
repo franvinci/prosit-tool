@@ -1,11 +1,16 @@
 from .extensions import db
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 
 from .config import Config
 
 
 BASELINE_RUN_NAME = 'As-Is'
+
+
+def utcnow():
+    """Current UTC time without a time zone, the form the database columns hold."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 class SimulationSession(db.Model):
@@ -21,8 +26,8 @@ class SimulationSession(db.Model):
     display_name = db.Column(db.String(255))
     noise_threshold = db.Column(db.Float, default=Config.DEFAULT_NOISE_THRESHOLD)
     parameters = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    last_used_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    last_used_at = db.Column(db.DateTime, default=utcnow)
     status = db.Column(db.String(50), default='uploaded')
 
     runs = db.relationship(
@@ -35,7 +40,7 @@ class SimulationSession(db.Model):
         self.filename = filename
         self.noise_threshold = noise_threshold
         self.status = 'uploaded'
-        self.last_used_at = datetime.utcnow()
+        self.last_used_at = utcnow()
 
     def get_parameters(self):
         if self.parameters:
@@ -46,7 +51,7 @@ class SimulationSession(db.Model):
         self.parameters = json.dumps(params_dict, indent=2)
 
     def touch(self):
-        self.last_used_at = datetime.utcnow()
+        self.last_used_at = utcnow()
 
     def get_baseline_run(self):
         for run in self.runs:
@@ -87,7 +92,7 @@ class SimulationRun(db.Model):
     simulation_df_filename = db.Column(db.String(255))
     num_instances = db.Column(db.Integer)
     is_baseline = db.Column(db.Boolean, default=False, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
     last_run_at = db.Column(db.DateTime)
 
     def to_summary(self):

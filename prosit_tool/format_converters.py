@@ -1,28 +1,49 @@
-"""Distribution format conversion between the UI shape and ProSiT JSON shape.
+"""Distribution format conversion between the UI shape and prosit-pm's JSON shape.
 
-The web UI emits distributions like::
+The web UI exchanges distributions like::
 
     {"distribution": "norm", "parameters": {"mean": 15, "std": 5, "min": 0, "max": 60}}
 
-ProSiT consumes them in this shape::
+prosit-pm stores them like::
 
     {"dist_name": "norm", "params": [15, 5], "min_value": 0, "max_value": 60, "mean_value": 15}
 
-Before this module, four near-identical translations of the inner ``if dist ==
-'fixed'/'norm'/'expon'/'uniform'`` ladder lived in ``routes.py`` (one each for
-execution times, waiting times, inter-arrival, and data attributes), and a
-near-duplicate inverse lived in ``prosit_integration.py``. They've all been
-collapsed into the helpers below.
+``params`` are the positional arguments of the ``scipy.stats`` distribution of
+the same name, exactly as ``scipy`` fitted them. The UI shows the quantities a
+person reasons about instead:
 
-Decision-tree distributions (UI shape ``{"0": {...}, "1": {...}, ...}`` where
-each leaf carries its own ``dist``) are flattened by ``transform_distribution_tree``.
+    =========  =====================  =============================================
+    family     prosit-pm ``params``   UI parameters
+    =========  =====================  =============================================
+    fixed      (value,)               value
+    norm       (mean, std)            mean, std
+    expon      (loc, scale)           mean = loc + scale, loc
+    uniform    (loc, scale)           min = loc, max = loc + scale
+    lognorm    (s, loc, scale)        shape, loc, scale
+    gamma      (a, loc, scale)        mean = loc + a*scale, std = sqrt(a)*scale, loc
+    =========  =====================  =============================================
+
+``min_value`` / ``max_value`` clip the sampled values (UI: ``min`` / ``max``).
+
+The two directions are exact inverses, and ``merge_app_entry`` does not even
+convert an entry that comes back from the UI the way it was sent. Together they
+make a what-if scenario saved without touching a distribution simulate exactly
+like the scenario it was copied from: the UI sends every distribution of a
+scenario back on each save, edited or not.
+
+In rules mode a distribution is a decision tree (``{"0": {...}, "1": {...}}``)
+whose leaves carry their own ``dist``; ``transform_distribution_tree`` converts
+those. A leaf the user never opened still has prosit-pm's ``params`` list and
+is passed through untouched; a leaf opened in the editor has UI parameters and
+goes through the same conversion as a plain distribution.
 """
 
+import math
 from typing import Any
 
-# Defaults used when a parameter is missing from the UI payload. Kept as
-# constants because they were sprinkled as magic numbers across the original
-# four duplicated blocks, all using the same values.
+import scipy.stats
+
+# Used only when the UI payload carries no value for a parameter.
 DEFAULT_MEAN = 15.0
 DEFAULT_STD = 5.0
 DEFAULT_MIN = 0.0
@@ -37,129 +58,165 @@ DEFAULT_LOGNORM_SCALE = 1.0
 DEFAULT_GAMMA_SHAPE = 2.0
 DEFAULT_GAMMA_SCALE = 1.0
 
+# When the UI gives no clipping bounds (it does not, right after the user picks
+# another family), clip only the extreme tails so that the distribution keeps
+# the shape and the mean the user asked for.
+_TAIL = 0.0005
 
-def _coerce_float(value: Any, default: float) -> float:
+
+def _number(value: Any, default=None):
+    """``float(value)`` when it is a finite number, else ``default``."""
+    if isinstance(value, bool):
+        return default
     try:
-        return float(value)
+        number = float(value)
     except (TypeError, ValueError):
         return default
+    return number if math.isfinite(number) else default
 
 
-def distribution_to_prosit(dist_name: str, param_values: dict | None) -> dict:
-    """Translate one UI-style distribution into ProSiT JSON shape.
+def _coerce_float(value: Any, default: float) -> float:
+    return _number(value, default)
 
-    ``param_values`` is the inner ``parameters`` dict from the UI. Tolerates the
-    legacy alias keys (``min_value``/``max_value``/``mean_value``) alongside
-    the modern short keys (``min``/``max``/``mean``).
 
-    Unknown distribution names fall back to ``fixed`` with a 1.0 value, which
-    matches the historical behaviour.
+def _first(values: dict, *keys):
+    """First finite number found under ``keys``, or ``None``."""
+    for key in keys:
+        number = _number(values.get(key))
+        if number is not None:
+            return number
+    return None
+
+
+def _or(value, default):
+    return default if value is None else value
+
+
+def _scipy_params(dist_name: str, values: dict, leaf_value=None):
+    """UI parameters -> ``(params, mean_value)`` in prosit-pm's layout.
+
+    ``leaf_value`` is the value of the tree leaf the distribution belongs to
+    (``None`` outside trees); it stands in for a missing central value.
     """
-    pv = param_values or {}
-
-    def get(*keys, default=None):
-        for k in keys:
-            if k in pv and pv[k] is not None:
-                return pv[k]
-        return default
-
-    min_val = _coerce_float(get('min', 'min_value', default=DEFAULT_FIXED), DEFAULT_FIXED)
-    max_val = _coerce_float(get('max', 'max_value', default=DEFAULT_FIXED), DEFAULT_FIXED)
-    mean_val = _coerce_float(get('mean', 'mean_value', default=DEFAULT_FIXED), DEFAULT_FIXED)
+    centre = _first(values, 'mean', 'mean_value')
+    if centre is None:
+        centre = _number(leaf_value)
 
     if dist_name == 'fixed':
-        value = _coerce_float(get('value', 'mean', 'mean_value', default=DEFAULT_FIXED), DEFAULT_FIXED)
+        value = _first(values, 'value')
+        if value is None:
+            value = _or(centre, DEFAULT_FIXED)
+        return [value], value
+
+    if dist_name == 'norm':
+        mean = _or(centre, DEFAULT_MEAN)
+        std = abs(_or(_first(values, 'std'), DEFAULT_STD))
+        return [mean, std], mean
+
+    if dist_name == 'expon':
+        mean = _or(centre, DEFAULT_MEAN)
+        loc = _or(_first(values, 'loc'), 0.0)
+        if mean <= loc:
+            # A mean at or below the shift leaves no room for the exponential
+            # part: read it as a plain exponential with that mean.
+            loc = 0.0
+        return [loc, max(mean - loc, 0.0)], mean
+
+    if dist_name == 'uniform':
+        low = _or(_first(values, 'min', 'min_value'), DEFAULT_MIN)
+        high = _or(_first(values, 'max', 'max_value'), DEFAULT_MAX)
+        if high < low:
+            low, high = high, low
+        return [low, high - low], (low + high) / 2.0
+
+    if dist_name == 'lognorm':
+        shape = abs(_or(_first(values, 'shape', 's'), DEFAULT_LOGNORM_SHAPE))
+        loc = _or(_first(values, 'loc'), 0.0)
+        scale = abs(_or(_first(values, 'scale'), DEFAULT_LOGNORM_SCALE))
+        return [shape, loc, scale], _or(centre, scale)
+
+    if dist_name == 'gamma':
+        loc = _or(_first(values, 'loc'), 0.0)
+        mean = _first(values, 'mean', 'mean_value')
+        std = _first(values, 'std')
+        # The UI edits Mean and Std Dev; shape and scale follow from them.
+        if mean is not None and std is not None and mean > loc and std > 0:
+            centred = mean - loc
+            shape = centred ** 2 / std ** 2
+            scale = std ** 2 / centred
+        else:
+            shape = abs(_or(_first(values, 'shape', 'a'), DEFAULT_GAMMA_SHAPE))
+            scale = abs(_or(_first(values, 'scale'), DEFAULT_GAMMA_SCALE))
+        return [shape, loc, scale], loc + shape * scale
+
+    raise KeyError(dist_name)
+
+
+def _natural_bounds(dist_name: str, params: list):
+    """Bounds that leave ``dist_name(*params)`` essentially unclipped."""
+    if dist_name == 'fixed':
+        return params[0], params[0]
+    if dist_name == 'uniform':
+        return params[0], params[0] + params[1]
+    try:
+        low, high = getattr(scipy.stats, dist_name).ppf([_TAIL, 1.0 - _TAIL], *params)
+    except Exception:
+        return DEFAULT_MIN, DEFAULT_MAX
+    low, high = _number(low), _number(high)
+    if low is None or high is None:
+        return DEFAULT_MIN, DEFAULT_MAX
+    return low, high
+
+
+def _bounds(dist_name: str, params: list, values: dict):
+    """Clipping bounds: the ones given, else the natural ones of the family."""
+    if dist_name in ('fixed', 'uniform'):
+        # For these two the bounds *are* the distribution.
+        return _natural_bounds(dist_name, params)
+    low = _first(values, 'min', 'min_value')
+    high = _first(values, 'max', 'max_value')
+    if low is None or high is None:
+        natural_low, natural_high = _natural_bounds(dist_name, params)
+        low = _or(low, natural_low)
+        high = _or(high, natural_high)
+    if high < low:
+        low, high = high, low
+    return low, high
+
+
+def distribution_to_prosit(dist_name: str, param_values: dict | None, leaf_value=None) -> dict:
+    """Translate one UI-style distribution into prosit-pm's JSON shape.
+
+    ``param_values`` is the inner ``parameters`` dict from the UI. The short
+    keys the UI writes when the user edits a field (``min``/``max``/``mean``)
+    win over the ``*_value`` keys it received from the server.
+
+    Unknown distribution names fall back to ``fixed`` with a 1.0 value.
+    """
+    values = param_values if isinstance(param_values, dict) else {}
+    try:
+        params, mean_value = _scipy_params(dist_name, values, leaf_value)
+    except KeyError:
         return {
             'dist_name': 'fixed',
-            'params': [value],
-            'min_value': value,
-            'max_value': value,
-            'mean_value': value,
+            'params': [DEFAULT_FIXED],
+            'min_value': _or(_first(values, 'min', 'min_value'), DEFAULT_FIXED),
+            'max_value': _or(_first(values, 'max', 'max_value'), DEFAULT_FIXED),
+            'mean_value': _or(_first(values, 'mean', 'mean_value'), DEFAULT_FIXED),
         }
-    if dist_name == 'norm':
-        mean = _coerce_float(get('mean', 'mean_value', default=DEFAULT_MEAN), DEFAULT_MEAN)
-        std = _coerce_float(get('std', default=DEFAULT_STD), DEFAULT_STD)
-        return {
-            'dist_name': 'norm',
-            'params': [mean, std],
-            'min_value': _coerce_float(get('min', 'min_value', default=DEFAULT_FIXED), DEFAULT_FIXED),
-            'max_value': _coerce_float(get('max', 'max_value', default=DEFAULT_MAX), DEFAULT_MAX),
-            'mean_value': mean,
-        }
-    if dist_name == 'expon':
-        mean = _coerce_float(get('mean', 'mean_value', default=DEFAULT_MEAN), DEFAULT_MEAN)
-        return {
-            'dist_name': 'expon',
-            'params': [0.0, mean],
-            'min_value': _coerce_float(get('min', 'min_value', default=DEFAULT_FIXED), DEFAULT_FIXED),
-            'max_value': _coerce_float(get('max', 'max_value', default=DEFAULT_MAX), DEFAULT_MAX),
-            'mean_value': mean,
-        }
-    if dist_name == 'uniform':
-        low = _coerce_float(get('min', 'min_value', default=DEFAULT_MIN), DEFAULT_MIN)
-        high = _coerce_float(get('max', 'max_value', default=DEFAULT_MAX), DEFAULT_MAX)
-        return {
-            'dist_name': 'uniform',
-            'params': [low, high],
-            'min_value': low,
-            'max_value': high,
-            'mean_value': (low + high) / 2.0,
-        }
-    if dist_name == 'lognorm':
-        # scipy.stats.lognorm uses (s, loc, scale). The UI exposes shape (s),
-        # loc (default 0), and scale; mean is roughly scale * exp(s^2 / 2).
-        shape = _coerce_float(get('shape', 's', default=DEFAULT_LOGNORM_SHAPE), DEFAULT_LOGNORM_SHAPE)
-        loc = _coerce_float(get('loc', default=0.0), 0.0)
-        scale = _coerce_float(get('scale', default=DEFAULT_LOGNORM_SCALE), DEFAULT_LOGNORM_SCALE)
-        return {
-            'dist_name': 'lognorm',
-            'params': [shape, loc, scale],
-            'min_value': _coerce_float(get('min', 'min_value', default=DEFAULT_MIN), DEFAULT_MIN),
-            'max_value': _coerce_float(get('max', 'max_value', default=DEFAULT_MAX), DEFAULT_MAX),
-            'mean_value': _coerce_float(get('mean', 'mean_value', default=scale), scale),
-        }
-    if dist_name == 'gamma':
-        # scipy.stats.gamma uses (a, loc, scale). Mean = a*scale (when loc=0)
-        # and std = sqrt(a)*scale, so the more user-friendly mean/std fields can
-        # be converted back to (shape, scale) when both are provided.
-        loc = _coerce_float(get('loc', default=0.0), 0.0)
-        mean_in = get('mean', 'mean_value')
-        std_in = get('std')
-        if mean_in is not None and std_in is not None:
-            try:
-                mean_f = float(mean_in)
-                std_f = float(std_in)
-            except (TypeError, ValueError):
-                mean_f, std_f = None, None
-            if mean_f and std_f and mean_f > 0 and std_f > 0:
-                shape = (mean_f ** 2) / (std_f ** 2)
-                scale = (std_f ** 2) / mean_f
-            else:
-                shape = _coerce_float(get('shape', 'a', default=DEFAULT_GAMMA_SHAPE), DEFAULT_GAMMA_SHAPE)
-                scale = _coerce_float(get('scale', default=DEFAULT_GAMMA_SCALE), DEFAULT_GAMMA_SCALE)
-        else:
-            shape = _coerce_float(get('shape', 'a', default=DEFAULT_GAMMA_SHAPE), DEFAULT_GAMMA_SHAPE)
-            scale = _coerce_float(get('scale', default=DEFAULT_GAMMA_SCALE), DEFAULT_GAMMA_SCALE)
-        return {
-            'dist_name': 'gamma',
-            'params': [shape, loc, scale],
-            'min_value': _coerce_float(get('min', 'min_value', default=DEFAULT_MIN), DEFAULT_MIN),
-            'max_value': _coerce_float(get('max', 'max_value', default=DEFAULT_MAX), DEFAULT_MAX),
-            'mean_value': shape * scale,
-        }
-
+    min_value, max_value = _bounds(dist_name, params, values)
     return {
-        'dist_name': 'fixed',
-        'params': [DEFAULT_FIXED],
-        'min_value': min_val,
-        'max_value': max_val,
-        'mean_value': mean_val,
+        'dist_name': dist_name,
+        'params': params,
+        'min_value': min_value,
+        'max_value': max_value,
+        'mean_value': mean_value,
     }
 
 
 def distribution_from_prosit(dist_name: str, params: list, min_val: Any,
                              max_val: Any, mean_val: Any) -> dict:
-    """Inverse of ``distribution_to_prosit``: ProSiT scalars → UI parameters.
+    """Inverse of ``distribution_to_prosit``: prosit-pm scalars -> UI parameters.
 
     Returns the ``parameters`` payload that pairs with a ``distribution`` key
     in the UI shape. The caller wraps it in
@@ -170,48 +227,56 @@ def distribution_from_prosit(dist_name: str, params: list, min_val: Any,
         'max_value': _coerce_float(max_val, DEFAULT_FIXED),
         'mean_value': _coerce_float(mean_val, DEFAULT_FIXED),
     }
-    params = params or []
+    params = list(params or [])
+
+    def param(index, default):
+        return _coerce_float(params[index], default) if len(params) > index else default
 
     if dist_name == 'fixed':
-        base['value'] = _coerce_float(params[0] if params else DEFAULT_FIXED, DEFAULT_FIXED)
+        base['value'] = param(0, DEFAULT_FIXED)
     elif dist_name == 'norm':
-        base['mean'] = _coerce_float(params[0] if len(params) > 0 else DEFAULT_MEAN, DEFAULT_MEAN)
-        base['std'] = _coerce_float(params[1] if len(params) > 1 else DEFAULT_STD, DEFAULT_STD)
+        base['mean'] = param(0, DEFAULT_MEAN)
+        base['std'] = param(1, DEFAULT_STD)
     elif dist_name == 'expon':
-        # ProSiT stores [loc, scale]; the UI displays mean = scale.
-        scale_val = _coerce_float(params[1] if len(params) > 1 else mean_val, DEFAULT_MEAN)
-        base['scale'] = scale_val
-        base['mean'] = scale_val
+        # scipy.stats.expon(loc, scale): shifted by loc, mean loc + scale.
+        loc = param(0, 0.0)
+        scale = param(1, _coerce_float(mean_val, DEFAULT_MEAN))
+        base['loc'] = loc
+        base['mean'] = loc + scale
     elif dist_name == 'uniform':
+        # scipy.stats.uniform(loc, scale) spans [loc, loc + scale].
         if len(params) >= 2:
-            base['min'] = _coerce_float(params[0], DEFAULT_MIN)
-            base['max'] = _coerce_float(params[1], DEFAULT_MAX)
+            low = param(0, DEFAULT_MIN)
+            base['min'] = low
+            base['max'] = low + param(1, DEFAULT_MAX)
         else:
             base['min'] = base['min_value']
             base['max'] = base['max_value']
     elif dist_name == 'lognorm':
-        # scipy.stats.lognorm.params == (shape s, loc, scale).
-        base['shape'] = _coerce_float(params[0] if len(params) > 0 else DEFAULT_LOGNORM_SHAPE, DEFAULT_LOGNORM_SHAPE)
-        base['loc'] = _coerce_float(params[1] if len(params) > 1 else 0.0, 0.0)
-        base['scale'] = _coerce_float(params[2] if len(params) > 2 else DEFAULT_LOGNORM_SCALE, DEFAULT_LOGNORM_SCALE)
+        # scipy.stats.lognorm(s, loc, scale).
+        base['shape'] = param(0, DEFAULT_LOGNORM_SHAPE)
+        base['loc'] = param(1, 0.0)
+        base['scale'] = param(2, DEFAULT_LOGNORM_SCALE)
     elif dist_name == 'gamma':
-        # scipy.stats.gamma.params == (a/shape, loc, scale). The UI surfaces
-        # (Mean, Std) since users rarely think in shape/scale terms.
-        shape = _coerce_float(params[0] if len(params) > 0 else DEFAULT_GAMMA_SHAPE, DEFAULT_GAMMA_SHAPE)
-        scale = _coerce_float(params[2] if len(params) > 2 else DEFAULT_GAMMA_SCALE, DEFAULT_GAMMA_SCALE)
+        # scipy.stats.gamma(a, loc, scale). The UI surfaces (Mean, Std) since
+        # users rarely think in shape/scale terms.
+        shape = param(0, DEFAULT_GAMMA_SHAPE)
+        loc = param(1, 0.0)
+        scale = param(2, DEFAULT_GAMMA_SCALE)
         base['shape'] = shape
-        base['loc'] = _coerce_float(params[1] if len(params) > 1 else 0.0, 0.0)
+        base['loc'] = loc
         base['scale'] = scale
-        base['mean'] = shape * scale
+        base['mean'] = loc + shape * scale
         base['std'] = (shape ** 0.5) * scale
     return base
 
 
 def normalize_distribution_object(dist_obj: Any, leaf_value: Any = None) -> Any:
-    """Normalize a distribution dict (UI shape) into ProSiT shape.
+    """Bring the ``dist`` of a tree leaf to prosit-pm's shape.
 
-    Accepts both ``params`` as a list (already ProSiT-aligned) and as a dict
-    (UI shape). Returns the input untouched if it isn't a dict.
+    ``params`` is a list when the leaf still holds what prosit-pm discovered,
+    and a dict of UI parameters once the leaf has been opened in the editor.
+    Returns the input untouched if it isn't a dict.
     """
     if not isinstance(dist_obj, dict):
         return dist_obj
@@ -219,137 +284,52 @@ def normalize_distribution_object(dist_obj: Any, leaf_value: Any = None) -> Any:
     dist_name = dist_obj.get('dist_name', 'expon')
     params_raw = dist_obj.get('params', {})
 
-    if isinstance(params_raw, list):
-        return _normalize_from_list(dist_name, params_raw, dist_obj, leaf_value)
-    return _normalize_from_object(dist_name, params_raw, dist_obj, leaf_value)
+    if isinstance(params_raw, (list, tuple)):
+        return _leaf_from_prosit_params(dist_name, list(params_raw), dist_obj, leaf_value)
+    return _leaf_from_ui_params(dist_name, params_raw, dist_obj, leaf_value)
 
 
-def _normalize_from_list(dist_name, params_raw, dist_obj, leaf_value):
-    leaf_default = leaf_value if leaf_value is not None else DEFAULT_FIXED
-    result = {'dist_name': dist_name}
-    if dist_name == 'fixed':
-        value = params_raw[0] if params_raw else leaf_default
-        result['params'] = [value]
-        result['min_value'] = dist_obj.get('min_value', value)
-        result['max_value'] = dist_obj.get('max_value', value)
-        result['mean_value'] = dist_obj.get('mean_value', value)
-    elif dist_name == 'norm':
-        mean = params_raw[0] if len(params_raw) > 0 else dist_obj.get('mean_value', leaf_value or DEFAULT_MEAN)
-        std = params_raw[1] if len(params_raw) > 1 else DEFAULT_STD
-        result['params'] = [mean, std]
-        result['min_value'] = dist_obj.get('min_value', DEFAULT_MIN)
-        result['max_value'] = dist_obj.get('max_value', DEFAULT_MAX)
-        result['mean_value'] = mean
-    elif dist_name == 'expon':
-        loc = params_raw[0] if len(params_raw) > 0 else 0.0
-        scale = params_raw[1] if len(params_raw) > 1 else dist_obj.get('mean_value', leaf_value or DEFAULT_MEAN)
-        result['params'] = [loc, scale]
-        result['min_value'] = dist_obj.get('min_value', DEFAULT_MIN)
-        result['max_value'] = dist_obj.get('max_value', DEFAULT_MAX)
-        result['mean_value'] = scale
-    elif dist_name == 'uniform':
-        low = params_raw[0] if len(params_raw) > 0 else dist_obj.get('min_value', DEFAULT_MIN)
-        high = params_raw[1] if len(params_raw) > 1 else dist_obj.get('max_value', DEFAULT_MAX)
-        result['params'] = [low, high]
-        result['min_value'] = low
-        result['max_value'] = high
-        result['mean_value'] = (low + high) / 2.0
-    elif dist_name == 'lognorm':
-        # scipy.stats.lognorm: (s, loc, scale).
-        s = params_raw[0] if len(params_raw) > 0 else DEFAULT_LOGNORM_SHAPE
-        loc = params_raw[1] if len(params_raw) > 1 else 0.0
-        scale = params_raw[2] if len(params_raw) > 2 else DEFAULT_LOGNORM_SCALE
-        result['params'] = [s, loc, scale]
-        result['min_value'] = dist_obj.get('min_value', DEFAULT_MIN)
-        result['max_value'] = dist_obj.get('max_value', DEFAULT_MAX)
-        result['mean_value'] = dist_obj.get('mean_value', scale)
-    elif dist_name == 'gamma':
-        # scipy.stats.gamma: (a, loc, scale).
-        shape = params_raw[0] if len(params_raw) > 0 else DEFAULT_GAMMA_SHAPE
-        loc = params_raw[1] if len(params_raw) > 1 else 0.0
-        scale = params_raw[2] if len(params_raw) > 2 else DEFAULT_GAMMA_SCALE
-        result['params'] = [shape, loc, scale]
-        result['min_value'] = dist_obj.get('min_value', DEFAULT_MIN)
-        result['max_value'] = dist_obj.get('max_value', DEFAULT_MAX)
-        result['mean_value'] = dist_obj.get('mean_value', shape * scale)
-    else:
-        # Unknown dist_name (e.g. 'beta'): preserve incoming fields
-        # so prosit-pm's dict_to_decrules doesn't blow up on missing 'params'.
-        leaf_default_value = leaf_value if leaf_value is not None else DEFAULT_FIXED
-        result['params'] = list(params_raw) if params_raw else dist_obj.get('params', [leaf_default_value])
-        result['min_value'] = dist_obj.get('min_value', DEFAULT_MIN)
-        result['max_value'] = dist_obj.get('max_value', DEFAULT_MAX)
-        result['mean_value'] = dist_obj.get('mean_value', leaf_default_value)
+def _leaf_from_prosit_params(dist_name, params, dist_obj, leaf_value):
+    """Parameters already in prosit-pm's own layout: keep the leaf as it is.
+
+    Only what prosit-pm needs to load the tree is filled in when missing.
+    """
+    known = dist_name in SUPPORTED_DISTRIBUTIONS
+    result = dict(dist_obj)
+    result['dist_name'] = dist_name
+    if not params:
+        if known:
+            params, _ = _scipy_params(dist_name, dist_obj, leaf_value)
+        else:
+            params = [_or(_number(leaf_value), DEFAULT_FIXED)]
+    result['params'] = params
+    if 'min_value' not in result or 'max_value' not in result:
+        low, high = _natural_bounds(dist_name, params) if known else (DEFAULT_MIN, DEFAULT_MAX)
+        result.setdefault('min_value', low)
+        result.setdefault('max_value', high)
     return result
 
 
-def _normalize_from_object(dist_name, params_raw, dist_obj, leaf_value):
+def _leaf_from_ui_params(dist_name, params_raw, dist_obj, leaf_value):
+    """Parameters edited in the tree editor: same conversion as a plain distribution."""
+    values = {
+        key: dist_obj[key] for key in ('min_value', 'max_value', 'mean_value') if key in dist_obj
+    }
     if isinstance(params_raw, dict):
-        mean = params_raw.get('mean', dist_obj.get('mean_value', leaf_value or DEFAULT_MEAN))
-        std = params_raw.get('std', DEFAULT_STD)
-        min_v = params_raw.get('min', dist_obj.get('min_value', DEFAULT_MIN))
-        max_v = params_raw.get('max', dist_obj.get('max_value', DEFAULT_MAX))
-        fixed_v = params_raw.get('value', mean)
-    else:
-        mean, std, min_v, max_v, fixed_v = (leaf_value or DEFAULT_MEAN), DEFAULT_STD, DEFAULT_MIN, DEFAULT_MAX, (leaf_value or DEFAULT_MEAN)
+        values.update(params_raw)
 
-    result = {'dist_name': dist_name}
-    if dist_name == 'fixed':
-        result['params'] = [fixed_v]
-        result['min_value'] = fixed_v
-        result['max_value'] = fixed_v
-        result['mean_value'] = fixed_v
-    elif dist_name == 'norm':
-        result['params'] = [mean, std]
-        result['min_value'] = min_v
-        result['max_value'] = max_v
-        result['mean_value'] = mean
-    elif dist_name == 'expon':
-        result['params'] = [0.0, mean]
-        result['min_value'] = min_v
-        result['max_value'] = max_v
-        result['mean_value'] = mean
-    elif dist_name == 'uniform':
-        result['params'] = [min_v, max_v]
-        result['min_value'] = min_v
-        result['max_value'] = max_v
-        result['mean_value'] = (min_v + max_v) / 2.0
-    elif dist_name == 'lognorm':
-        # UI-shape input for lognorm carries shape/scale (and optional loc).
-        if isinstance(params_raw, dict):
-            shape = params_raw.get('shape', params_raw.get('s', DEFAULT_LOGNORM_SHAPE))
-            loc = params_raw.get('loc', 0.0)
-            scale = params_raw.get('scale', DEFAULT_LOGNORM_SCALE)
-        else:
-            shape, loc, scale = DEFAULT_LOGNORM_SHAPE, 0.0, DEFAULT_LOGNORM_SCALE
-        result['params'] = [shape, loc, scale]
-        result['min_value'] = min_v
-        result['max_value'] = max_v
-        result['mean_value'] = dist_obj.get('mean_value', scale)
-    elif dist_name == 'gamma':
-        if isinstance(params_raw, dict):
-            shape = params_raw.get('shape', params_raw.get('a', DEFAULT_GAMMA_SHAPE))
-            loc = params_raw.get('loc', 0.0)
-            scale = params_raw.get('scale', DEFAULT_GAMMA_SCALE)
-        else:
-            shape, loc, scale = DEFAULT_GAMMA_SHAPE, 0.0, DEFAULT_GAMMA_SCALE
-        result['params'] = [shape, loc, scale]
-        result['min_value'] = min_v
-        result['max_value'] = max_v
-        result['mean_value'] = dist_obj.get('mean_value', shape * scale)
-    else:
-        # Unknown dist_name: preserve whatever the caller supplied so the
-        # downstream prosit JSON keeps its 'params' list (otherwise simulate
-        # crashes with KeyError: 'params').
-        existing_params = dist_obj.get('params')
-        if isinstance(existing_params, list):
-            result['params'] = existing_params
-        else:
-            result['params'] = [mean]
-        result['min_value'] = min_v
-        result['max_value'] = max_v
-        result['mean_value'] = dist_obj.get('mean_value', mean)
-    return result
+    if dist_name in SUPPORTED_DISTRIBUTIONS:
+        return distribution_to_prosit(dist_name, values, leaf_value)
+
+    # Unknown family: keep a 'params' list so that prosit-pm can load the tree.
+    mean = _or(_first(values, 'mean', 'mean_value'), _or(_number(leaf_value), DEFAULT_MEAN))
+    return {
+        'dist_name': dist_name,
+        'params': [mean],
+        'min_value': _or(_first(values, 'min', 'min_value'), DEFAULT_MIN),
+        'max_value': _or(_first(values, 'max', 'max_value'), DEFAULT_MAX),
+        'mean_value': mean,
+    }
 
 
 def transform_distribution_tree(tree: Any) -> Any:
@@ -369,11 +349,18 @@ def transform_distribution_tree(tree: Any) -> Any:
                 'dist_name': 'expon',
                 'params': {'mean': leaf_value if leaf_value is not None else DEFAULT_MEAN},
             }
-            dist_obj = node.get('dist', default_dist)
-            normalized[key] = {
-                'value': leaf_value,
-                'dist': normalize_distribution_object(dist_obj, leaf_value),
-            }
+            dist_in = node.get('dist', default_dist)
+            edited_in_ui = isinstance(dist_in, dict) and not isinstance(dist_in.get('params'), (list, tuple))
+            dist = normalize_distribution_object(dist_in, leaf_value)
+            if isinstance(dist, dict) and edited_in_ui:
+                if dist.get('dist_name') == 'fixed':
+                    # prosit-pm samples a fixed leaf from the leaf's own value,
+                    # not from the distribution: the two must agree, or editing
+                    # the fixed value in the UI changes nothing.
+                    leaf_value = dist['params'][0]
+                elif leaf_value is None:
+                    leaf_value = dist.get('mean_value')
+            normalized[key] = {'value': leaf_value, 'dist': dist}
         elif isinstance(node, dict) and 'feature' in node:
             normalized[key] = {
                 'feature': node.get('feature'),
@@ -386,11 +373,10 @@ def transform_distribution_tree(tree: Any) -> Any:
 
 
 def app_entry_to_prosit(params: dict) -> dict:
-    """Convert one ``{distribution, parameters}`` UI entry (or a tree) to ProSiT.
+    """Convert one ``{distribution, parameters}`` UI entry (or a tree) to prosit-pm.
 
-    Replaces the four near-duplicated bodies that previously lived inline in
-    ``convert_app_to_prosit_format``: execution time, waiting time, inter-arrival,
-    and data attributes all flow through this single helper now.
+    Execution times, waiting times, inter-arrival times and data attributes all
+    flow through this single helper.
     """
     if isinstance(params, dict) and '0' in params:
         return transform_distribution_tree(params)
@@ -398,3 +384,56 @@ def app_entry_to_prosit(params: dict) -> dict:
     dist = params.get('distribution', 'fixed') if isinstance(params, dict) else 'fixed'
     pv = params.get('parameters', {}) if isinstance(params, dict) else {}
     return distribution_to_prosit(dist, pv)
+
+
+def prosit_entry_to_app(entry: Any) -> Any:
+    """Inverse of ``app_entry_to_prosit``: what the UI receives for one entry.
+
+    A decision tree (a dict without ``params``) is shown as it is; a plain
+    distribution becomes ``{"distribution": ..., "parameters": {...}}``.
+    """
+    if not isinstance(entry, dict) or 'params' not in entry:
+        return entry
+    dist_name = entry.get('dist_name', 'fixed')
+    params = entry.get('params') or [DEFAULT_FIXED]
+    return {
+        'distribution': dist_name,
+        'parameters': distribution_from_prosit(
+            dist_name,
+            params,
+            entry.get('min_value', DEFAULT_FIXED),
+            entry.get('max_value', DEFAULT_FIXED),
+            entry.get('mean_value', params[0]),
+        ),
+    }
+
+
+def attribute_entry_from_prosit(stored: Any):
+    """A continuous data attribute as prosit-pm stores it -> a distribution entry.
+
+    Since 1.0.2 prosit-pm names the keys of a data attribute ``dist`` / ``min`` /
+    ``max`` / ``mean``; older documents use the same names as time distributions.
+    Returns ``None`` for anything that is not a continuous attribute.
+    """
+    if not isinstance(stored, dict) or 'params' not in stored:
+        return None
+    params = stored.get('params') or [DEFAULT_FIXED]
+    return {
+        'dist_name': stored.get('dist') or stored.get('dist_name', 'fixed'),
+        'params': params,
+        'min_value': stored.get('min', stored.get('min_value', DEFAULT_FIXED)),
+        'max_value': stored.get('max', stored.get('max_value', DEFAULT_FIXED)),
+        'mean_value': stored.get('mean', stored.get('mean_value', params[0])),
+    }
+
+
+def merge_app_entry(stored: Any, app_entry: Any) -> Any:
+    """prosit-pm entry to store for ``app_entry``, given what is stored now.
+
+    An entry that comes back exactly as the UI received it was not edited: the
+    stored one is kept as it is, to the last bit, instead of being converted
+    there and back.
+    """
+    if stored is not None and app_entry == prosit_entry_to_app(stored):
+        return stored
+    return app_entry_to_prosit(app_entry)

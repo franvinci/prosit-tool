@@ -3,7 +3,6 @@
 import os
 import shutil
 import logging
-from datetime import datetime
 
 import pandas as pd
 import pm4py
@@ -15,13 +14,19 @@ from ..models import SimulationSession
 from ..validators import validate_noise_threshold
 
 from ._decorators import handle_api_errors
+from ._shared import unique_timestamp
 
 logger = logging.getLogger(__name__)
 bp = Blueprint('upload', __name__)
 
 
 def _apply_mapping(df: pd.DataFrame, mapping: dict, source_label: str) -> pd.DataFrame:
-    """Rename DataFrame columns to pm4py conventions and ensure required fields.
+    """Rename DataFrame columns to pm4py conventions and check the required ones.
+
+    Case id, activity and end timestamp are required. The start timestamp and
+    the resource are optional and nothing is made up for them here: an event
+    without them is written without them, and the reader of the log
+    (``normalize_event_log``) decides what to use instead and tells the user.
 
     ``source_label`` is used in error messages (e.g. ``"CSV"`` / ``"XES"``).
     """
@@ -46,25 +51,42 @@ def _apply_mapping(df: pd.DataFrame, mapping: dict, source_label: str) -> pd.Dat
         df = df.drop(columns=drop_cols)
     df = df.rename(columns=rename)
 
+    for column, meaning in (('case:concept:name', 'case id'), ('concept:name', 'activity'),
+                            ('time:timestamp', 'end timestamp')):
+        empty = int(df[column].isna().sum())
+        if empty:
+            raise ValueError(f"{source_label} has {empty} row(s) with no {meaning}")
+
     df['case:concept:name'] = df['case:concept:name'].astype(str)
     df['time:timestamp'] = pd.to_datetime(df['time:timestamp'], utc=True, errors='raise')
     if 'start:timestamp' in df.columns:
         df['start:timestamp'] = pd.to_datetime(df['start:timestamp'], utc=True, errors='raise')
+        began = df['start:timestamp'].fillna(df['time:timestamp'])
     else:
-        df['start:timestamp'] = df['time:timestamp']
-    if 'org:resource' not in df.columns:
-        df['org:resource'] = 'unknown'
+        began = df['time:timestamp']
 
-    return df.sort_values(
-        by=['case:concept:name', 'start:timestamp', 'time:timestamp']
-    ).reset_index(drop=True)
+    # Events of a case in the order they started (an event with no start
+    # timestamp is placed by its end).
+    order = df.assign(_began=began).sort_values(
+        by=['case:concept:name', '_began', 'time:timestamp'], kind='stable',
+    ).index
+    return df.loc[order].reset_index(drop=True)
+
+
+def _write_xes(df: pd.DataFrame, xes_path: str) -> None:
+    """Write the log, leaving out the attributes an event has no value for.
+
+    Written as they are, the empty cells of a table would become attributes
+    whose value is the text "nan".
+    """
+    pm4py.write_xes(pm4py.convert_to_event_log(df, stream_postprocessing=True), xes_path)
 
 
 def _csv_to_xes(csv_path: str, xes_path: str, mapping: dict) -> None:
     """Read a CSV log, rename columns to pm4py conventions, write as XES."""
     df = pd.read_csv(csv_path)
     df = _apply_mapping(df, mapping, source_label='CSV')
-    pm4py.write_xes(df, xes_path)
+    _write_xes(df, xes_path)
 
 
 _DEFAULT_XES_COLS = {
@@ -89,7 +111,7 @@ def _xes_apply_mapping(input_xes_path: str, output_xes_path: str, mapping: dict)
 
     df = pm4py.convert_to_dataframe(pm4py.read_xes(input_xes_path))
     df = _apply_mapping(df, mapping, source_label='XES')
-    pm4py.write_xes(df, output_xes_path)
+    _write_xes(df, output_xes_path)
 
 
 @bp.route('/api/upload', methods=['POST'])
@@ -116,7 +138,7 @@ def upload_file():
     if pnml_file and pnml_file.filename and not pnml_file.filename.lower().endswith('.pnml'):
         return jsonify({'error': 'PNML file must have .pnml extension'}), 400
 
-    timestamp = int(datetime.now().timestamp())
+    timestamp = unique_timestamp()
 
     case_id_col = (request.form.get('case_id_col') or '').strip()
     activity_col = (request.form.get('activity_col') or '').strip()
@@ -129,12 +151,11 @@ def upload_file():
         return jsonify({'error': 'CSV upload requires column mapping'}), 400
 
     if has_mapping:
+        # The start timestamp and the resource are optional (see _apply_mapping).
         missing = [k for k, v in (
             ('case_id_col', case_id_col),
             ('activity_col', activity_col),
             ('end_ts_col', end_ts_col),
-            ('start_ts_col', start_ts_col),
-            ('resource_col', resource_col),
         ) if not v]
         if missing:
             return jsonify({'error': f"Column mapping incomplete: {', '.join(missing)}"}), 400

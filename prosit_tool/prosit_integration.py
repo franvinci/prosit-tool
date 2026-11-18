@@ -10,7 +10,7 @@ from pm4py.algo.evaluation.precision import algorithm as precision_evaluator
 
 from prosit.simulator import SimulatorParameters, SimulatorEngine
 from .evaluation import evaluate, compute_log_kpis, compute_log_charts
-from .format_converters import distribution_from_prosit
+from .format_converters import attribute_entry_from_prosit, prosit_entry_to_app
 
 logger = logging.getLogger(__name__)
 
@@ -135,7 +135,7 @@ class ProSiTIntegration:
             logger.error(f"Error discovering process model: {str(e)}")
             raise
     
-    def import_petri_net_from_pnml(self, pnml_file_path, compute_metrics=True):
+    def import_petri_net_from_pnml(self, pnml_file_path, compute_metrics=True, render=True):
         """Import Petri net structure from PNML file.
 
         Args:
@@ -144,6 +144,10 @@ class ProSiTIntegration:
                 ``self.event_log``. If False (or no event log set), populate
                 metrics with zeros — useful when the only goal is to reload the
                 net for a later simulation.
+            render: If True, draw the net (an external Graphviz run). Pass
+                False when the drawing is not needed, as when the net is only
+                reloaded to simulate or to read parameters; it can still be
+                produced later with ``render_process_model``.
 
         Updates:
             self.process_model: Dictionary containing the imported process model.
@@ -167,7 +171,9 @@ class ProSiTIntegration:
                     map_transitionName_to_id[t.label] = tid
                 transition_label_map[t.name] = t.label if t.label else t.name
 
-            visualization_svg = self._generate_petri_net_visualization(net, initial_marking, final_marking)
+            visualization_svg = (
+                self._generate_petri_net_visualization(net, initial_marking, final_marking) if render else None
+            )
 
             if compute_metrics and self.event_log is not None:
                 fitness = fitness_evaluator.apply(self.event_log, net, initial_marking, final_marking)['averageFitness']
@@ -231,7 +237,7 @@ class ProSiTIntegration:
             Dictionary containing discovered parameters in application format
         """
         try:
-            logger.info(f"Discovering parameters from Event Log")
+            logger.info("Discovering parameters from Event Log")
 
             if not self.process_model:
                 self.discover_process_model()
@@ -363,6 +369,21 @@ class ProSiTIntegration:
             logger.error(f"Error running simulation: {str(e)}")
             raise
 
+    def render_process_model(self):
+        """Draw the loaded net and return what the UI needs to show it.
+
+        The drawing identifies each transition by an id that is only valid
+        together with the map returned here, so the two always travel as a pair.
+        """
+        model = self.process_model
+        model['visualization'] = self._generate_petri_net_visualization(
+            model['net'], model['initial_marking'], model['final_marking'],
+        )
+        return {
+            'visualization': model['visualization'],
+            'map_transitionName_to_id': model['map_transitionName_to_id'],
+        }
+
     def _generate_petri_net_visualization(self, net, initial_marking, final_marking):
         """Generate Petri net visualization using PM4Py and return as SVG"""
         try:
@@ -462,235 +483,146 @@ class ProSiTIntegration:
    
     def _convert_prosit_to_app_format(self):
         """Convert ProSiT parameters to application format.
-        
+
+        Every distribution goes through ``prosit_entry_to_app``, the exact
+        inverse of what the parameters endpoints apply when the UI sends the
+        document back.
+
         Returns:
             Dictionary containing parameters formatted for the web application
         """
-        try:
-            logger.info("Converting ProSiT parameters to application format")
+        prosit_params = self.prosit_params
 
-            # Get transition weights from ProSiT parameters
-            transition_weights = self.prosit_params["transition_params"]["transition_weights"]
-            
-            # Get execution time distributions from ProSiT parameters
-            execution_time_params = {}
-            exec_time_dists = self.prosit_params['execution_time_params']['execution_time_distributions']
-            logger.info(f"Found execution time distributions for {len(exec_time_dists)} activities")
-            
-            # Debug: Check the actual structure of execution_time_distributions
-            if exec_time_dists:
-                logger.info(f"Sample execution time entry: {list(exec_time_dists.items())[0] if exec_time_dists else 'None'}")
-            
-            for activity, dist_info in exec_time_dists.items():
-                logger.info(f"Processing execution time for activity: {activity}, dist_info type: {type(dist_info)}")
-                if isinstance(dist_info, dict):
-                    if 'params' not in dist_info:
-                        execution_time_params[activity] = dist_info
-                        logger.info(f"Activity {activity} DT: {dist_info}")
-                    else:
-                        params = dist_info.get('params', [1.0])
-                        execution_time_params[activity] = {
-                            'distribution': dist_info.get('dist_name', 'fixed'),
-                            'parameters': self._convert_prosit_params_to_app(dist_info.get('dist_name', 'fixed'), params, dist_info.get('min_value', 1.0), dist_info.get('max_value', 1.0), dist_info.get('mean_value', params[0] if params and len(params) > 0 else 1.0))
-                        }
-                        logger.info(f"Activity {activity}: {dist_info.get('dist_name', 'fixed')} with params {params}")
-                elif dist_info is not None:
-                    # Handle other non-dict formats
-                    logger.info(f"Unknown execution time data format for {activity}: {dist_info}")
-                    execution_time_params[activity] = {
-                        'distribution': 'fixed',
-                        'parameters': {
-                            'params': [1.0],
-                            'min_value': 1.0,
-                            'max_value': 1.0,
-                            'mean_value': 1.0
-                        }
-                    }
-            
-            # Get resources and activity-resource assignments
-            resources = self.prosit_params['resource_params']['resources']
-            resource_weights = self.prosit_params['resource_params']['resource_weights']
-            act_to_resources = self.prosit_params['resource_params']['act_to_resources']
-            max_concurrency = self.prosit_params['resource_params'].get(
-                'max_concurrency', {r: 1 for r in resources}
-            )
-            
-            # Get calendars and convert numeric day keys to day names
-            calendars = self.prosit_params['resource_params']['calendars']
-            logger.info(f"Found calendars for {len(calendars)} resources: {list(calendars.keys())}")
-            
-            # Get waiting time distributions (resource-specific)
-            resource_waiting_times = {}
-            wait_time_dists = self.prosit_params['waiting_time_params']['waiting_time_distributions']
-            logger.info(f"Found waiting time distributions for {len(wait_time_dists)} resources")
-            
-            for resource, dist_info in wait_time_dists.items():
-                logger.info(f"Processing waiting time for resource: {resource}, dist_info type: {type(dist_info)}")
-                if isinstance(dist_info, dict):
-                    if 'params' not in dist_info:
-                        resource_waiting_times[resource] = dist_info
-                        logger.info(f"Resource {resource} DT: {dist_info}")
-                    else:
-                        params = dist_info.get('params', [1.0])
-                        resource_waiting_times[resource] = {
-                            'distribution': dist_info.get('dist_name', 'fixed'),
-                            'parameters': self._convert_prosit_params_to_app(dist_info.get('dist_name', 'fixed'), params, dist_info.get('min_value', 1.0), dist_info.get('max_value', 1.0), dist_info.get('mean_value', params[0] if params and len(params) > 0 else 1.0))
-                        }
-                        logger.info(f"Resource {resource}: {dist_info.get('dist_name', 'fixed')} waiting time with params {params}")
-                elif dist_info is not None:
-                    # Handle other non-dict formats
-                    logger.info(f"Unknown waiting time data format for {resource}: {dist_info}")
-                    resource_waiting_times[resource] = {
-                        'distribution': 'fixed',
-                        'parameters': {
-                            'params': [1.0],
-                            'min_value': 1.0,
-                            'max_value': 1.0,
-                            'mean_value': 1.0
-                        }
-                    }
-            
-            # Get arrival time parameters
-            arrival_dist = self.prosit_params['arrival_params']['arrival_time_distributions']
-            arrival_calendar = self.prosit_params['arrival_params']['arrival_calendar']
-            
-            inter_arrival_time = {}
-            if isinstance(arrival_dist, dict):
-                if 'params' not in arrival_dist:
-                    inter_arrival_time = {'distribution': arrival_dist, 'calendar': arrival_calendar}
-                    logger.info(f"Arrival time: {arrival_dist}")
-                else:
-                    arr_params = arrival_dist.get('params', [1.0])
-                    min_val = arrival_dist.get('min_value', 1.0)
-                    max_val = arrival_dist.get('max_value', 1.0)
-                    mean_val = arrival_dist.get('mean_value', (arr_params[0] if arr_params else 1.0))
-                    inter_arrival_time = {
-                        'distribution': arrival_dist.get('dist_name', 'fixed'),
-                        'parameters': self._convert_prosit_params_to_app(arrival_dist.get('dist_name', 'fixed'), arr_params, min_val, max_val, mean_val),
-                        'calendar': arrival_calendar
-                    }
-                    logger.info(f"Arrival time: {arrival_dist.get('dist_name', 'fixed')} with params {arr_params}")
+        def entries_to_app(entries):
+            converted = {}
+            for name, entry in entries.items():
+                if isinstance(entry, dict):
+                    converted[name] = prosit_entry_to_app(entry)
+                elif entry is not None:
+                    # Not a shape prosit-pm writes; show it as a fixed value.
+                    logger.warning("Unknown distribution format for %s: %r", name, entry)
+                    converted[name] = prosit_entry_to_app({'dist_name': 'fixed', 'params': [1.0]})
+            return converted
 
-            # Data Attributes — prosit-pm (since 1.0.2) wraps the dict in
-            # {"mode": ..., "data": {...}} and renames keys (dist_name→dist,
-            # min_value→min, max_value→max, mean_value→mean). Older logs may
-            # still have the legacy flat shape; handle both.
-            data_attribute_params = self.prosit_params.get('data_attribute_params', {})
-            app_data_attributes = {
-                "label_data_attributes": data_attribute_params.get("label_data_attributes", []),
-                "label_data_attributes_categorical": data_attribute_params.get("label_data_attributes_categorical", []),
-                "attribute_values_label_categorical": data_attribute_params.get("attribute_values_label_categorical", {}),
-                "distribution_data_attributes": {},
-                # Defaults to 'distribution'; flipped below if prosit-pm wrote
-                # empirical samples instead.
-                "distribution_mode": 'distribution',
-            }
+        execution_time_params = entries_to_app(
+            prosit_params['execution_time_params']['execution_time_distributions']
+        )
+        resource_waiting_times = entries_to_app(
+            prosit_params['waiting_time_params']['waiting_time_distributions']
+        )
 
-            raw_dist_attrs = data_attribute_params.get("distribution_data_attributes") or {}
-            mode = None
-            if 'mode' in raw_dist_attrs and 'data' in raw_dist_attrs:
-                mode = raw_dist_attrs.get('mode')
-                prosit_dist_attrs = raw_dist_attrs.get('data') or {}
+        resource_params = prosit_params['resource_params']
+        resources = resource_params['resources']
+        max_concurrency = resource_params.get('max_concurrency', {r: 1 for r in resources})
+
+        arrival_dist = prosit_params['arrival_params']['arrival_time_distributions']
+        arrival_calendar = prosit_params['arrival_params']['arrival_calendar']
+        inter_arrival_time = {}
+        if isinstance(arrival_dist, dict):
+            if 'params' not in arrival_dist:
+                # Decision tree: shown as it is.
+                inter_arrival_time = {'distribution': arrival_dist, 'calendar': arrival_calendar}
             else:
-                prosit_dist_attrs = raw_dist_attrs
+                inter_arrival_time = {**prosit_entry_to_app(arrival_dist), 'calendar': arrival_calendar}
 
-            if mode == 'empirical':
-                # Empirical mode keys are stringified tuples of joint values, not
-                # per-attribute dicts. We can't surface them as editable rows, so
-                # we just expose the attribute names with a read-only marker. The
-                # underlying empirical samples are preserved on save.
-                app_data_attributes['distribution_mode'] = 'empirical'
-                for attr_name in app_data_attributes['label_data_attributes']:
-                    app_data_attributes['distribution_data_attributes'][attr_name] = {
-                        'type': 'empirical',
-                        'readonly': True,
-                    }
-                # Skip the per-attribute conversion loop below.
-                prosit_dist_attrs = {}
+        # Data Attributes — prosit-pm (since 1.0.2) wraps the dict in
+        # {"mode": ..., "data": {...}} and renames keys (dist_name→dist,
+        # min_value→min, max_value→max, mean_value→mean). Older logs may
+        # still have the legacy flat shape; handle both.
+        data_attribute_params = prosit_params.get('data_attribute_params', {})
+        app_data_attributes = {
+            "label_data_attributes": data_attribute_params.get("label_data_attributes", []),
+            "label_data_attributes_categorical": data_attribute_params.get("label_data_attributes_categorical", []),
+            "attribute_values_label_categorical": data_attribute_params.get("attribute_values_label_categorical", {}),
+            "distribution_data_attributes": {},
+            # Defaults to 'distribution'; flipped below if prosit-pm wrote
+            # empirical samples instead.
+            "distribution_mode": 'distribution',
+        }
 
-            categorical_attrs = data_attribute_params.get("label_data_attributes_categorical", [])
+        raw_dist_attrs = data_attribute_params.get("distribution_data_attributes") or {}
+        mode = None
+        if 'mode' in raw_dist_attrs and 'data' in raw_dist_attrs:
+            mode = raw_dist_attrs.get('mode')
+            prosit_dist_attrs = raw_dist_attrs.get('data') or {}
+        else:
+            prosit_dist_attrs = raw_dist_attrs
 
-            for attr, params_dict in prosit_dist_attrs.items():
-                if attr in categorical_attrs:
-                    # Normalize categorical entries to a stable shape so the UI
-                    # can rely on params.values. prosit-pm sometimes writes
-                    # ``{"type": 0, "values": {...}}`` (truthy garbage), and
-                    # legacy logs may store the bare ``{cat: prob}`` dict.
-                    if isinstance(params_dict, dict) and 'values' in params_dict:
-                        values = params_dict.get('values') or {}
-                    elif isinstance(params_dict, dict):
-                        values = params_dict
-                    else:
-                        values = {}
-                    app_data_attributes["distribution_data_attributes"][attr] = {
-                        'type': 'categorical',
-                        'values': values,
-                    }
-                    continue
-                if not isinstance(params_dict, dict):
-                    continue
-                dist_name = params_dict.get('dist') or params_dict.get('dist_name', 'fixed')
-                params = params_dict.get('params', [1.0])
-                min_val = params_dict.get('min', params_dict.get('min_value', 1.0))
-                max_val = params_dict.get('max', params_dict.get('max_value', 1.0))
-                mean_val = params_dict.get('mean', params_dict.get('mean_value', params[0] if params else 1.0))
-                app_data_attributes["distribution_data_attributes"][attr] = {
-                    'distribution': dist_name,
-                    'parameters': self._convert_prosit_params_to_app(dist_name, params, min_val, max_val, mean_val)
+        if mode == 'empirical':
+            # Empirical mode keys are stringified tuples of joint values, not
+            # per-attribute dicts. We can't surface them as editable rows, so
+            # we just expose the attribute names with a read-only marker. The
+            # underlying empirical samples are preserved on save.
+            app_data_attributes['distribution_mode'] = 'empirical'
+            for attr_name in app_data_attributes['label_data_attributes']:
+                app_data_attributes['distribution_data_attributes'][attr_name] = {
+                    'type': 'empirical',
+                    'readonly': True,
                 }
+            # Skip the per-attribute conversion loop below.
+            prosit_dist_attrs = {}
 
-            # Build the final parameters structure
-            parameters = {
-                'process_model': {
-                    'activities': self.process_model['activities'],
-                    'places': self.process_model['places'],
-                    'transitions': self.process_model['transitions'],
-                    'map_transitionName_to_id': self.process_model['map_transitionName_to_id'],
-                    'transition_label_map': self.process_model.get('transition_label_map', {}),
-                    'visualization': self.process_model['visualization'],
-                    'fitness': self.process_model['fitness'],
-                    'precision': self.process_model['precision'],
-                    'f_measure': self.process_model['f_measure']
-                },
-                'prosit_metrics': self.prosit_metrics,
-                'transition_params': {
-                    'transition_weights': transition_weights
-                },
-                'execution_time_params': {
-                    'activity_durations': execution_time_params
-                },
-                'resource_params': {
-                    'resources': resources,
-                    'resource_weights': resource_weights,
-                    'max_concurrency': max_concurrency,
-                    'act_to_resources': act_to_resources,
-                    'calendars': calendars
-                },
-                'waiting_time_params': {
-                    'resource_waiting_times': resource_waiting_times
-                },
-                'inter_arrival_params': {
-                    'inter_arrival_time': inter_arrival_time
-                },
-                'data_attribute_params': app_data_attributes
-            }
-            
-            multitasking_count = sum(1 for v in max_concurrency.values() if v > 1)
-            logger.info(f"Converted parameters: {len(resources)} resources, {len(execution_time_params)} activities with execution times, {multitasking_count} multitasking resources")
-            logger.info(f"Activities with execution times: {list(execution_time_params.keys())}")
-            logger.info(f"Resources with waiting times: {list(resource_waiting_times.keys())}")
-            
-            return parameters
-            
-        except Exception as e:
-            logger.error(f"Error converting ProSiT parameters: {str(e)}")
-            logger.error(f"ProSiT params attributes: {dir(self.prosit_params)}")
-            raise
+        categorical_attrs = data_attribute_params.get("label_data_attributes_categorical", [])
 
-    def _convert_prosit_params_to_app(self, dist_name, params, min_val, max_val, mean_val):
-        """Convert ProSiT scalar parameters to the UI parameters payload."""
-        try:
-            return distribution_from_prosit(dist_name, params, min_val, max_val, mean_val)
-        except Exception as e:
-            logger.error(f"Error converting parameters for {dist_name}: {e}")
-            return {'mean': 15.0, 'std': 2.0, 'min_value': 0.0, 'max_value': 60.0, 'mean_value': 15.0}
+        for attr, params_dict in prosit_dist_attrs.items():
+            if attr in categorical_attrs:
+                # Normalize categorical entries to a stable shape so the UI
+                # can rely on params.values. prosit-pm sometimes writes
+                # ``{"type": 0, "values": {...}}`` (truthy garbage), and
+                # legacy logs may store the bare ``{cat: prob}`` dict.
+                if isinstance(params_dict, dict) and 'values' in params_dict:
+                    values = params_dict.get('values') or {}
+                elif isinstance(params_dict, dict):
+                    values = params_dict
+                else:
+                    values = {}
+                app_data_attributes["distribution_data_attributes"][attr] = {
+                    'type': 'categorical',
+                    'values': values,
+                }
+                continue
+            entry = attribute_entry_from_prosit(params_dict)
+            if entry is not None:
+                app_data_attributes["distribution_data_attributes"][attr] = prosit_entry_to_app(entry)
+
+        parameters = {
+            'process_model': {
+                'activities': self.process_model['activities'],
+                'places': self.process_model['places'],
+                'transitions': self.process_model['transitions'],
+                'map_transitionName_to_id': self.process_model['map_transitionName_to_id'],
+                'transition_label_map': self.process_model.get('transition_label_map', {}),
+                'visualization': self.process_model['visualization'],
+                'fitness': self.process_model['fitness'],
+                'precision': self.process_model['precision'],
+                'f_measure': self.process_model['f_measure']
+            },
+            'prosit_metrics': self.prosit_metrics,
+            'transition_params': {
+                'transition_weights': prosit_params["transition_params"]["transition_weights"]
+            },
+            'execution_time_params': {
+                'activity_durations': execution_time_params
+            },
+            'resource_params': {
+                'resources': resources,
+                'resource_weights': resource_params['resource_weights'],
+                'max_concurrency': max_concurrency,
+                'act_to_resources': resource_params['act_to_resources'],
+                'calendars': resource_params['calendars']
+            },
+            'waiting_time_params': {
+                'resource_waiting_times': resource_waiting_times
+            },
+            'inter_arrival_params': {
+                'inter_arrival_time': inter_arrival_time
+            },
+            'data_attribute_params': app_data_attributes
+        }
+
+        multitasking_count = sum(1 for v in max_concurrency.values() if v > 1)
+        logger.info(
+            "Converted parameters: %d resources, %d activities with execution times, %d multitasking resources",
+            len(resources), len(execution_time_params), multitasking_count,
+        )
+        return parameters

@@ -10,7 +10,6 @@ and is read-only.
 """
 
 import os
-import json
 import logging
 import shutil
 from datetime import datetime
@@ -18,16 +17,12 @@ from datetime import datetime
 from flask import Blueprint, current_app, request, jsonify
 
 from ..extensions import db
-from ..models import SimulationRun, SimulationSession, BASELINE_RUN_NAME
+from ..models import SimulationRun, SimulationSession, BASELINE_RUN_NAME, utcnow
+from ..validators import validate_run_id
 
 from ._decorators import handle_api_errors
-from ._shared import load_session_prosit
-from .parameters import (
-    DEFAULT_RESOURCE_WEIGHT,
-    DEFAULT_WAITING_DIST,
-    _default_calendar,
-    convert_app_to_prosit_format,
-)
+from ._shared import remove_file
+from .parameters import ParameterError, apply_ui_parameters_to_file, load_parameters_for_ui
 
 logger = logging.getLogger(__name__)
 bp = Blueprint('runs', __name__)
@@ -59,10 +54,14 @@ def _serialize_run(run):
     return run.to_summary()
 
 
+def _is_baseline_name(name):
+    return name.strip().lower() == BASELINE_RUN_NAME.lower()
+
+
 @bp.route('/api/sessions/<int:session_id>/runs', methods=['GET'])
 @handle_api_errors('Failed to list runs')
 def list_runs(session_id):
-    session = SimulationSession.query.get_or_404(session_id)
+    session = db.get_or_404(SimulationSession, session_id)
     runs = sorted(session.runs, key=lambda r: (not r.is_baseline, r.created_at or datetime.min))
     return jsonify({
         'success': True,
@@ -82,48 +81,60 @@ def create_run(session_id):
         from_run_id (int, optional) — copy parameters from this run instead of
             the baseline (defaults to baseline)
     """
-    session = SimulationSession.query.get_or_404(session_id)
+    session = db.get_or_404(SimulationSession, session_id)
 
-    body = request.get_json() or {}
-    name = (body.get('name') or '').strip()
+    body = request.get_json(silent=True) or {}
+    name = body.get('name')
+    name = name.strip() if isinstance(name, str) else ''
     if not name:
         return jsonify({'error': 'Run name is required'}), 400
-    if name == BASELINE_RUN_NAME:
+    if _is_baseline_name(name):
         return jsonify({'error': f'"{BASELINE_RUN_NAME}" is reserved for the baseline run'}), 400
 
     existing = next((r for r in session.runs if r.name.lower() == name.lower()), None)
     if existing:
         return jsonify({'error': f'A run named "{existing.name}" already exists in this session'}), 409
 
-    source_run = None
-    if 'from_run_id' in body and body['from_run_id'] is not None:
-        source_run = SimulationRun.query.filter_by(
-            id=int(body['from_run_id']), session_id=session_id
-        ).first()
+    from_run_id, err = validate_run_id(body.get('from_run_id'))
+    if err:
+        return jsonify({'error': err.replace('run_id', 'from_run_id')}), 400
+    if from_run_id is not None:
+        source_run = SimulationRun.query.filter_by(id=from_run_id, session_id=session_id).first()
         if not source_run:
             return jsonify({'error': 'Source run not found'}), 404
-    if source_run is None:
+    else:
         source_run = session.get_baseline_run()
     if source_run is None or not source_run.parameters_filename:
         return jsonify({'error': 'Session has no baseline parameters yet'}), 400
+    if not os.path.exists(_params_path(source_run.parameters_filename)):
+        return jsonify({'error': 'Parameter file of the source scenario is missing on disk'}), 404
 
     new_run = SimulationRun(
         session_id=session_id,
         name=name,
         is_baseline=False,
-        created_at=datetime.utcnow(),
+        created_at=utcnow(),
     )
     db.session.add(new_run)
     db.session.flush()  # populate new_run.id for the snapshot filename
 
     snapshot_name = _snapshot_filename(new_run.id, source_run.parameters_filename)
-    _copy_parameters(source_run.parameters_filename, snapshot_name)
-    new_run.parameters_filename = snapshot_name
+    try:
+        _copy_parameters(source_run.parameters_filename, snapshot_name)
+        new_run.parameters_filename = snapshot_name
 
-    # Optional inline edit: persist UI-format edits into the new snapshot.
-    parameters = body.get('parameters')
-    if parameters:
-        _apply_ui_parameters_to_run(new_run, parameters)
+        # Optional inline edit: persist UI-format edits into the new snapshot.
+        parameters = body.get('parameters')
+        if parameters:
+            apply_ui_parameters_to_file(_params_path(snapshot_name), parameters)
+    except ParameterError as exc:
+        db.session.rollback()
+        remove_file(current_app.config['UPLOAD_FOLDER'], snapshot_name)
+        return jsonify({'error': str(exc)}), 400
+    except Exception:
+        db.session.rollback()
+        remove_file(current_app.config['UPLOAD_FOLDER'], snapshot_name)
+        raise
 
     session.touch()
     db.session.commit()
@@ -133,7 +144,7 @@ def create_run(session_id):
 @bp.route('/api/runs/<int:run_id>', methods=['GET'])
 @handle_api_errors('Failed to load run')
 def get_run(run_id):
-    run = SimulationRun.query.get_or_404(run_id)
+    run = db.get_or_404(SimulationRun, run_id)
     if not run.parameters_filename:
         return jsonify({'error': 'Run has no parameters yet'}), 404
 
@@ -141,17 +152,7 @@ def get_run(run_id):
     if not os.path.exists(json_filepath):
         return jsonify({'error': 'Run parameter file missing on disk'}), 404
 
-    session = run.session
-    session_metadata = session.get_parameters() or {}
-    prosit = load_session_prosit(session)
-    parameters = prosit.load_parameters_from_json_file(json_filepath)
-
-    if 'process_model' in session_metadata:
-        parameters['process_model'].update(session_metadata['process_model'])
-    if 'prosit_metrics' in session_metadata:
-        merged = parameters.get('prosit_metrics') or {}
-        merged.update(session_metadata.get('prosit_metrics') or {})
-        parameters['prosit_metrics'] = merged
+    parameters = load_parameters_for_ui(run.session, json_filepath)
 
     return jsonify({
         'success': True,
@@ -163,16 +164,21 @@ def get_run(run_id):
 @bp.route('/api/runs/<int:run_id>', methods=['PUT'])
 @handle_api_errors('Failed to update run')
 def update_run(run_id):
-    run = SimulationRun.query.get_or_404(run_id)
+    run = db.get_or_404(SimulationRun, run_id)
     if run.is_baseline:
         return jsonify({'error': 'The baseline (As-Is) run is read-only'}), 400
 
-    body = request.get_json() or {}
+    body = request.get_json(silent=True) or {}
     parameters = body.get('parameters')
     if not parameters:
         return jsonify({'error': 'No parameters provided'}), 400
+    if not run.parameters_filename or not os.path.exists(_params_path(run.parameters_filename)):
+        return jsonify({'error': 'Run parameter file missing on disk'}), 404
 
-    _apply_ui_parameters_to_run(run, parameters)
+    try:
+        apply_ui_parameters_to_file(_params_path(run.parameters_filename), parameters)
+    except ParameterError as exc:
+        return jsonify({'error': str(exc)}), 400
     run.session.touch()
     db.session.commit()
     return jsonify({'success': True, 'run': _serialize_run(run)})
@@ -181,15 +187,16 @@ def update_run(run_id):
 @bp.route('/api/runs/<int:run_id>', methods=['PATCH'])
 @handle_api_errors('Failed to rename run')
 def rename_run(run_id):
-    run = SimulationRun.query.get_or_404(run_id)
+    run = db.get_or_404(SimulationRun, run_id)
     if run.is_baseline:
         return jsonify({'error': 'The baseline (As-Is) run cannot be renamed'}), 400
 
-    body = request.get_json() or {}
-    new_name = (body.get('name') or '').strip()
+    body = request.get_json(silent=True) or {}
+    new_name = body.get('name')
+    new_name = new_name.strip() if isinstance(new_name, str) else ''
     if not new_name:
         return jsonify({'error': 'Name is required'}), 400
-    if new_name == BASELINE_RUN_NAME:
+    if _is_baseline_name(new_name):
         return jsonify({'error': f'"{BASELINE_RUN_NAME}" is reserved'}), 400
 
     clash = next(
@@ -209,82 +216,45 @@ def rename_run(run_id):
 @bp.route('/api/runs/<int:run_id>', methods=['DELETE'])
 @handle_api_errors('Failed to delete run')
 def delete_run(run_id):
-    run = SimulationRun.query.get_or_404(run_id)
+    run = db.get_or_404(SimulationRun, run_id)
     if run.is_baseline:
         return jsonify({'error': 'The baseline (As-Is) run cannot be deleted'}), 400
 
-    if run.parameters_filename:
-        try:
-            os.unlink(_params_path(run.parameters_filename))
-        except OSError:
-            pass
-    if run.simulation_df_filename:
-        sim_path = os.path.join(
-            current_app.config['SIMULATION_FOLDER'],
-            run.simulation_df_filename,
-        )
-        try:
-            os.unlink(sim_path)
-        except OSError:
-            pass
+    parameters_filename = run.parameters_filename
+    simulation_filename = run.simulation_df_filename
 
     session = run.session
     db.session.delete(run)
     session.touch()
     db.session.commit()
+
+    # Files go only once the row is gone for good: a failed delete must not
+    # leave a scenario that points at nothing.
+    remove_file(current_app.config['UPLOAD_FOLDER'], parameters_filename)
+    remove_file(current_app.config['SIMULATION_FOLDER'], simulation_filename)
     return jsonify({'success': True})
-
-
-# --- helpers ---------------------------------------------------------------
-
-def _apply_ui_parameters_to_run(run, ui_params):
-    """Convert UI-format parameter edits into ProSiT JSON and overwrite the
-    run's snapshot file in place.
-    """
-    json_filepath = _params_path(run.parameters_filename)
-    if not os.path.exists(json_filepath):
-        raise FileNotFoundError(f'Snapshot file missing: {run.parameters_filename}')
-
-    with open(json_filepath, 'r') as f:
-        prosit_json = json.load(f)
-    prosit_json = convert_app_to_prosit_format(ui_params, prosit_json)
-    with open(json_filepath, 'w') as f:
-        json.dump(prosit_json, f, indent=4)
 
 
 @bp.route('/api/sessions/<int:session_id>', methods=['DELETE'])
 @handle_api_errors('Failed to delete session')
 def delete_session(session_id):
     """Remove a session, all its runs, and any files they reference."""
-    session = SimulationSession.query.get_or_404(session_id)
+    session = db.get_or_404(SimulationSession, session_id)
 
     metadata = session.get_parameters() or {}
-    upload_files = []
-    for key in ('pnml_filename',):
-        if metadata.get(key):
-            upload_files.append(metadata[key])
-
-    sim_folder = current_app.config['SIMULATION_FOLDER']
+    upload_files = [metadata.get('pnml_filename'), metadata.get('json_filename'), session.filename]
+    simulation_files = []
     for run in session.runs:
-        if run.parameters_filename:
-            upload_files.append(run.parameters_filename)
-        if run.simulation_df_filename:
-            try:
-                os.unlink(os.path.join(sim_folder, run.simulation_df_filename))
-            except OSError:
-                pass
-
-    if session.filename:
-        upload_files.append(session.filename)
-
-    for fname in upload_files:
-        try:
-            os.unlink(_params_path(fname))
-        except OSError:
-            pass
+        upload_files.append(run.parameters_filename)
+        simulation_files.append(run.simulation_df_filename)
 
     db.session.delete(session)
     db.session.commit()
+
+    for filename in upload_files:
+        remove_file(current_app.config['UPLOAD_FOLDER'], filename)
+    for filename in simulation_files:
+        remove_file(current_app.config['SIMULATION_FOLDER'], filename)
     return jsonify({'success': True})
 
 
@@ -293,8 +263,8 @@ def delete_session(session_id):
 def rename_session(session_id):
     """Rename a session. Pass ``display_name: null`` (or empty string) to
     clear the override and revert to the auto-derived label."""
-    session = SimulationSession.query.get_or_404(session_id)
-    body = request.get_json() or {}
+    session = db.get_or_404(SimulationSession, session_id)
+    body = request.get_json(silent=True) or {}
     if 'display_name' not in body:
         return jsonify({'error': 'display_name field is required'}), 400
     raw = body.get('display_name')
