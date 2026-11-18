@@ -1,21 +1,23 @@
+# ProSiT Tool with Docker Compose.
+#
+#   docker compose up -d      start it, then open http://localhost:5050
+#   docker compose down       stop it
+#
+# The first start downloads the published image. From a source checkout,
+# "docker compose up -d --build" builds the image from the sources instead.
 services:
   prosit-app:
+    image: ghcr.io/franvinci/prosit-tool:latest
     build: .
     ports:
-      - "5050:5050"
-    environment:
-      # Inside a container the server must accept connections from outside it,
-      # and there is no browser to open.
-      - PROSIT_TOOL_HOST=0.0.0.0
-      - PROSIT_TOOL_NO_BROWSER=1
+      # Reachable from this computer only. The tool has no login: whoever can
+      # reach it can read and delete its data. To let the other computers of
+      # the network in all the same, write "5050:5050".
+      - "127.0.0.1:5050:5050"
     volumes:
-      - ./uploads:/app/uploads
-      - ./simulations:/app/simulations
-      - ./instance:/app/instance
+      # Uploaded logs, simulated logs and the database stay in these three
+      # folders, next to this file.
+      - ./uploads:/data/uploads
+      - ./simulations:/data/simulations
+      - ./instance:/data/instance
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5050/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s

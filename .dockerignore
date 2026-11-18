@@ -1,88 +1,15 @@
-# Git
-.git
-.gitignore
+# Only what the image is built from is sent to Docker. Nothing else in this
+# folder ever is: not the uploaded logs, the simulations and the database
+# (uploads/, simulations/, instance/), not the examples, not the tests.
+*
 
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+!pyproject.toml
+!README.md
+!LICENSE
+!THIRD-PARTY-LICENSES
+!packaging/constraints.txt
+!packaging/third_party_notices.py
+!prosit_tool/
 
-# Virtual environments
-.venv/
-venv/
-env/
-ENV/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
-
-# Database
-*.db
-*.sqlite
-*.sqlite3
-
-# Temporary files
-*.tmp
-*.temp
-
-# Documentation
-README.md
-*.md
-
-# Test files
-test_*
-*_test.py
-tests/
-
-# Jupyter notebooks
-*.ipynb
-
-# Environment files
-.env
-.env.local
-.env.production
-
-# Docker
-Dockerfile*
-docker-compose*
-.dockerignore
-
-# Node modules (if any)
-node_modules/
-
-# Coverage reports
-htmlcov/
-.coverage
-.coverage.*
-coverage.xml
-*.cover
-.hypothesis/
-.pytest_cache/
+**/__pycache__
+**/*.py[cod]

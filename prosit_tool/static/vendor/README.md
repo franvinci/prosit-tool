@@ -14,8 +14,12 @@ unmodified: `tests/test_frontend.py` checks each one against its SHA-384.
 | `viz-js/viz.js` | @viz-js/viz 3.31.0 | MIT | `https://cdn.jsdelivr.net/npm/@viz-js/viz@3.31.0/dist/viz.js` |
 
 `viz-js/viz.js` contains, compiled to WebAssembly, Graphviz 16.1.0 (Eclipse
-Public License 1.0, https://www.graphviz.org) and Expat (MIT,
+Public License 2.0, https://www.graphviz.org) and Expat (MIT,
 https://libexpat.github.io).
+
+The copyright notices and the licence texts of all of them are in
+`THIRD-PARTY-LICENSES`, at the root of the repository: a new library, or a new
+version of one, has to be recorded there too.
 
 To update a library, replace its file with the one of the new version and
 update the version and the hash in `tests/test_frontend.py` and in this table.

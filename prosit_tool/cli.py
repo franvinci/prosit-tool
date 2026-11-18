@@ -13,6 +13,7 @@ import os
 import socket
 import sys
 import threading
+import traceback
 import urllib.request
 import webbrowser
 from pathlib import Path
@@ -174,12 +175,42 @@ def _prepare_frozen_runtime() -> None:
     os.environ.setdefault('LOKY_MAX_CPU_COUNT', '1')
 
 
+def _window_closes_with_the_program() -> bool:
+    """True for the executable started with a double click on Windows.
+
+    The console window is then its own, and disappears the moment the program
+    ends, together with whatever the program has just said.
+    """
+    if os.name != 'nt' or not getattr(sys, 'frozen', False):
+        return False
+    try:
+        import ctypes
+        attached = (ctypes.c_uint * 2)()
+        return ctypes.windll.kernel32.GetConsoleProcessList(attached, 2) == 1
+    except Exception:
+        return False
+
+
 def main(argv=None) -> int:
     # Must come first: in a frozen executable, pm4py's alignment workers are
     # started by re-running this very program.
     multiprocessing.freeze_support()
     _prepare_frozen_runtime()
 
+    try:
+        status = _launch(argv)
+    except Exception:
+        if not _window_closes_with_the_program():
+            raise
+        traceback.print_exc()
+        status = 1
+    if status and _window_closes_with_the_program():
+        # Leave the reason on screen until it has been read.
+        input('\nPress Enter to close this window.')
+    return status
+
+
+def _launch(argv=None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
@@ -201,6 +232,9 @@ def main(argv=None) -> int:
                 webbrowser.open(url)
             return 0
 
+        # Loading the scientific libraries takes a few seconds, more the first
+        # time an executable is run: say that something is happening.
+        print(f'Starting ProSiT {__version__}...', flush=True)
         configure_logging()
         from waitress import create_server
         from .app import create_app

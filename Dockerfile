@@ -1,67 +1,65 @@
-# Use Python 3.10 slim image as base
-FROM python:3.10-slim
+# ProSiT Tool in a container: the web application, on port 5050.
+#
+#   docker build -t prosit-tool .
+#   docker run --rm -p 127.0.0.1:5050:5050 -v prosit-data:/data prosit-tool
+#
+# Everything comes from PyPI as ready-made wheels: there is nothing to compile
+# and no Graphviz to install (the diagrams are drawn by the browser).
 
-# Set build arguments for architecture detection
-ARG TARGETARCH
-ARG TARGETPLATFORM
+ARG PYTHON_VERSION=3.12
 
-# Set working directory
-WORKDIR /app
+# --- the tool and what it needs, in a virtual environment ---------------------
+FROM python:${PYTHON_VERSION}-slim AS build
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    graphviz \
-    libgraphviz-dev \
-    pkg-config \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_ROOT_USER_ACTION=ignore
 
-# The conda environment installs the tool itself (pip install -e .), so the
-# sources have to be in place before the environment is created.
-COPY . .
+RUN python -m venv /opt/prosit
+ENV PATH="/opt/prosit/bin:$PATH"
+WORKDIR /src
 
-# Install conda and create environment
-RUN apt-get update && apt-get install -y wget && \
-    if [ "$TARGETARCH" = "amd64" ] || [ "$TARGETARCH" = "x86_64" ]; then \
-        MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"; \
-    elif [ "$TARGETARCH" = "arm64" ] || [ "$TARGETARCH" = "aarch64" ]; then \
-        MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh"; \
-    else \
-        echo "Unsupported architecture: $TARGETARCH" && exit 1; \
-    fi && \
-    echo "Downloading Miniconda for architecture: $TARGETARCH" && \
-    wget "$MINICONDA_URL" -O miniconda.sh && \
-    bash miniconda.sh -b -p /opt/conda && \
-    rm miniconda.sh && \
-    /opt/conda/bin/conda config --set always_yes true && \
-    /opt/conda/bin/conda config --set auto_activate_base false && \
-    /opt/conda/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
-    /opt/conda/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r && \
-    /opt/conda/bin/conda env create -f environment.yml && \
-    /opt/conda/bin/conda clean -afy && \
-    rm -rf /var/lib/apt/lists/*
+# The dependencies first, at the versions the release was tested with: this
+# layer is built again only when they change.
+COPY pyproject.toml ./
+COPY packaging/constraints.txt packaging/
+RUN python -c "import tomllib; print('\n'.join(tomllib.load(open('pyproject.toml', 'rb'))['project']['dependencies']))" > requirements.txt \
+    && pip install -c packaging/constraints.txt -r requirements.txt
 
-# Use the Python of the environment created above (named in environment.yml)
-ENV PATH="/opt/conda/envs/prosit-tool/bin:$PATH"
+# Then the tool itself.
+COPY README.md LICENSE THIRD-PARTY-LICENSES ./
+COPY prosit_tool prosit_tool
+RUN pip install --no-deps .
 
-# Create necessary directories
-RUN mkdir -p uploads simulations instance
+# What the image contains, with the licence of each part and where its source is.
+COPY packaging/third_party_notices.py packaging/
+RUN mkdir -p /opt/prosit/share/doc/prosit-tool \
+    && cp LICENSE /opt/prosit/share/doc/prosit-tool/ \
+    && python packaging/third_party_notices.py --output /opt/prosit/share/doc/prosit-tool/THIRD-PARTY-NOTICES.txt
 
-# Set environment variables
-ENV PYTHONPATH=/app
-# Inside a container the server must accept connections from outside it, and
-# there is no browser to open.
-ENV PROSIT_TOOL_HOST=0.0.0.0
-ENV PROSIT_TOOL_NO_BROWSER=1
+# --- the image -----------------------------------------------------------------
+FROM python:${PYTHON_VERSION}-slim
 
-# Expose port
+LABEL org.opencontainers.image.title="ProSiT Tool" \
+      org.opencontainers.image.description="Web tool for data-driven business process simulation, built on prosit-pm" \
+      org.opencontainers.image.source="https://github.com/franvinci/prosit-tool" \
+      org.opencontainers.image.licenses="AGPL-3.0-or-later"
+
+COPY --from=build /opt/prosit /opt/prosit
+
+# Uploaded logs, simulations and the database are kept under /data: mount a
+# volume there to keep them. Inside a container the server has to accept
+# connections from outside it, and there is no browser to open.
+ENV PATH="/opt/prosit/bin:$PATH" \
+    PYTHONUNBUFFERED=1 \
+    MPLCONFIGDIR=/tmp/matplotlib \
+    PROSIT_TOOL_DATA_DIR=/data \
+    PROSIT_TOOL_HOST=0.0.0.0 \
+    PROSIT_TOOL_NO_BROWSER=1
+
 EXPOSE 5050
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:5050/ || exit 1
+HEALTHCHECK --interval=10s --timeout=5s --start-period=60s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5050/api/health', timeout=4)" || exit 1
 
-# Run the application
-CMD ["python", "main.py"]
+CMD ["prosit-tool"]

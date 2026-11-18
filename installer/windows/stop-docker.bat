@@ -1,52 +1,37 @@
 @echo off
-REM ProSiT Docker Stopper for Windows
-REM This script stops the ProSiT Docker containers
+REM Stop the ProSiT started with run-docker.bat. Its data stays where it is
+REM (uploads, simulations and instance, in the folder of the project).
 
-echo ========================================
-echo ProSiT Docker Stopper for Windows
-echo ========================================
-echo.
+setlocal
+cd /d "%~dp0..\.."
 
-REM Check if Docker is running
 docker info >nul 2>&1
-if %errorlevel% neq 0 (
-    echo ERROR: Docker is not running or not installed.
-    echo Please start Docker Desktop and try again.
-    pause
-    exit /b 1
-)
+if errorlevel 1 goto no_docker
+docker compose version >nul 2>&1
+if errorlevel 1 goto no_compose
 
-REM Get the directory where this script is located
-set "SCRIPT_DIR=%~dp0"
-set "PROJECT_ROOT=%SCRIPT_DIR%..\..\"
-
-REM Change to project root directory
-cd /d "%PROJECT_ROOT%"
-
-REM Check if docker-compose.yml exists
-if not exist "docker-compose.yml" (
-    echo ERROR: docker-compose.yml not found in project root directory.
-    echo Expected location: %PROJECT_ROOT%docker-compose.yml
-    pause
-    exit /b 1
-)
-
-echo Stopping ProSiT application...
-echo.
-
-REM Stop and remove containers
-docker-compose down
-
-if %errorlevel% neq 0 (
-    echo ERROR: Failed to stop the application.
-    echo Check the error messages above.
-    pause
-    exit /b 1
-)
+docker compose down
+if errorlevel 1 goto not_stopped
 
 echo.
-echo ✓ Application stopped successfully!
+echo ProSiT is stopped. To start it again: installer\windows\run-docker.bat
+exit /b 0
+
+:not_stopped
 echo.
-echo To start the application again, run: run-docker.bat
-echo.
+echo ProSiT could not be stopped: see the messages above.
 pause
+exit /b 1
+
+:no_docker
+echo Docker is not installed, or Docker Desktop is not running.
+echo Start Docker Desktop, wait until it says it is running, and try again.
+echo If it is not installed: installer\windows\setup-windows.bat
+pause
+exit /b 1
+
+:no_compose
+echo Docker Compose is missing ("docker compose" does not work).
+echo It comes with Docker Desktop: update Docker Desktop.
+pause
+exit /b 1

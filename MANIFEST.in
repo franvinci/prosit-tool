@@ -1,0 +1,4 @@
+# The source distribution is the pip package and nothing else. The tests need
+# the example logs and the packaging scripts: all of that is in the repository
+# (https://github.com/franvinci/prosit-tool).
+prune tests

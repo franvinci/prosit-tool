@@ -1,100 +1,43 @@
 @echo off
-REM ProSiT Docker Runner for Windows
-REM This script helps you run the ProSiT application using Docker
+REM Start ProSiT with Docker and open it in the browser.
+REM
+REM   installer\windows\run-docker.bat            use the published image
+REM   installer\windows\run-docker.bat --build    build the image from this checkout instead
 
-echo ========================================
-echo ProSiT Docker Runner for Windows
-echo ========================================
-echo.
+setlocal
+set "URL=http://localhost:5050"
+cd /d "%~dp0..\.."
 
-REM Check if Docker is running
 docker info >nul 2>&1
-if %errorlevel% neq 0 (
-    echo ERROR: Docker is not running or not installed.
-    echo Please start Docker Desktop and try again.
-    pause
-    exit /b 1
-)
+if errorlevel 1 goto no_docker
+docker compose version >nul 2>&1
+if errorlevel 1 goto no_compose
 
-echo Docker is running. Proceeding with setup...
-echo.
-
-REM Get the directory where this script is located
-set "SCRIPT_DIR=%~dp0"
-set "PROJECT_ROOT=%SCRIPT_DIR%..\..\"
-
-REM Change to project root directory
-cd /d "%PROJECT_ROOT%"
-
-REM Check if docker-compose.yml exists
-if not exist "docker-compose.yml" (
-    echo ERROR: docker-compose.yml not found in project root directory.
-    echo Expected location: %PROJECT_ROOT%docker-compose.yml
-    pause
-    exit /b 1
-)
-
-echo Starting ProSiT application...
-echo.
-
-REM Stop any existing containers
-echo Stopping any existing containers...
-docker-compose down >nul 2>&1
-
-REM Build and start the application
-echo Building and starting the application...
-docker-compose up -d --build
-
-if %errorlevel% neq 0 (
-    echo ERROR: Failed to start the application.
-    echo Check the error messages above.
-    pause
-    exit /b 1
-)
+echo Starting ProSiT (the first time, the image has to be downloaded)...
+docker compose up -d --wait %*
+if errorlevel 1 goto not_started
 
 echo.
-echo ========================================
-echo Application Status
-echo ========================================
-docker-compose ps
+echo ProSiT is running at %URL%
+echo To stop it: installer\windows\stop-docker.bat
+start "" "%URL%"
+exit /b 0
 
+:not_started
 echo.
-echo ========================================
-echo Access Information
-echo ========================================
-echo Application URL: http://localhost:5050
-echo.
-echo To view logs: docker-compose logs -f
-echo To stop: docker-compose down
-echo To restart: docker-compose restart
-echo.
-
-REM Wait a moment for the application to start
-echo Waiting for application to start...
-timeout /t 10 /nobreak >nul
-
-REM Check if application is responding
-echo Checking application health...
-curl -s -o nul -w "%%{http_code}" http://localhost:5050 > temp_status.txt
-set /p status=<temp_status.txt
-del temp_status.txt
-
-if "%status%"=="200" (
-    echo ✓ Application is running successfully!
-    echo ✓ You can now access it at: http://localhost:5050
-) else (
-    echo ⚠ Application may still be starting up.
-    echo Please wait a moment and try accessing: http://localhost:5050
-)
-
-echo.
-echo Press any key to open the application in your browser...
-pause >nul
-
-REM Try to open the application in the default browser
-start http://localhost:5050
-
-echo.
-echo Application opened in browser. You can close this window.
-echo To stop the application later, run: docker-compose down
+echo ProSiT did not start. See what it says with: docker compose logs
 pause
+exit /b 1
+
+:no_docker
+echo Docker is not installed, or Docker Desktop is not running.
+echo Start Docker Desktop, wait until it says it is running, and try again.
+echo If it is not installed: installer\windows\setup-windows.bat
+pause
+exit /b 1
+
+:no_compose
+echo Docker Compose is missing ("docker compose" does not work).
+echo It comes with Docker Desktop: update Docker Desktop.
+pause
+exit /b 1

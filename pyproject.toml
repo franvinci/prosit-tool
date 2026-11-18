@@ -9,7 +9,9 @@ description = "Web tool for data-driven business process simulation, built on pr
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
 license = "MIT"
-license-files = ["LICENSE"]
+# The second file names the software of other authors that comes with the
+# tool (the libraries of the page) and reproduces their licences.
+license-files = ["LICENSE", "THIRD-PARTY-LICENSES"]
 authors = [{ name = "Francesco Vinci" }]
 keywords = ["process mining", "business process simulation", "petri net", "what-if analysis"]
 classifiers = [
@@ -37,6 +39,12 @@ dependencies = [
     "pandas>=2.2,<3",
     "numpy>=1.26,<2",
     "scipy>=1.14,<2",
+    # Not used directly: two packages needed by pm4py and prosit-pm whose latest
+    # releases cannot be installed everywhere without compiling them. cvxopt
+    # 1.3.3 has ready-made files only for macOS 15 and later; river 0.23 has
+    # none for Macs with an Intel processor.
+    "cvxopt<1.3.3; sys_platform == 'darwin'",
+    "river<0.23; sys_platform == 'darwin' and platform_machine == 'x86_64'",
 ]
 
 [project.optional-dependencies]

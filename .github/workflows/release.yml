@@ -1,0 +1,243 @@
+# What a release is made of, built and tried when a tag "v<version>" is pushed:
+#
+#   - the pip package (wheel and source), also sent to PyPI when the repository
+#     variable PUBLISH_TO_PYPI is "true";
+#   - the executables for Linux, Windows and macOS (Apple Silicon and Intel);
+#   - the Docker image for Intel/AMD and ARM, pushed to ghcr.io;
+#   - a GitHub Release with all the files.
+#
+# Nothing is published unless everything was built and worked. Started by hand
+# ("Run workflow"), it builds and tries everything and publishes nothing.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  tests:
+    uses: ./.github/workflows/tests.yml
+
+  package:
+    name: pip package
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: The tag is the version of the code
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          version="$(python -c "import prosit_tool; print(prosit_tool.__version__)")"
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::The tag is $GITHUB_REF_NAME but prosit_tool/__init__.py says $version"
+            exit 1
+          fi
+
+      - name: Build the wheel and the source distribution
+        run: |
+          python -m pip install build
+          python -m build
+
+      - name: Install the wheel in an empty environment and take it through a session
+        run: |
+          python -m venv "$RUNNER_TEMP/installed"
+          "$RUNNER_TEMP/installed/bin/python" -m pip install -c packaging/constraints.txt dist/*.whl
+          python packaging/smoke_test.py "$RUNNER_TEMP/installed/bin/prosit-tool"
+
+      # The executables and the image contain packages under the GNU (Affero)
+      # General Public License: their source goes into the release next to them.
+      - name: Collect the source of the copyleft packages
+        run: |
+          "$RUNNER_TEMP/installed/bin/python" packaging/copyleft_sources.py --output copyleft-sources
+          version="$(python -c "import prosit_tool; print(prosit_tool.__version__)")"
+          tar -czf "dist/prosit-tool-$version-copyleft-sources.tar.gz" copyleft-sources
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: pip-package
+          path: dist/
+          if-no-files-found: error
+
+  executables:
+    name: Executable for ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # An older Linux on purpose: what is built there also runs on newer ones.
+          - name: Linux
+            os: ubuntu-22.04
+          - name: Windows
+            os: windows-2022
+          - name: macOS (Apple Silicon)
+            os: macos-15
+          - name: macOS (Intel)
+            os: macos-15-intel
+    steps:
+      # On Windows git would otherwise rewrite the line endings of every file.
+      - name: Keep the files as they are in the repository
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install the tool and PyInstaller
+        run: python -m pip install -c packaging/constraints.txt . -r packaging/requirements-build.txt
+
+      # PyInstaller, then the program is started and taken through a session,
+      # then the folder is packed.
+      - name: Build, try and pack the executable
+        run: python packaging/build_executable.py
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: executable-${{ matrix.os }}
+          path: |
+            dist/prosit-tool-*.zip
+            dist/prosit-tool-*.tar.gz
+            dist/prosit-tool-*.sha256
+          if-no-files-found: error
+
+  image:
+    name: Docker image
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-qemu-action@v4
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build the image for this machine
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          tags: prosit-tool:candidate
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Start it and take it through a session
+        run: |
+          docker run --detach --name candidate --publish 127.0.0.1:5050:5050 prosit-tool:candidate
+          for attempt in $(seq 1 60); do
+            if curl --silent --fail http://127.0.0.1:5050/api/health > /dev/null; then break; fi
+            sleep 1
+          done
+          python3 packaging/smoke_test.py --url http://127.0.0.1:5050 || { docker logs candidate; exit 1; }
+          docker rm --force candidate
+
+      # Nothing is pushed here: the "publish" job does it, from what this
+      # build leaves in the cache, once everything else has worked too.
+      - name: Build it for Intel/AMD and ARM
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  publish:
+    name: Publish the image and the GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [tests, package, executables, image]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          path: release
+          merge-multiple: true
+
+      - uses: docker/setup-qemu-action@v4
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Sign in to ghcr.io
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Names and labels of the image
+        id: names
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+          # The image contains pm4py (AGPL) and CVXOPT (GPL): see THIRD-PARTY-LICENSES.
+          labels: |
+            org.opencontainers.image.title=ProSiT Tool
+            org.opencontainers.image.licenses=AGPL-3.0-or-later
+
+      - name: Push the image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.names.outputs.tags }}
+          labels: ${{ steps.names.outputs.labels }}
+          cache-from: type=gha
+
+      - name: Create the release with its files
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -l release
+          gh release create "$GITHUB_REF_NAME" release/* \
+            --verify-tag \
+            --title "ProSiT Tool ${GITHUB_REF_NAME#v}" \
+            --notes-file packaging/release-notes.md \
+            --generate-notes
+
+  pypi:
+    name: PyPI
+    # Set the repository variable PUBLISH_TO_PYPI to "true" once prosit-tool
+    # is registered on PyPI with this workflow as its trusted publisher.
+    if: startsWith(github.ref, 'refs/tags/v') && vars.PUBLISH_TO_PYPI == 'true'
+    needs: [publish]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: pip-package
+          path: artifacts
+
+      - name: Keep the wheel and the source distribution
+        run: |
+          mkdir dist
+          mv artifacts/prosit_tool-* dist/
+          ls -l dist
+
+      - uses: pypa/gh-action-pypi-publish@release/v1

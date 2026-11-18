@@ -181,7 +181,12 @@ def node():
 
 
 def test_javascript_unit_tests(node):
-    result = subprocess.run([node, '--test', 'tests/js'], cwd=REPO, capture_output=True, text=True, timeout=300)
+    # The files one by one, and the report format by name: what Node does with
+    # a folder, and how it reports by default, changed between its versions.
+    files = sorted(path.relative_to(REPO).as_posix() for path in (REPO / 'tests' / 'js').glob('*.test.mjs'))
+    assert len(files) >= 6
+    result = subprocess.run([node, '--test', '--test-reporter=tap', *files], cwd=REPO,
+                            capture_output=True, text=True, encoding='utf-8', timeout=300)
 
     assert result.returncode == 0, result.stdout[-4000:] + result.stderr[-2000:]
     assert re.search(r'^# fail 0$', result.stdout, re.M)

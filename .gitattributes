@@ -1,3 +1,7 @@
 *.mp4 filter=lfs diff=lfs merge=lfs -text
 # Third-party files are kept byte for byte (their hashes are checked by the tests).
 prosit_tool/static/vendor/** -text
+# Shell scripts keep Unix line endings and batch files Windows ones, whatever
+# the system of the checkout: neither runs with the endings of the other.
+*.sh text eol=lf
+*.bat text eol=crlf
