@@ -178,14 +178,16 @@ def render_svg():
         "process.stdout.write(result.output);"
     )
 
+    # The script reads and writes UTF-8, whatever encoding the system prefers
+    # (on Windows one that has no character for the mark of the final place).
     def _render(dot):
         done = subprocess.run([node, '--input-type=module', '-e', script], input=dot,
-                              capture_output=True, text=True, timeout=120)
+                              capture_output=True, encoding='utf-8', timeout=120)
         assert done.returncode == 0, done.stderr
         return done.stdout
 
     probe = subprocess.run([node, '--input-type=module', '-e', script], input='digraph { a }',
-                           capture_output=True, text=True, timeout=120)
+                           capture_output=True, encoding='utf-8', timeout=120)
     if probe.returncode != 0:
         pytest.skip('this Node.js cannot load the drawing library')
     return _render

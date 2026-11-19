@@ -379,7 +379,8 @@ def test_the_smoke_test_fails_a_program_that_cannot_start_its_worker_processes(t
     slow = tmp_path / 'no_workers.py'
     slow.write_text(textwrap.dedent('''
         import sys
-        from http.server import BaseHTTPRequestHandler, HTTPServer
+        from http.server import BaseHTTPRequestHandler
+        from socketserver import TCPServer
 
         if '--check-workers' in sys.argv:
             print('Worker processes cannot be started: PermissionError: not on this computer')
@@ -396,7 +397,9 @@ def test_the_smoke_test_fails_a_program_that_cannot_start_its_worker_processes(t
                 pass
 
 
-        HTTPServer(('127.0.0.1', int(sys.argv[sys.argv.index('--port') + 1])), Health).serve_forever()
+        # Not HTTPServer: before it listens it asks the system for the name of the
+        # computer, which on some systems takes longer than the test waits.
+        TCPServer(('127.0.0.1', int(sys.argv[sys.argv.index('--port') + 1])), Health).serve_forever()
     '''))
 
     result = run_script('smoke_test.py', '--startup-timeout', '30', sys.executable, str(slow))

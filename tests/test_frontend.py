@@ -99,7 +99,9 @@ def test_page_asks_nothing_of_the_network(client):
 
 
 def test_vendored_libraries_are_the_published_files():
-    present = sorted(str(path.relative_to(VENDOR)) for path in VENDOR.rglob('*') if path.is_file() and path.suffix in ('.js', '.css'))
+    # as_posix: the names are written with "/" here, whatever the system uses in a path
+    present = sorted(path.relative_to(VENDOR).as_posix() for path in VENDOR.rglob('*')
+                     if path.is_file() and path.suffix in ('.js', '.css'))
     assert present == sorted(VENDORED)
 
     for name, (package, expected) in VENDORED.items():
