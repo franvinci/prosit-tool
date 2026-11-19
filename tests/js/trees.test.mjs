@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { generateFeaturesForTreeType, getFeatureTooltip } from '../../prosit_tool/static/js/features/params/tree-features.js';
 import {
-    addSplit, branchIds, isCategoricalFeature, isTree, removeSplit, shownBranches, singleLeafTimeTree,
+    generateFeaturesForTreeType, getFeatureTooltip, isWholeNumberFeature, splitCondition,
+} from '../../prosit_tool/static/js/features/params/tree-features.js';
+import {
+    addSplit, branchIds, isCategoricalFeature, isSplitOpen, isTree, removeSplit, setSplitOpen, shownBranches, singleLeafTimeTree,
 } from '../../prosit_tool/static/js/features/params/trees.js';
 
 // ---- shape of a tree --------------------------------------------------------------------
@@ -110,6 +112,57 @@ const parameters = {
 };
 const values = (treeType) => generateFeaturesForTreeType(treeType, parameters).map(f => f.value);
 
+// ---- which splits show their branches --------------------------------------------------------
+
+const deepTree = () => ({
+    0: { feature: 'amount', threshold: 10, children: { true: 1, false: 2 } },
+    1: { feature: 'hour', threshold: 12, children: { true: 3, false: 4 } },
+    2: { value: 0.2 },
+    3: { value: 0.5 },
+    4: { value: 0.9 },
+});
+
+test('a tree opens with every split closed', () => {
+    const tree = deepTree();
+    assert.equal(isSplitOpen(tree, '0'), false);
+    assert.equal(isSplitOpen(tree, 1), false);
+});
+
+test('what is opened stays open for that tree, and for that tree only', () => {
+    const tree = deepTree();
+    const another = deepTree();
+
+    setSplitOpen(tree, '0', true);
+    setSplitOpen(tree, 1, true);          // ids are told apart as text
+    assert.equal(isSplitOpen(tree, 0), true);
+    assert.equal(isSplitOpen(tree, '1'), true);
+    assert.equal(isSplitOpen(another, '0'), false);
+
+    setSplitOpen(tree, '1', false);
+    assert.equal(isSplitOpen(tree, '1'), false);
+    assert.equal(isSplitOpen(tree, '0'), true);
+});
+
+test('a split that has just been added shows its two leaves', () => {
+    const tree = deepTree();
+
+    addSplit(tree, '2', 'hour', 9, { value: 0.1 }, { value: 0.3 });
+
+    assert.equal(isSplitOpen(tree, '2'), true);
+    assert.equal(isSplitOpen(tree, '0'), false);     // the others are as they were
+});
+
+test('a split that is removed is forgotten, with the ones below it', () => {
+    const tree = deepTree();
+    setSplitOpen(tree, '0', true);
+    setSplitOpen(tree, '1', true);
+
+    removeSplit(tree, '0', { value: 1 });
+
+    assert.equal(isSplitOpen(tree, '0'), false);
+    assert.equal(isSplitOpen(tree, '1'), false);
+});
+
 test('each kind of tree offers the features the simulator gives it', () => {
     const attributes = ['amount', 'kind = a"b', 'kind = <x>'];
     assert.deepEqual(values('arrival'), ['hour', 'weekday']);
@@ -165,4 +218,79 @@ test('each feature is explained in words', () => {
     assert.match(getFeatureTooltip('waiting_activity = Check', parameters), /waiting for the resource is «Check»/);
     assert.match(getFeatureTooltip('queue_length', parameters), /scheduled for the resource/);
     assert.equal(getFeatureTooltip('', parameters), '');
+});
+
+// ---- whole numbers ------------------------------------------------------------------------------
+
+test('counts, hours and days are whole numbers; attributes and conditions are not', () => {
+    for (const feature of ['Check', 'Anna', 'hour', 'weekday', 'workload', 'queue_length']) {
+        assert.equal(isWholeNumberFeature(feature, parameters), true, feature);
+    }
+    for (const feature of ['amount', 'kind = gold', 'resource = Anna', 'something else', '', null]) {
+        assert.equal(isWholeNumberFeature(feature, parameters), false, String(feature));
+    }
+});
+
+test('a split on a whole number is shown with a whole number', () => {
+    // learnt from a log: half way between two values
+    assert.equal(splitCondition('Check', 1.5, parameters), 'Check ≤ 1');
+    assert.equal(splitCondition('Check', 0.5, parameters), 'Check ≤ 0');
+    assert.equal(splitCondition('hour', 13.5, parameters), 'hour ≤ 13');
+    assert.equal(splitCondition('Anna', 2.5, parameters), 'Anna ≤ 2');
+    // added by hand: already whole
+    assert.equal(splitCondition('Check', 2, parameters), 'Check ≤ 2');
+    assert.equal(splitCondition('Check', '3', parameters), 'Check ≤ 3');
+});
+
+test('a split on an attribute keeps its threshold, without meaningless decimals', () => {
+    assert.equal(splitCondition('amount', 250.5, parameters), 'amount ≤ 250.5');
+    assert.equal(splitCondition('amount', 0.1 + 0.2, parameters), 'amount ≤ 0.3');
+    assert.equal(splitCondition('amount', 12500, parameters), 'amount ≤ 12500');
+});
+
+test('a condition has no threshold to show', () => {
+    assert.equal(splitCondition('kind = gold', 0.5, parameters), 'kind = gold');
+    assert.equal(splitCondition('resource = Anna', 0.5, parameters), 'resource = Anna');
+});
+
+test('the explanation of a split on a count says who takes each branch', () => {
+    assert.equal(
+        getFeatureTooltip('Check', parameters, 1.5),
+        'How many times the case has gone through activity «Check» so far. '
+        + 'True branch: at most once; false branch: 2 times or more.',
+    );
+    assert.match(getFeatureTooltip('Check', parameters, 0.5), /True branch: never; false branch: at least once\.$/);
+    assert.match(getFeatureTooltip('Check', parameters, 3.5), /True branch: at most 3 times; false branch: 4 times or more\.$/);
+    assert.match(getFeatureTooltip('Check', parameters, 2), /True branch: at most 2 times; false branch: 3 times or more\.$/);
+    assert.match(getFeatureTooltip('Anna', parameters, 1.5),
+        /resource «Anna» has served the case so far\. True branch: at most once; false branch: 2 times or more\.$/);
+});
+
+test('the explanation of a split never asks the reader to do the sum', () => {
+    for (const feature of ['Check', 'Anna', 'hour', 'weekday', 'workload', 'queue_length', 'amount']) {
+        for (const threshold of [undefined, 0.5, 1.5, 4.5]) {
+            assert.doesNotMatch(getFeatureTooltip(feature, parameters, threshold), /threshold \+ 1/);
+        }
+    }
+});
+
+test('hours and days are explained as hours and days', () => {
+    assert.match(getFeatureTooltip('hour', parameters, 13.5), /True branch: until 13:59; false branch: from 14:00\.$/);
+    assert.match(getFeatureTooltip('hour', parameters, 8.5), /until 08:59; false branch: from 09:00\.$/);
+    assert.match(getFeatureTooltip('weekday', parameters, 4.5), /True branch: Monday to Friday; false branch: Saturday to Sunday\.$/);
+    assert.match(getFeatureTooltip('weekday', parameters, 0.5), /True branch: Monday; false branch: Tuesday to Sunday\.$/);
+    assert.match(getFeatureTooltip('weekday', parameters, 5.5), /True branch: Monday to Saturday; false branch: Sunday\.$/);
+    assert.equal(getFeatureTooltip('hour', parameters), 'Hour of the day (0-23) when the event occurs.');
+});
+
+test('workload and attributes say where the two branches part', () => {
+    assert.match(getFeatureTooltip('workload', parameters, 2.5), /True branch: at most 2; false branch: 3 or more\.$/);
+    assert.match(getFeatureTooltip('queue_length', parameters, 0.5), /True branch: at most 0; false branch: 1 or more\.$/);
+    assert.equal(getFeatureTooltip('amount', parameters, 250.5),
+        'The case attribute «amount». True branch: at most 250.5; false branch: more than 250.5.');
+});
+
+test('before a threshold is chosen, a count is explained as the whole number it is', () => {
+    assert.match(getFeatureTooltip('Check', parameters), /A whole number: "≤ 1" is the branch of the cases where it happened at most once\.$/);
+    assert.match(getFeatureTooltip('workload', parameters), /A whole number/);
 });

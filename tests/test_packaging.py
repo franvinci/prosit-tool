@@ -5,6 +5,7 @@ import re
 import socket
 import subprocess
 import sys
+import textwrap
 from importlib import metadata
 from pathlib import Path
 
@@ -50,6 +51,7 @@ def test_the_image_is_built_with_pip_alone():
         assert unwanted not in dockerfile.lower(), unwanted
     assert '-c packaging/constraints.txt' in dockerfile          # the tested versions
     assert 'CMD ["prosit-tool"]' in dockerfile
+    assert 'STOPSIGNAL SIGINT' in dockerfile                    # as the first process it ignores TERM
     assert 'PROSIT_TOOL_DATA_DIR=/data' in dockerfile
     assert 'PROSIT_TOOL_HOST=0.0.0.0' in dockerfile and 'PROSIT_TOOL_NO_BROWSER=1' in dockerfile
     assert '/api/health' in dockerfile                            # the health check
@@ -289,7 +291,9 @@ def test_the_notices_of_a_packaged_copy_list_what_is_installed():
 
     assert result.returncode == 0, result.stderr
     notices = result.stdout
-    assert f'ProSiT Tool {metadata.version("prosit-tool")} - third-party notices' in notices
+    # (the version is the one of the installation, which after a change of
+    # version is the new one only once the tool has been installed again)
+    assert re.match(r'ProSiT Tool \d+\.\d+\S* - third-party notices\n', notices)
     # what makes the whole package AGPL is said at the top, with where the source is
     top = notices[:notices.index('PART 1')]
     assert re.search(r'^  - pm4py \S+ \(AGPL', top, re.M)
@@ -316,6 +320,23 @@ def test_workflows_only_use_files_that_exist():
             assert (REPO / path).exists(), (workflow.name, path)
 
 
+def test_only_a_tag_publishes():
+    """A trial run (a "trial/..." branch, or by hand) builds everything and publishes nothing."""
+    release = text_of(WORKFLOWS / 'release.yml')
+    assert re.search(r"^    tags: \['v\*'\]\n    branches: \['trial/\*\*'\]$", release, re.M)
+
+    jobs = dict(re.findall(r'^  (\w[\w-]*):\n((?:    .*\n|\n)+)', release[release.index('\njobs:'):], re.M))
+    assert set(jobs) == {'tests', 'package', 'executables', 'image', 'publish', 'pypi'}
+    for name, body in jobs.items():
+        writes = re.search(r'^      (contents|packages|id-token): write$', body, re.M)
+        pushes = 'push: true' in body or 'gh release create' in body or 'pypi-publish' in body
+        if writes or pushes:
+            assert re.search(r"^    if: startsWith\(github\.ref, 'refs/tags/v'\)", body, re.M), name
+    assert {name for name, body in jobs.items() if re.search(r': write$', body, re.M)} == {'publish', 'pypi'}
+    # the tests are not run a second time for a trial branch
+    assert "branches: ['**', '!trial/**']" in text_of(WORKFLOWS / 'tests.yml')
+
+
 def test_a_release_is_built_on_a_python_the_tool_supports():
     release = text_of(WORKFLOWS / 'release.yml')
     version = re.search(r"PYTHON_VERSION: '(3\.\d+)'", release).group(1)
@@ -335,7 +356,8 @@ def test_the_tool_goes_through_a_whole_session_when_started_as_a_program():
 
     assert result.returncode == 0, result.stdout + result.stderr
     assert 'Everything works' in result.stdout
-    for step in ('it starts and listens', 'the page, its scripts', 'an event log is uploaded',
+    for step in ('it starts and listens', 'it starts worker processes', 'the page, its scripts',
+                 'an event log is uploaded',
                  'the model and its parameters are discovered', 'its progress is reported',
                  'a simulation runs', 'the results are computed', 'the accuracy of the model is measured',
                  'downloaded as CSV and as XES', 'then deleted'):
@@ -350,6 +372,38 @@ def test_the_smoke_test_says_what_does_not_work(tmp_path):
 
     assert result.returncode == 1
     assert 'FAILED: the program stopped at start-up with exit status 3' in result.stdout
+
+
+def test_the_smoke_test_fails_a_program_that_cannot_start_its_worker_processes(tmp_path):
+    """Such a program would still discover, on one processor: the fault must not go unseen in a release."""
+    slow = tmp_path / 'no_workers.py'
+    slow.write_text(textwrap.dedent('''
+        import sys
+        from http.server import BaseHTTPRequestHandler, HTTPServer
+
+        if '--check-workers' in sys.argv:
+            print('Worker processes cannot be started: PermissionError: not on this computer')
+            sys.exit(1)
+
+
+        class Health(BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b'{}')
+
+            def log_message(self, *arguments):
+                pass
+
+
+        HTTPServer(('127.0.0.1', int(sys.argv[sys.argv.index('--port') + 1])), Health).serve_forever()
+    '''))
+
+    result = run_script('smoke_test.py', '--startup-timeout', '30', sys.executable, str(slow))
+
+    assert result.returncode == 1
+    assert 'FAILED: the program cannot start a worker process' in result.stdout
+    assert 'PermissionError: not on this computer' in result.stdout
 
 
 def test_the_smoke_test_says_when_nothing_answers():

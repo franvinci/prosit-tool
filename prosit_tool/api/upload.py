@@ -155,6 +155,16 @@ def upload_file():
     if not (lower_name.endswith('.xes') or is_csv):
         return jsonify({'error': 'Event log must have .xes or .csv extension'}), 400
 
+    # Where the Petri net comes from, as chosen in the form. A client that
+    # does not say (the field is the form's) imports the net it sends, if any.
+    net_source = (request.form.get('petriNetSource') or '').strip().lower()
+    if net_source not in ('', 'discover', 'import'):
+        return jsonify({'error': "petriNetSource must be 'discover' or 'import'"}), 400
+    if net_source == 'discover':
+        pnml_file = None  # whatever file came along is not what was asked for
+    elif net_source == 'import' and not (pnml_file and pnml_file.filename):
+        return jsonify({'error': 'Choose the PNML file of the Petri net to import'}), 400
+
     if pnml_file and pnml_file.filename and not pnml_file.filename.lower().endswith('.pnml'):
         return jsonify({'error': 'PNML file must have .pnml extension'}), 400
 

@@ -87,6 +87,8 @@ export function addSplit(tree, nodeId, feature, threshold, whenItHolds, otherwis
     tree[nodeId] = { feature, threshold, children: { true: atMostId, false: aboveId } };
     tree[atMostId] = categorical ? otherwise : whenItHolds;
     tree[aboveId] = categorical ? whenItHolds : otherwise;
+    // Whoever adds a split wants to see the two leaves it comes with.
+    setSplitOpen(tree, nodeId, true);
 }
 
 /** Turn the split `nodeId` back into `leaf`, dropping everything below it. */
@@ -94,6 +96,7 @@ export function removeSplit(tree, nodeId, leaf) {
     const drop = (id) => {
         dropChildren(tree[id]);
         delete tree[id];
+        setSplitOpen(tree, id, false);
     };
     const dropChildren = (node) => {
         if (!node || !node.children) return;
@@ -103,4 +106,32 @@ export function removeSplit(tree, nodeId, leaf) {
     };
     dropChildren(tree[nodeId]);
     tree[nodeId] = leaf;
+    setSplitOpen(tree, nodeId, false);
+}
+
+// Which splits of each tree show their branches in the editor. A tree opens
+// with every split closed: a deep tree is long, and what is looked at is one
+// branch at a time. What the user opens stays open for as long as the tree is
+// in memory, so that the editor can draw the tree again after an edit without
+// losing the place.
+const openSplits = new WeakMap();
+
+function opened(tree) {
+    let ids = openSplits.get(tree);
+    if (!ids) {
+        ids = new Set();
+        openSplits.set(tree, ids);
+    }
+    return ids;
+}
+
+/** Whether the split `nodeId` of `tree` shows its branches. */
+export function isSplitOpen(tree, nodeId) {
+    return opened(tree).has(String(nodeId));
+}
+
+/** Remember that the split `nodeId` of `tree` shows its branches, or does not. */
+export function setSplitOpen(tree, nodeId, open) {
+    if (open) opened(tree).add(String(nodeId));
+    else opened(tree).delete(String(nodeId));
 }

@@ -77,6 +77,8 @@ def build_parser() -> argparse.ArgumentParser:
         help=f'do not open the browser. Env: {ENV_NO_BROWSER}=1',
     )
     parser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
+    # For whoever builds an executable: does it manage to start a worker process?
+    parser.add_argument('--check-workers', action='store_true', help=argparse.SUPPRESS)
     return parser
 
 
@@ -165,14 +167,26 @@ def configure_logging() -> None:
     )
 
 
-def _prepare_frozen_runtime() -> None:
-    """Settings needed only when running as a PyInstaller executable."""
-    if not getattr(sys, 'frozen', False):
-        return
-    # joblib's process workers are started with ``python -m ...``, which an
-    # executable cannot do. One "CPU" makes prosit-pm fit its models in this
-    # process, in the deterministic order it uses when no workers are available.
-    os.environ.setdefault('LOKY_MAX_CPU_COUNT', '1')
+def _check_workers() -> int:
+    """Start a worker process, give it a job and say how it went (``--check-workers``)."""
+    from joblib import cpu_count
+
+    from . import workers
+
+    problem = workers.problem()
+    if problem:
+        print(f'Worker processes cannot be started: {problem}')
+        return 1
+    print(f'Worker processes can be started ({cpu_count()} processors).')
+    return 0
+
+
+def _stop_workers() -> None:
+    """A discovery in progress must not keep its worker processes busy once
+    the program is closed, nor keep the program from closing."""
+    workers = sys.modules.get('prosit_tool.workers')
+    if workers is not None:
+        workers.stop_all()
 
 
 def _window_closes_with_the_program() -> bool:
@@ -192,10 +206,10 @@ def _window_closes_with_the_program() -> bool:
 
 
 def main(argv=None) -> int:
-    # Must come first: in a frozen executable, pm4py's alignment workers are
-    # started by re-running this very program.
+    # Must come first: in an executable, a worker process (pm4py's for the
+    # alignments, the ones of ``workers`` for the models) is this very program,
+    # run again with arguments that this call recognises.
     multiprocessing.freeze_support()
-    _prepare_frozen_runtime()
 
     try:
         status = _launch(argv)
@@ -213,6 +227,8 @@ def main(argv=None) -> int:
 def _launch(argv=None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    if args.check_workers:
+        return _check_workers()
 
     try:
         env_port = _env_port()
@@ -265,6 +281,7 @@ def _launch(argv=None) -> int:
         pass
     finally:
         server.close()
+        _stop_workers()
     return 0
 
 

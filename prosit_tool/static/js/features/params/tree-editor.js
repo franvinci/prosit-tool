@@ -1,19 +1,26 @@
 /**
  * The editor of a decision tree.
  *
- * A split shows its condition and the two branches under it, and can be
- * collapsed or removed. A leaf holds what the tree decides for the cases that
- * reach it: a weight (transition and resource trees) or a distribution (time
- * trees), editable in place; a leaf can also be turned into a new split.
+ * A split shows its condition and, when it is opened, the two branches under
+ * it; it can be removed. A tree opens with every split closed. A leaf holds
+ * what the tree decides for the cases that reach it: a weight (transition and
+ * resource trees) or a distribution (time trees), editable in place; a leaf
+ * can also be turned into a new split.
  */
 
 import { escapeHtml, initTooltipsIn, on } from '../../core/dom.js';
 import { markParametersDirty } from '../../core/state.js';
 import { FAMILIES, distributionPdf, distributionRange, isOptionalBound, leafFields, leafParamsFromProsit } from './distributions.js';
-import { getFeatureTooltip } from './tree-features.js';
-import { isCategoricalFeature, shownBranches } from './trees.js';
+import { getFeatureTooltip, splitCondition } from './tree-features.js';
+import { isSplitOpen, setSplitOpen, shownBranches } from './trees.js';
 
 const TIME_TREE_TYPES = ['execution', 'waiting', 'arrival'];
+
+// For the element that holds the branches of a split: the tree and the node it
+// belongs to, and how to draw the branches if they have not been drawn yet.
+// (The branches of a closed split are drawn only when it is opened: the
+// leaves of a deep tree are many, and each time leaf draws a chart.)
+const splitOf = new WeakMap();
 
 function indentedBlock() {
     const wrapper = document.createElement('div');
@@ -41,30 +48,31 @@ function renderTree(treeData, mountEl, treeType, leafExplanation, createLeaf) {
         if (node && typeof node === 'object' && Object.prototype.hasOwnProperty.call(node, 'value')) {
             wrapper.appendChild(createLeaf(node, id));
         } else if (node && Object.prototype.hasOwnProperty.call(node, 'feature')) {
-            // A condition holds or not; a number is compared with the threshold.
-            const condition = isCategoricalFeature(node.feature)
-                ? escapeHtml(node.feature)
-                : `${escapeHtml(node.feature)} ≤ ${escapeHtml(node.threshold)}`;
+            // A condition holds or not; a number is compared with the threshold
+            // (a whole number with the whole part of it: "≤ 1", not "≤ 1.5").
+            const condition = escapeHtml(splitCondition(node.feature, node.threshold));
 
+            const open = isSplitOpen(treeData, id);
             const title = document.createElement('div');
             title.innerHTML = `
                 <div class="d-flex align-items-center gap-2">
                     <button class="btn btn-sm btn-outline-secondary tree-toggle" data-action="toggle-tree-node" title="Collapse/Expand">
-                        <i data-feather="chevron-down" class="tree-icon"></i>
+                        <i data-feather="${open ? 'chevron-down' : 'chevron-right'}" class="tree-icon"></i>
                     </button>
                     <span class="badge bg-primary">Split</span>
-                    <span data-bs-toggle="tooltip" data-bs-placement="top" title="${escapeHtml(getFeatureTooltip(node.feature))}" style="cursor: help; border-bottom: 1px dotted #adb5bd;">${condition}</span>
+                    <span data-bs-toggle="tooltip" data-bs-placement="top" title="${escapeHtml(getFeatureTooltip(node.feature, undefined, node.threshold))}" style="cursor: help; border-bottom: 1px dotted #adb5bd;">${condition}</span>
                     <button class="btn btn-sm btn-outline-danger" data-action="remove-tree-split" data-node-id="${escapeHtml(id)}" data-tree-type="${escapeHtml(treeType)}" title="Remove split">
                         <i data-feather="trash-2" class="me-1"></i>Remove
                     </button>
                 </div>`;
             const childrenContainer = document.createElement('div');
-            childrenContainer.className = 'tree-children';
+            childrenContainer.className = open ? 'tree-children' : 'tree-children collapsed';
             childrenContainer.style.display = 'block';
             wrapper.appendChild(title);
             wrapper.appendChild(childrenContainer);
 
-            if (node.children) {
+            const drawBranches = () => {
+                if (!node.children) return;
                 // "true" is the branch of the cases for which the condition
                 // written above holds, whichever way prosit-pm stores it.
                 const [holdsId, otherwiseId] = shownBranches(node);
@@ -74,6 +82,12 @@ function renderTree(treeData, mountEl, treeType, leafExplanation, createLeaf) {
                     childrenContainer.appendChild(label);
                     childrenContainer.appendChild(createNode(String(childId)));
                 }
+            };
+            const split = { tree: treeData, id, draw: drawBranches };
+            splitOf.set(childrenContainer, split);
+            if (open) {
+                split.draw = null;
+                drawBranches();
             }
         } else {
             const unknown = document.createElement('div');
@@ -387,27 +401,58 @@ function childrenOf(toggleButton) {
     return null;
 }
 
+// The button that opens and closes the branches held by `childrenContainer`.
+function toggleOf(childrenContainer) {
+    const title = childrenContainer.previousElementSibling;
+    return title ? title.querySelector('.tree-toggle') : null;
+}
+
 function setCollapsed(toggleButton, childrenContainer, collapsed) {
+    const split = splitOf.get(childrenContainer);
+    if (split) {
+        setSplitOpen(split.tree, split.id, !collapsed);
+        if (!collapsed && split.draw) {
+            // Opened for the first time: its branches are drawn now.
+            const draw = split.draw;
+            split.draw = null;
+            draw();
+        }
+    }
     childrenContainer.classList.toggle('collapsed', collapsed);
-    const icon = toggleButton.querySelector('.tree-icon');
-    if (icon) icon.setAttribute('data-feather', collapsed ? 'chevron-right' : 'chevron-down');
+    const icon = toggleButton && toggleButton.querySelector('.tree-icon');
+    // Feather has replaced the <i> with an <svg>: put back an <i> for it to draw.
+    if (icon) icon.outerHTML = `<i data-feather="${collapsed ? 'chevron-right' : 'chevron-down'}" class="tree-icon"></i>`;
+}
+
+// The icons and the tooltips of what has just been drawn.
+function finishDrawing(container) {
+    feather.replace();
+    initTooltipsIn(container);
 }
 
 function toggleTreeNode(toggleButton) {
     const childrenContainer = childrenOf(toggleButton);
     if (!childrenContainer) return;
     setCollapsed(toggleButton, childrenContainer, !childrenContainer.classList.contains('collapsed'));
-    feather.replace();
+    finishDrawing(childrenContainer);
 }
 
 // Collapse or expand every split of the tree the button belongs to.
 function setAllCollapsed(button, collapsed) {
     const tree = button.closest('.small') || document;
-    tree.querySelectorAll('.tree-toggle').forEach(toggleButton => {
-        const childrenContainer = childrenOf(toggleButton);
-        if (childrenContainer) setCollapsed(toggleButton, childrenContainer, collapsed);
-    });
-    feather.replace();
+    if (collapsed) {
+        tree.querySelectorAll('.tree-children:not(.collapsed)').forEach(childrenContainer => {
+            setCollapsed(toggleOf(childrenContainer), childrenContainer, true);
+        });
+    } else {
+        // Opening a split draws the splits under it, closed: go on until none is.
+        let closed = tree.querySelectorAll('.tree-children.collapsed');
+        while (closed.length) {
+            closed.forEach(childrenContainer => setCollapsed(toggleOf(childrenContainer), childrenContainer, false));
+            closed = tree.querySelectorAll('.tree-children.collapsed');
+        }
+    }
+    finishDrawing(tree);
 }
 
 on('click', {

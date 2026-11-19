@@ -10,7 +10,7 @@ import { FAMILIES, leafFields } from './distributions.js';
 import { showActivityExecution } from './execution.js';
 import { showResourceWeight } from './resources.js';
 import { showTransitionWeights } from './transitions.js';
-import { generateFeaturesForTreeType, getFeatureTooltip } from './tree-features.js';
+import { generateFeaturesForTreeType, getFeatureTooltip, isWholeNumberFeature } from './tree-features.js';
 import { addSplit, isCategoricalFeature, isTree, removeSplit, singleLeafTimeTree } from './trees.js';
 import { showResourceWaiting } from './waiting.js';
 
@@ -208,6 +208,7 @@ function addSplitToNode(nodeId, treeType) {
                         <div class="mb-3" id="thresholdGroup">
                             <label for="splitThreshold" class="form-label">Threshold (≤)</label>
                             <input type="number" class="form-control" id="splitThreshold" step="0.1" value="0.5">
+                            <div class="form-text" id="splitThresholdHelp"></div>
                         </div>
                         <div class="mb-3">
                             <label for="trueValue" class="form-label">True Branch Value <small class="text-muted">(the condition holds)</small></label>
@@ -233,9 +234,18 @@ function addSplitToNode(nodeId, treeType) {
     const featureInput = document.getElementById('splitFeature');
     const featureLabel = document.getElementById('splitFeatureLabel');
     const thresholdGroup = document.getElementById('thresholdGroup');
-    // A condition has no threshold: it holds or it does not.
+    const thresholdInput = document.getElementById('splitThreshold');
+    const thresholdHelp = document.getElementById('splitThresholdHelp');
+    // A condition has no threshold: it holds or it does not. A count, an hour
+    // or a day is a whole number, and so is its threshold.
     const syncThreshold = () => {
         thresholdGroup.style.display = isCategoricalFeature(featureInput.value) ? 'none' : 'block';
+        const whole = isWholeNumberFeature(featureInput.value);
+        thresholdInput.step = whole ? '1' : '0.1';
+        if (whole) thresholdInput.value = Math.floor(parseFloat(thresholdInput.value) || 0);
+        thresholdHelp.textContent = whole
+            ? 'A whole number. True branch: up to this number; false branch: more than it.'
+            : 'True branch: up to this value; false branch: more than it.';
     };
     modalEl.querySelectorAll('.dropdown-menu .dropdown-item').forEach(button => {
         button.addEventListener('click', () => {

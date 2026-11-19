@@ -62,4 +62,9 @@ EXPOSE 5050
 HEALTHCHECK --interval=10s --timeout=5s --start-period=60s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5050/api/health', timeout=4)" || exit 1
 
+# Stopped the way Ctrl+C stops it: the program is the first process of the
+# container, where the usual signal (TERM) would be ignored until Docker
+# gives up waiting, ten seconds later.
+STOPSIGNAL SIGINT
+
 CMD ["prosit-tool"]

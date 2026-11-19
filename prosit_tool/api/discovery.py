@@ -8,7 +8,13 @@ from flask import Blueprint, current_app, request, jsonify
 from .. import progress
 from ..extensions import db
 from ..models import BASELINE_RUN_NAME, SimulationRun, SimulationSession
-from ..prosit_integration import LIBRARY_STEPS, DiscoveryError, ProSiTIntegration, discovery_steps
+from ..prosit_integration import (
+    LIBRARY_STEPS,
+    DiscoveryError,
+    ModelMismatchError,
+    ProSiTIntegration,
+    discovery_steps,
+)
 from ..validators import validate_discovery_options
 
 from ._decorators import handle_api_errors
@@ -167,7 +173,12 @@ def _discover(session, filepath, pnml_filename, options, report):
         for filename in created:
             remove_file(upload_folder, filename)
         _mark_session_failed(session_id)
-        reason = 'The event log cannot be used.' if isinstance(exc, EventLogError) else 'Parameter discovery failed.'
+        if isinstance(exc, EventLogError):
+            reason = 'The event log cannot be used.'
+        elif isinstance(exc, ModelMismatchError):
+            reason = 'The Petri net cannot be used with this event log.'
+        else:
+            reason = 'Parameter discovery failed.'
         return jsonify({'error': f'{reason} {exc}'}), 422
 
     except Exception:
@@ -189,7 +200,7 @@ def _discover(session, filepath, pnml_filename, options, report):
         'json_filename': json_filename,
         'process_model': parameters['process_model'],
         'prosit_metrics': prosit_metrics,
-        'warnings': log_notes + list(prosit.discovery_warnings),
+        'warnings': log_notes + list(prosit.model_warnings) + list(prosit.discovery_warnings),
         'message': 'Parameters processed successfully',
     })
 

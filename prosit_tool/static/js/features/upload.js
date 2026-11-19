@@ -60,7 +60,12 @@ function initPetriNetSource() {
         byId('pnmlSection').style.display = importing ? 'block' : 'none';
         byId('uploadBtnText').textContent = importing ? 'Upload & Import' : 'Upload & Discover';
         const pnmlFile = byId('pnmlFile');
-        if (pnmlFile) pnmlFile.required = importing;
+        if (pnmlFile) {
+            pnmlFile.required = importing;
+            // A file chosen earlier stays in the field when the section is
+            // hidden: a disabled field is not sent with the form.
+            pnmlFile.disabled = !importing;
+        }
     };
     discoverNet.addEventListener('change', sync);
     importNet.addEventListener('change', sync);

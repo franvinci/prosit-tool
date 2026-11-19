@@ -5,10 +5,22 @@ people install. The release workflow (`.github/workflows/release.yml`) runs
 all of it when a tag `v<version>` is pushed; every step can also be run by
 hand.
 
+To try what a release would contain without making one, push the commit to a
+branch whose name begins with `trial/`:
+
+```bash
+git push origin HEAD:trial/1.1.0
+```
+
+The workflow builds and tries everything and publishes nothing; the wheel and
+the four executables are then among the artifacts of the run (GitHub, Actions,
+the run, "Artifacts"). Delete the branch afterwards
+(`git push origin --delete trial/1.1.0`).
+
 | File | What it is |
 |---|---|
 | `constraints.txt` | The version of every dependency that a release is tested with and built from, for Python 3.10 to 3.12 on every system. |
-| `smoke_test.py` | Starts a packaged ProSiT and takes it through a whole session: upload, discovery, simulation, results. Standard library only. |
+| `smoke_test.py` | Starts a packaged ProSiT, asks it to start a worker process (`--check-workers`) and takes it through a whole session: upload, discovery, simulation, results. Standard library only. |
 | `prosit-tool.spec`, `launcher.py` | The PyInstaller recipe of the executable, and what the executable runs. |
 | `build_executable.py` | Builds the executable for the system it runs on, adds the notices, tries it and packs it. |
 | `requirements-build.txt` | PyInstaller, at the version the executables are built with. |

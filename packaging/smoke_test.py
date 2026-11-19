@@ -21,6 +21,7 @@ import argparse
 import json
 import os
 import shutil
+import signal
 import socket
 import subprocess
 import sys
@@ -193,6 +194,10 @@ def exercise(base, log_name, log_content, expected_version=None, activities=()):
     expect(model['activities'] and set(activities) <= set(model['activities']),
            f'activities are missing: {model["activities"]}')
     expect(discovered['parameters']['resource_params']['resources'], 'no resource was discovered')
+    # A program that cannot start its worker processes still discovers, more
+    # slowly, and says so: here that is a fault of the package.
+    slowly = [warning for warning in discovered.get('warnings', []) if 'fitted by one process' in warning]
+    expect(not slowly, ' '.join(slowly))
     passed(f'the model and its parameters are discovered ({len(model["activities"])} activities, '
            f'fitness {model["fitness"]:.2f})')
     # How many steps are caught depends on how fast the machine is: one is enough
@@ -257,14 +262,41 @@ def wait_until_it_answers(base, process, seconds):
     raise Failure(f'the program did not answer within {seconds} seconds')
 
 
+def check_workers(command, seconds):
+    """The program starts a worker process and gives it a job.
+
+    That is how a discovery fits its models on every processor, and what an
+    executable has to do in a way of its own.
+    """
+    try:
+        check = subprocess.run(command + ['--check-workers'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                               timeout=seconds)
+    except subprocess.TimeoutExpired:
+        raise Failure(f'asked to start a worker process, the program did not answer within {seconds:.0f} seconds')
+    said = check.stdout.decode('utf-8', 'replace').strip()
+    expect(check.returncode == 0, f'the program cannot start a worker process:\n{said}')
+    passed('it starts worker processes')
+
+
 def stop(process):
-    if process.poll() is None:
-        process.terminate()
+    """Stop the program, the way Ctrl+C does where that can be sent: the program
+    then stops the processes it works with, which one that is simply ended
+    leaves behind for a while."""
+    if process.poll() is not None:
+        return
+    if os.name == 'posix':
+        process.send_signal(signal.SIGINT)
         try:
-            process.wait(timeout=20)
+            process.wait(timeout=15)
+            return
         except subprocess.TimeoutExpired:
-            process.kill()
-            process.wait(timeout=20)
+            pass  # it was started where Ctrl+C is ignored
+    process.terminate()
+    try:
+        process.wait(timeout=20)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait(timeout=20)
 
 
 def main(argv=None):
@@ -304,6 +336,7 @@ def main(argv=None):
             process = subprocess.Popen(command, stdout=output, stderr=subprocess.STDOUT, env=environment)
             wait_until_it_answers(base, process, args.startup_timeout)
             passed(f'it starts and listens ({time.monotonic() - started:.1f} s)')
+            check_workers(args.command, args.startup_timeout)
         exercise(base, log_name, log_content, args.expect_version, activities)
         if process is not None:
             expect(process.poll() is None, f'the program stopped by itself with exit status {process.returncode}')

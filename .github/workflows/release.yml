@@ -6,13 +6,18 @@
 #   - the Docker image for Intel/AMD and ARM, pushed to ghcr.io;
 #   - a GitHub Release with all the files.
 #
-# Nothing is published unless everything was built and worked. Started by hand
-# ("Run workflow"), it builds and tries everything and publishes nothing.
+# Nothing is published unless everything was built and worked.
+#
+# To try all of it without releasing anything, push the commit to a branch
+# whose name begins with "trial/" (git push origin HEAD:trial/1.1.0), or start
+# the workflow by hand ("Run workflow"): everything is built and tried, nothing
+# is published, and the executables are among the artifacts of the run.
 name: Release
 
 on:
   push:
     tags: ['v*']
+    branches: ['trial/**']
   workflow_dispatch:
 
 permissions:

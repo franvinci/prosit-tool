@@ -8,7 +8,8 @@ name: Tests
 
 on:
   push:
-    branches: ['**']
+    # Not the trial branches: the release workflow runs the tests itself there.
+    branches: ['**', '!trial/**']
   pull_request:
   schedule:
     - cron: '17 5 * * 1'

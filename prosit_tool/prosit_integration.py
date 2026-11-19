@@ -1,5 +1,6 @@
 import logging
 import re
+from collections import Counter
 from datetime import datetime
 
 import pandas as pd
@@ -8,6 +9,7 @@ from pm4py.algo.evaluation.replay_fitness import algorithm as fitness_evaluator
 from pm4py.algo.evaluation.precision import algorithm as precision_evaluator
 
 from prosit.simulator import SimulatorParameters, SimulatorEngine
+from . import workers
 from .evaluation import evaluate, compute_log_kpis, compute_log_charts
 from .format_converters import attribute_entry_from_prosit, prosit_entry_to_app
 from .petri_dot import petri_net_to_dot
@@ -86,6 +88,31 @@ class DiscoveryError(Exception):
     """Parameter discovery failed; the message is safe to show to the user."""
 
 
+class ModelMismatchError(DiscoveryError):
+    """The Petri net and the event log do not describe the same process."""
+
+
+def listed(names, limit=8):
+    """Names for a message: the first few, then how many more there are."""
+    names = [str(name) for name in names]
+    if not names:
+        return '(none)'
+    shown = ', '.join(names[:limit])
+    return shown if len(names) <= limit else f'{shown} and {len(names) - limit} more'
+
+
+def activities_outside_model(event_log, net):
+    """``(activities of the net, events per activity of the log, the same for the activities the net lacks)``.
+
+    prosit-pm learns from the events it can replay on the net. An event whose
+    activity is not the label of any transition cannot be replayed: it is left
+    out of everything that is learnt, and nothing like it is ever simulated.
+    """
+    labels = {transition.label for transition in net.transitions if transition.label is not None}
+    events = Counter(event['concept:name'] for trace in event_log for event in trace)
+    return labels, events, {activity: count for activity, count in events.items() if activity not in labels}
+
+
 _PATH_RE = re.compile(r'(?:[A-Za-z]:)?(?:[\\/][^\\/\s:\'"]+){2,}')
 _ADDRESS_RE = re.compile(r'0x[0-9a-fA-F]+')
 
@@ -130,6 +157,8 @@ class ProSiTIntegration:
         self.prosit_params = None
         self.prosit_metrics = None
         self.discovery_warnings = []
+        # What the user should know about the model with respect to the log.
+        self.model_warnings = []
         # Whoever follows the discovery (``prosit_tool.progress.Progress``), if anyone.
         self._progress = progress
 
@@ -137,6 +166,32 @@ class ProSiTIntegration:
         """A step of ``discovery_steps`` begins."""
         if self._progress is not None:
             self._progress.start(step)
+
+    def _check_model_against_log(self, net):
+        """Refuse a net that has no activity of the log; note the activities it lacks.
+
+        It costs one pass over the events, and comes before the minutes that
+        measuring fitness and precision can take.
+        """
+        self.model_warnings = []
+        if self.event_log is None:
+            return
+        labels, events, outside = activities_outside_model(self.event_log, net)
+        if len(outside) == len(events):
+            raise ModelMismatchError(
+                'None of the activities of the event log is in the Petri net, so the log cannot be replayed on it. '
+                f'Activities of the log: {listed(sorted(events, key=str))}. '
+                f'Activities of the net: {listed(sorted(labels, key=str))}. '
+                'The names have to be identical: check that the PNML file is the model of this log.'
+            )
+        if outside:
+            by_size = sorted(outside.items(), key=lambda item: (-item[1], str(item[0])))
+            self.model_warnings.append(
+                'These activities of the event log are not in the process model, so their events are left out '
+                'of what is learnt and nothing like them is simulated: '
+                + listed([f'{activity} ({count} event{"" if count == 1 else "s"})' for activity, count in by_size], 10)
+                + '.'
+            )
 
     def discover_process_model(self, noise_threshold=0.2):
         """Discover process model using PM4Py inductive miner.
@@ -153,6 +208,8 @@ class ProSiTIntegration:
             # Apply inductive miner to discover Petri net
             self._begin('model')
             net, initial_marking, final_marking = pm4py.discover_petri_net_inductive(self.event_log, noise_threshold=noise_threshold)
+            # The miner leaves out what it takes for noise: say which activities.
+            self._check_model_against_log(net)
 
             self._begin('fitness')
             fitness = fitness_evaluator.apply(self.event_log, net, initial_marking, final_marking)['averageFitness']
@@ -183,6 +240,7 @@ class ProSiTIntegration:
             logger.info(f"Importing Petri net structure from {pnml_file_path}")
             self._begin('model')
             net, initial_marking, final_marking = pm4py.read_pnml(pnml_file_path)
+            self._check_model_against_log(net)
 
             if compute_metrics and self.event_log is not None:
                 self._begin('fitness')
@@ -280,20 +338,23 @@ class ProSiTIntegration:
             logger.info("Starting ProSiT parameter discovery...")
             self.discovery_warnings = []
             try:
-                self.prosit_params.discover_from_eventlog(
-                    self.event_log,
-                    max_depth_tree=max_depth_tree,
-                    incremental_discovery=incremental_discovery,
-                    grace_period=grace_period,
-                    enable_multitasking=enable_multitasking,
-                    multitasking_thr=multitasking_thr,
-                    random_state=random_state,
-                    use_workload_features=use_workload_features,
-                    attribute_mode=attribute_mode,
-                    # It prints the name of each step it begins: that is how
-                    # the progress shown to the user follows it (LIBRARY_STEPS).
-                    verbose=True,
-                )
+                # The models are fitted on several processes: in an executable
+                # they have to be started in a way of their own (see workers).
+                with workers.joblib_on_worker_processes():
+                    self.prosit_params.discover_from_eventlog(
+                        self.event_log,
+                        max_depth_tree=max_depth_tree,
+                        incremental_discovery=incremental_discovery,
+                        grace_period=grace_period,
+                        enable_multitasking=enable_multitasking,
+                        multitasking_thr=multitasking_thr,
+                        random_state=random_state,
+                        use_workload_features=use_workload_features,
+                        attribute_mode=attribute_mode,
+                        # It prints the name of each step it begins: that is how
+                        # the progress shown to the user follows it (LIBRARY_STEPS).
+                        verbose=True,
+                    )
                 self.prosit_params = self.prosit_params.to_dict()
             except Exception as discovery_error:
                 # Never substitute made-up parameters for a failed discovery:
@@ -301,8 +362,20 @@ class ProSiTIntegration:
                 # their log. Report what went wrong instead.
                 self.prosit_params = None
                 logger.exception("ProSiT discover_from_eventlog failed")
-                raise DiscoveryError(describe_exception(discovery_error)) from discovery_error
+                reason = describe_exception(discovery_error)
+                if self.model_warnings:
+                    # The likeliest lead when the library gives up on a log.
+                    reason += ' — ' + self.model_warnings[0]
+                raise DiscoveryError(reason) from discovery_error
             logger.info("ProSiT parameter discovery completed successfully")
+
+            unstarted = workers.problem(check=False)
+            if unstarted:
+                # The whole reason, paths included, is in what the program writes as it runs.
+                self.discovery_warnings.append(
+                    'The models were fitted by one process, which takes longer: the program could not '
+                    f'start its worker processes ({_PATH_RE.sub("<path>", unstarted)}).'
+                )
 
             unstaffed = unstaffed_activities(self.prosit_params)
             if unstaffed:
